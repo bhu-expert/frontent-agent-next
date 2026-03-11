@@ -106,7 +106,7 @@ export default function HeroSection() {
             w={{ base: "full", sm: "auto" }}
             px={{ base: "4", sm: "0" }}
           >
-            <Link href="/tool">
+            <Link href="/onboarding">
               <Box
                 as="button"
                 bg="#8a2ce2"

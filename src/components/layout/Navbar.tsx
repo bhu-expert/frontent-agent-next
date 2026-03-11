@@ -66,7 +66,7 @@ export default function Navbar() {
               Log in
             </Text>
           </Link>
-          <Link href="/tool">
+          <Link href="/onboarding">
             <Box
               bg="#8a2ce2"
               color="white"
@@ -123,7 +123,7 @@ export default function Navbar() {
               <Link href="#">
                 <Text fontSize="sm" fontWeight="500" color="gray.600">Log in</Text>
               </Link>
-              <Link href="/tool">
+              <Link href="/onboarding">
                 <Box
                   bg="#8a2ce2"
                   color="white"
