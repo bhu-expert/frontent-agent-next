@@ -58,7 +58,7 @@ test.describe('Accessibility', () => {
     await page.goto('/onboarding');
     await page.getByRole('button', { name: 'Sign In' }).click();
     
-    const modal = page.locator('div[role="dialog"]');
+    await page.locator('div[role="dialog"]');
     // If we didn't add role="dialog", we might need to rely on other ARIA labels or the structure
     // Let's assert the close button at least
     const closeBtn = page.getByLabel('Close');

@@ -4,7 +4,9 @@ import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionBox = motion.create(Box as React.ComponentType<any>);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionFlex = motion.create(Flex as React.ComponentType<any>);
 
 export default function FinalCTA() {
