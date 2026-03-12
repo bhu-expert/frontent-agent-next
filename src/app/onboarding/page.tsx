@@ -1,45 +1,33 @@
 "use client";
 
-import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { useOnboardingFlow } from "@/hooks";
-import { useAuth, AuthProvider } from "@/store/AuthProvider";
+import { AuthProvider } from "@/store/AuthProvider";
 
 import ToolNavbar from "@/components/tool/ToolNavbar";
 import StepBar from "@/components/tool/StepBar";
 import Footer from "@/components/layout/Footer";
 import AuthModal from "@/components/tool/AuthModal";
-import Toast from "@/components/tool/Toast";
-import Page1URL from "@/components/tool/Page1URL";
-import Page2Analysing from "@/components/tool/Page2Analysing";
-import Page3Results from "@/components/tool/Page3Results";
-import Page4SelectContext from "@/components/tool/Page4SelectContext";
-import Page5TemplateOptions from "@/components/tool/Page5TemplateOptions";
-import Page6Generating from "@/components/tool/Page6Generating";
-import Page7Output from "@/components/tool/Page7Output";
-import { LightMode } from "@/components/ui/color-mode";
+import URLInput from "@/components/tool/URLInput";
+import BrandAnalysis from "@/components/tool/BrandAnalysis";
+import ContextResults from "@/components/tool/ContextResults";
+import ContextSelector from "@/components/tool/ContextSelector";
+import TemplateOptions from "@/components/tool/TemplateOptions";
+import AdGeneration from "@/components/tool/AdGeneration";
+import AdOutput from "@/components/tool/AdOutput";
 
-export default function ToolPage() {
-  const {
-    curStep, maxReached, url, brandName, ctx, ratings, bm, likes,
-    selCtx, selTpl, selIgTpl, tone, emoji, platform, cta, offer, slideN, gen, auth,
-    modalOpen, modalMode, toastMsg, toastVisible,
-    setModalMode, setModalOpen, setPlatform, setSelTpl, setSelIgTpl, setTone, setEmoji, setCta, setOffer, setSlideN,
-    goStep, handleAnalyse, handleAnalysisDone, handleUpdateContexts, handleSelectCtx, handleRate, handleToggleBm, handleToggleLike,
-    handleUseSelected, handleGoTemplates, handleGenerate, handleGenerateDone, handleAuth, handleLogout,
-    handleSetField, handleNewAnalysis, copyToCB
-  } = useToolState();
+function ToolContent() {
+  const ts = useOnboardingFlow();
 
   return (
     <Box bg="#faf5ff" minH="100vh" overflowX="hidden">
       {/* Tool Navbar */}
       <ToolNavbar
-        user={user}
+        user={null}
         onLoginClick={ts.openLogin}
         onSignupClick={ts.openSignup}
-        onLogout={signOut}
-        onHome={onHome}
+        onLogout={() => {}}
+        onHome={() => {}}
       />
 
       {/* Step Bar */}
@@ -55,7 +43,7 @@ export default function ToolPage() {
         mode={ts.modalMode}
         onClose={ts.closeModal}
         onSwitch={ts.setModalMode}
-        onAuthSuccess={handleAuthSuccess}
+        onAuthSuccess={() => {}}
       />
 
       {/* Pages */}
@@ -65,9 +53,7 @@ export default function ToolPage() {
         <BrandAnalysis
           url={ts.url}
           brandName={ts.brandName}
-          token={session?.access_token}
           onDone={() => ts.goTo(3)}
-          onBack={() => ts.goTo(1)}
         />
       )}
 
@@ -111,7 +97,7 @@ export default function ToolPage() {
           cta={ts.cta}
           offer={ts.offer}
           slideN={ts.slideN}
-          isLoggedIn={!!user}
+          isLoggedIn={false}
           onBack={ts.prev}
           onSelPlatform={ts.setPlatform}
           onSelTpl={ts.setSelTpl}
@@ -127,7 +113,7 @@ export default function ToolPage() {
         />
       )}
 
-      {ts.curStep === 6 && <AdGeneration onDone={handleGenDone} />}
+      {ts.curStep === 6 && <AdGeneration onDone={() => ts.goTo(7)} />}
 
       {ts.curStep === 7 && ts.gen && (
         <AdOutput

@@ -13,8 +13,8 @@
   "dependencies": {
     "@chakra-ui/react": "^3.34.0",
     "@emotion/react": "^11.14.0",
-    "@types/marked": "^5.0.2",
     "@supabase/supabase-js": "^2.99.1",
+    "@types/marked": "^5.0.2",
     "framer-motion": "^12.35.2",
     "lucide-react": "^0.577.0",
     "marked": "^17.0.4",

@@ -1,7 +1,13 @@
 import { useState, useCallback, useMemo } from "react";
-import { AuthState, BrandContext, GeneratedContent } from "@/types/tool";
-import { CTXS } from "@/config/toolData";
+import { BrandContext, GeneratedContent } from "@/types/onboarding.types";
+import { CTXS } from "@/config";
 import { buildContent } from "@/utils/contentEngine";
+
+interface AuthState {
+  loggedIn: boolean;
+  name: string;
+  email: string;
+}
 
 export function useToolState() {
   const [curStep, setCurStep] = useState(1);

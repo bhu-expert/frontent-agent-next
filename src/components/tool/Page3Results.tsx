@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { BrandContext } from "@/types/tool";
-import { CTX_META } from "@/config/toolData";
+import { BrandContext } from "@/types/onboarding.types";
+import { CTX_META } from "@/config";
 
 interface Props {
   url: string;
