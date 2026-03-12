@@ -1,4 +1,4 @@
-import type { ContextBlock } from "@/types/tool";
+import type { ContextBlock } from "@/types/onboarding.types";
 
 const SPLIT_PATTERN = /\n## \d+\.\s.*?\n/;
 

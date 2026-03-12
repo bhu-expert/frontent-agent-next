@@ -3,8 +3,8 @@
 import { useState, useCallback } from "react";
 import { Box, Flex, Text, Button, HStack, VStack, SimpleGrid } from "@chakra-ui/react";
 import { Star, Bookmark, Heart, Copy, ChevronDown, ChevronUp, ArrowRight, RotateCcw } from "lucide-react";
-import { BrandContext } from "@/types/tool";
-import { CTX_META } from "@/config/toolData";
+import { BrandContext } from "@/types/onboarding.types";
+import { CTX_META } from "@/config";
 
 interface Props {
   url: string;
@@ -41,7 +41,7 @@ export default function Page3Results({
   const toggle = useCallback((id: number) => {
     setExpanded((p) => {
       const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) { n.delete(id); } else { n.add(id); }
       return n;
     });
   }, []);

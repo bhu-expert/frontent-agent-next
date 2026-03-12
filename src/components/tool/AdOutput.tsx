@@ -2,7 +2,7 @@
 
 import { Box, Flex, Text, Button, SimpleGrid, Badge, IconButton } from "@chakra-ui/react";
 import { ArrowLeft, Download, RotateCcw, Copy, MessageSquare, Hash, Image as ImageIcon, Layers, CheckCircle2 } from "lucide-react";
-import { GeneratedContent } from "@/types/tool";
+import { GeneratedContent } from "@/types/onboarding.types";
 
 interface Props {
   gen: GeneratedContent;

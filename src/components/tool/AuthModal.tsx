@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Text, Button, Input, VStack, HStack, IconButton, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, Button, Input, VStack, IconButton, Spinner } from "@chakra-ui/react";
 import { X, Check, Mail } from "lucide-react";
-import { useAuth } from "@/store/authStore";
+import { useAuth } from "@/store/AuthProvider";
 
 interface Props {
   open: boolean;

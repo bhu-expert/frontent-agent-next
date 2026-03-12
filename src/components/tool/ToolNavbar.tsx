@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { AuthUser } from "@/types/tool";
-import { Box, Flex, Text, Button, Container } from "@chakra-ui/react";
+import type { AuthUser } from "@/types/onboarding.types";
+import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { ChevronDown, LogOut } from "lucide-react";
 
 interface Props {

@@ -2,8 +2,8 @@
 
 import { Box, Flex, Text, Button, SimpleGrid, Badge, HStack } from "@chakra-ui/react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
-import { BrandContext } from "@/types/tool";
-import { CTX_META } from "@/config/toolData";
+import { BrandContext } from "@/types/onboarding.types";
+import { CTX_META } from "@/config";
 
 interface Props {
   ctx: BrandContext[];

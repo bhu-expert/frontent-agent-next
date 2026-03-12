@@ -1,9 +1,10 @@
-import type { PendingAction } from "@/types/tool";
+import type { PendingAction } from "@/types/onboarding.types";
+import { STORAGE_KEYS } from "@/config";
 
 // ─── Keys ────────────────────────────────────────────────────────────
 
-const KEY_BRAND_ID = "adforge_pending_brand_id";
-const KEY_ACTION = "adforge_pending_action";
+const KEY_BRAND_ID = STORAGE_KEYS.PENDING_BRAND_ID;
+const KEY_ACTION = STORAGE_KEYS.PENDING_ACTION;
 
 // ─── Brand ID helpers ────────────────────────────────────────────────
 

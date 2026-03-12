@@ -16,7 +16,7 @@ import {
   getPendingAction,
   clearDelayedAuthState,
 } from "@/lib/delayedAuth";
-import type { AuthUser } from "@/types/tool";
+import type { AuthUser } from "@/types/onboarding.types";
 
 // ─── Context value ───────────────────────────────────────────────────
 

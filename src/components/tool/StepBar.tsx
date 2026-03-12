@@ -3,7 +3,9 @@
 import { Flex, Box, Text, HStack, VStack } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 
-const STEPS = ["URL", "Analyse", "Results", "Context", "Template", "Generate", "Output"];
+import { TOOL_STEPS } from "@/config";
+
+const STEPS = TOOL_STEPS;
 
 interface Props {
   curStep: number;

@@ -5,14 +5,9 @@ import { Box, Flex, Text, VStack, Spinner, HStack, Button } from "@chakra-ui/rea
 import { Check } from "lucide-react";
 import { createBrandStream } from "@/lib/api";
 import { savePendingBrandId } from "@/lib/delayedAuth";
+import { ANALYSIS_PROGRESS_STEPS } from "@/config";
 
-const STEPS = [
-  "Scraping website content",
-  "Extracting brand signals",
-  "Analysing tone & positioning",
-  "Generating 5 brand contexts",
-  "Finalising output",
-];
+const STEPS = ANALYSIS_PROGRESS_STEPS;
 
 interface Props {
   url: string;

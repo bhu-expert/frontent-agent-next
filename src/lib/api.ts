@@ -2,11 +2,10 @@ import type {
   BrandEvent,
   AdVariationsPayload,
   AdVariation,
-} from "@/types/tool";
+} from "@/types/onboarding.types";
+import { API_BASE_URL, API_ENDPOINTS } from "@/config";
 
-const BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "https://content.bhuexpert.com/api/v1/data"
-).replace(/\/$/, "");
+const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
 // ─── Error helper ────────────────────────────────────────────────────
 
@@ -20,7 +19,7 @@ export async function signUp(
   email: string,
   password: string
 ): Promise<{ token: string; user_id: string }> {
-  const res = await fetch(`${BASE_URL}/auth/signup`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.SIGNUP}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -36,7 +35,7 @@ export async function signIn(
   email: string,
   password: string
 ): Promise<{ token: string; user_id: string }> {
-  const res = await fetch(`${BASE_URL}/auth/signin`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.SIGNIN}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -60,7 +59,7 @@ export async function* createBrandStream(
     name: brandName || "My Brand",
   };
 
-  const res = await fetch(`${BASE_URL}/brands`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRANDS}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -117,7 +116,7 @@ export async function getBrandContext(
   brandId: string,
   token: string
 ): Promise<{ context_md: string }> {
-  const res = await fetch(`${BASE_URL}/brands/${brandId}/context`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_CONTEXT(brandId)}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -137,7 +136,7 @@ export async function claimBrand(
   brandId: string,
   token: string
 ): Promise<void> {
-  const res = await fetch(`${BASE_URL}/brands/${brandId}/claim`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_CLAIM(brandId)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -157,7 +156,7 @@ export async function generateAdVariations(
   payload: AdVariationsPayload,
   token: string
 ): Promise<AdVariation[]> {
-  const res = await fetch(`${BASE_URL}/brands/${brandId}/ad-variations`, {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_VARIATIONS(brandId)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

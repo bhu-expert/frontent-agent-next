@@ -3,22 +3,22 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { useToolState } from "@/hooks/useToolState";
-import { useAuth, AuthProvider } from "@/store/authStore";
+import { useOnboardingFlow } from "@/hooks";
+import { useAuth, AuthProvider } from "@/store/AuthProvider";
 
 import ToolNavbar from "@/components/tool/ToolNavbar";
 import StepBar from "@/components/tool/StepBar";
 import Footer from "@/components/layout/Footer";
 import AuthModal from "@/components/tool/AuthModal";
-import Page1URL from "@/components/tool/Page1URL";
-import Page2Analysing from "@/components/tool/Page2Analysing";
-import Page3Results from "@/components/tool/Page3Results";
-import Page4SelectContext from "@/components/tool/Page4SelectContext";
-import Page5TemplateOptions from "@/components/tool/Page5TemplateOptions";
-import Page6Generating from "@/components/tool/Page6Generating";
-import Page7Output from "@/components/tool/Page7Output";
+import URLInput from "@/components/tool/URLInput";
+import BrandAnalysis from "@/components/tool/BrandAnalysis";
+import ContextResults from "@/components/tool/ContextResults";
+import ContextSelector from "@/components/tool/ContextSelector";
+import TemplateOptions from "@/components/tool/TemplateOptions";
+import AdGeneration from "@/components/tool/AdGeneration";
+import AdOutput from "@/components/tool/AdOutput";
 
-import type { GeneratedContent } from "@/types/tool";
+import type { GeneratedContent } from "@/types/onboarding.types";
 
 // Mock generated content for demo
 const MOCK_GEN: GeneratedContent = {
@@ -83,7 +83,7 @@ const MOCK_GEN: GeneratedContent = {
 function ToolContent() {
   const router = useRouter();
   const { user, session, signOut } = useAuth();
-  const ts = useToolState();
+  const ts = useOnboardingFlow();
 
   const onHome = useCallback(() => router.push("/"), [router]);
 
@@ -124,10 +124,10 @@ function ToolContent() {
       />
 
       {/* Pages */}
-      {ts.curStep === 1 && <Page1URL onAnalyse={ts.handleAnalyse} />}
+      {ts.curStep === 1 && <URLInput onAnalyse={ts.handleAnalyse} />}
 
       {ts.curStep === 2 && (
-        <Page2Analysing
+        <BrandAnalysis
           url={ts.url}
           brandName={ts.brandName}
           token={session?.access_token}
@@ -137,7 +137,7 @@ function ToolContent() {
       )}
 
       {ts.curStep === 3 && (
-        <Page3Results
+        <ContextResults
           url={ts.url}
           ctx={ts.ctx}
           ratings={ts.ratings}
@@ -155,7 +155,7 @@ function ToolContent() {
       )}
 
       {ts.curStep === 4 && (
-        <Page4SelectContext
+        <ContextSelector
           ctx={ts.ctx}
           selCtx={ts.selCtx}
           onSelect={ts.selectCtx}
@@ -165,7 +165,7 @@ function ToolContent() {
       )}
 
       {ts.curStep === 5 && (
-        <Page5TemplateOptions
+        <TemplateOptions
           ctx={ts.ctx}
           selCtx={ts.selCtx}
           selTpl={ts.selTpl}
@@ -192,10 +192,10 @@ function ToolContent() {
         />
       )}
 
-      {ts.curStep === 6 && <Page6Generating onDone={handleGenDone} />}
+      {ts.curStep === 6 && <AdGeneration onDone={handleGenDone} />}
 
       {ts.curStep === 7 && ts.gen && (
-        <Page7Output
+        <AdOutput
           gen={ts.gen}
           onCopy={ts.copyText}
           onBack={ts.prev}

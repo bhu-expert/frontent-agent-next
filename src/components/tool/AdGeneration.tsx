@@ -3,15 +3,9 @@
 import { useEffect, useState } from "react";
 import { Box, Flex, Text, VStack, Spinner } from "@chakra-ui/react";
 import { Check } from "lucide-react";
+import { GENERATION_PROGRESS_STEPS } from "@/config";
 
-const STEPS = [
-  "Loading selected context",
-  "Applying template structure",
-  "Composing slides",
-  "Writing caption & hashtags",
-  "Generating image prompts",
-  "Finalising output",
-];
+const STEPS = GENERATION_PROGRESS_STEPS;
 
 interface Props {
   onDone: () => void;

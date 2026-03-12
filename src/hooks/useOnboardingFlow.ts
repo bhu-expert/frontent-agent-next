@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { BrandContext, GeneratedContent } from "@/types/tool";
-import { CTXS } from "@/config/toolData";
+import type { BrandContext, GeneratedContent } from "@/types/onboarding.types";
+import { CTXS } from "@/config";
 
-export function useToolState() {
+export function useOnboardingFlow() {
   // Step navigation
   const [curStep, setCurStep] = useState(1);
   const [maxReached, setMaxReached] = useState(1);
@@ -84,7 +84,7 @@ export function useToolState() {
   const toggleBm = useCallback((id: number) => {
     setBm((prev) => {
       const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) { n.delete(id); } else { n.add(id); }
       return n;
     });
   }, []);
@@ -92,7 +92,7 @@ export function useToolState() {
   const toggleLike = useCallback((id: number) => {
     setLikes((prev) => {
       const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) { n.delete(id); } else { n.add(id); }
       return n;
     });
   }, []);

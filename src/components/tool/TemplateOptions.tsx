@@ -1,7 +1,7 @@
 "use client";
 
-import { BrandContext } from "@/types/tool";
-import { TPLS, IG_TPLS, TPL_META, TPL_EXAMPLES } from "@/config/toolData";
+import { BrandContext } from "@/types/onboarding.types";
+import { TPLS, IG_TPLS, TPL_META, TPL_EXAMPLES } from "@/config";
 import {
   Box,
   Flex,
@@ -11,7 +11,6 @@ import {
   Badge,
   Icon,
   VStack,
-  HStack,
   Input,
   Grid,
   Separator,
@@ -374,7 +373,7 @@ export default function Page5TemplateOptions(props: Props) {
                       {TPLS.find((t) => t.id === selTpl)?.name} Options
                     </Text>
                     <VStack gap={4} align="stretch">
-                      {TPLS.find((t) => t.id === selTpl)?.dynOpts.map((opt: any) => (
+                      {TPLS.find((t) => t.id === selTpl)?.dynOpts.map((opt: { id: string; lbl: string; ph: string; type?: string }) => (
                         <Box key={opt.id}>
                           <Text
                             fontSize="xs"
@@ -575,7 +574,7 @@ export default function Page5TemplateOptions(props: Props) {
 
                     <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4} mb={6}>
                       {IG_TPLS.find((t) => t.id === selIgTpl)?.fields.map(
-                        (f: any) => (
+                        (f: { id: string; lbl: string; ph: string }) => (
                           <Box key={f.id}>
                             <Text
                               fontSize="xs"
@@ -905,6 +904,7 @@ export default function Page5TemplateOptions(props: Props) {
                   </Text>
                   <Flex align="center" gap={4}>
                     <Slider.Root
+                      // eslint-disable-next-line jsx-a11y/aria-proptypes
                       aria-label={["slider-ex-1"]}
                       min={3}
                       max={8}
