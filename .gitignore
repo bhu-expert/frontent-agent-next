@@ -23,7 +23,16 @@
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/.playwright/
 test-results.json
+
+#palywright-mcp
+/playwright-mcp/
+/playwright-mcp/console-*.log
+/playwright-mcp/trace-*.zip
+/playwright-mcp/trace-*.zip
+/playwright-mcp/trace-*.zip
+/playwright-mcp/trace-*.zip
 
 
 # production
