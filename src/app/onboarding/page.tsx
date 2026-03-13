@@ -14,6 +14,7 @@ import ContextResults from "@/components/onboarding/ContextResults";
 import TemplateOptions from "@/components/onboarding/TemplateOptions";
 import AdGeneration from "@/components/onboarding/AdGeneration";
 import AdOutput from "@/components/onboarding/AdOutput";
+import Navbar from "@/components/layout/Navbar";
 
 function ToolContent() {
   const ts = useOnboardingFlow();
@@ -30,13 +31,7 @@ function ToolContent() {
   return (
     <Box bg="#faf5ff" minH="100vh" overflowX="hidden">
       {/* Tool Navbar */}
-      <ToolNavbar
-        user={null}
-        onLoginClick={ts.openLogin}
-        onSignupClick={ts.openSignup}
-        onLogout={() => {}}
-        onHome={() => {}}
-      />
+      <Navbar />
 
       {/* Step Bar */}
       <StepBar

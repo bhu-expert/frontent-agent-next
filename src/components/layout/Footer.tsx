@@ -11,16 +11,18 @@ import { FOOTER_LINKS, HEADING_COLORS } from "@/constants";
  */
 export default function Footer() {
   return (
-    <Box bg="#fadcf2" p={{ base: "4", md: "10" }}>
+    <Box bg="#F8FAFF" p={{ base: "4", md: "10" }}>
       <Box
-        bg="#0f111a"
+        bg="#0A1E7A"
         borderRadius={{ base: "3xl", md: "40px" }}
         px={{ base: "6", md: "16", lg: "24" }}
         py={{ base: "10", md: "20" }}
         maxW="100%"
         mx="auto"
-        color="#8B949E"
+        color="blue.100"
         minH={{ md: "350px" }}
+        position="relative"
+        overflow="hidden"
       >
         <Flex
           direction={{ base: "column", lg: "row" }}
@@ -28,6 +30,8 @@ export default function Footer() {
           gap={{ base: "10", lg: "8" }}
           maxW="7xl"
           mx="auto"
+          position="relative"
+          zIndex={1}
         >
           {/* Link columns */}
           <Grid
@@ -43,8 +47,8 @@ export default function Footer() {
                 <Heading
                   fontSize={{ base: "13px", md: "15px" }}
                   mb={{ base: "4", md: "5" }}
-                  color={HEADING_COLORS[title] || "gray.900"}
-                  fontWeight="600"
+                  color="white"
+                  fontWeight="700"
                 >
                   {title}
                 </Heading>
@@ -53,7 +57,7 @@ export default function Footer() {
                     <Link key={link.label} href={link.href}>
                       <Text
                         fontSize={{ base: "12px", md: "13px" }}
-                        color="#9CA3AF"
+                        color="blue.200"
                         _hover={{ color: "white" }}
                         transition="0.2s"
                         cursor="pointer"
@@ -70,27 +74,34 @@ export default function Footer() {
           {/* Last Update Card */}
           <Box display="flex" justifyContent={{ base: "flex-start", lg: "flex-end" }} w={{ lg: "30%" }}>
             <Box
-              bg="#1a1a2e"
+              bg="rgba(255, 255, 255, 0.05)"
               p={{ base: "4", md: "5" }}
               borderRadius="2xl"
               w="full"
               maxW={{ base: "full", lg: "240px" }}
               h="fit-content"
               border="1px solid"
-              borderColor="whiteAlpha.100"
+              borderColor="whiteAlpha.200"
+              backdropFilter="blur(10px)"
             >
-              <Text fontSize="11px" mb="1" color="#60a5fa" fontWeight="500">
-                Last update
+              <Text fontSize="11px" mb="1" color="blue.300" fontWeight="600" textTransform="uppercase" letterSpacing="0.1em">
+                Latest Update
               </Text>
-              <Text color="gray.300" fontSize={{ base: "13px", md: "14px" }} mb="1" fontWeight="500">
-                AdForge Generation Model
+              <Text color="white" fontSize={{ base: "13px", md: "14px" }} mb="1" fontWeight="600">
+                Insta Agent v2.4
               </Text>
-              <Text fontSize="11px" color="gray.600">
-                March 25, 2026
+              <Text fontSize="11px" color="blue.200">
+                Released March 2026
               </Text>
             </Box>
           </Box>
         </Flex>
+        
+        <Box mt={20} pt={8} borderTop="1px solid" borderColor="whiteAlpha.100" textAlign="center">
+          <Text fontSize="xs" color="blue.300">
+            © {new Date().getFullYear()} Insta Agent. Built for Instagram growth.
+          </Text>
+        </Box>
       </Box>
     </Box>
   );

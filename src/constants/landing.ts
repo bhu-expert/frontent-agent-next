@@ -6,56 +6,56 @@ import { Globe, BrainCircuit, LayoutTemplate, CalendarClock } from "lucide-react
 
 export const USE_CASES = [
   {
-    title: "Know Your Brand Before You Advertise",
+    title: "Know your brand before you advertise",
     tags: [
-      { label: "brand analysis", color: "#8a2ce2", bg: "#f3e8ff" },
-      { label: "AI insights", color: "#ea580c", bg: "#fff7ed" },
-      { label: "competitor scan", color: "#0891b2", bg: "#ecfeff" },
+      { label: "brand analysis", color: "#0a1e7a", bg: "#e1e7ff" },
+      { label: "AI insights", color: "#0a1e7a", bg: "#dbe3ff" },
+      { label: "competitor scan", color: "#0a1e7a", bg: "#cfd8ff" },
     ],
     description:
-      "AdForge reads your website and generates a full brand analysis report — your tone of voice, target audience, core messaging, and competitive positioning — all before you spend a dollar on ads.",
+      "AdForge scans your website, notes your tone, audience, and positioning, and delivers a one-page brand blueprint before you spend a rupee on ads.",
     image: "/usecase-website-ads.png",
-    bgColor: "#f3e8ff",
+    bgColor: "#e4edff",
     direction: "row" as const,
   },
   {
-    title: "Launch Campaigns in Minutes, Not Days",
+    title: "Launch campaigns in minutes, not days",
     tags: [
-      { label: "quick launch", color: "#ea580c", bg: "#fff7ed" },
-      { label: "multi-platform", color: "#d946ef", bg: "#fdf4ff" },
-      { label: "auto-schedule", color: "#059669", bg: "#ecfdf5" },
+      { label: "quick launch", color: "#0a1e7a", bg: "#dbe3ff" },
+      { label: "multi-platform", color: "#0a1e7a", bg: "#cfd8ff" },
+      { label: "auto-schedule", color: "#0a1e7a", bg: "#e1e7ff" },
     ],
     description:
-      "Go from brand analysis to a live, scheduled ad campaign in under 10 minutes. AdForge handles the creative strategy, copywriting, and publishing so you can focus on results.",
+      "Go from brand analysis to a scheduled launch in under 10 minutes. AdForge writes the strategy, copy, and publishing schedule for you.",
     image: "/usecase-campaign-launch.png",
-    bgColor: "#fff7ed",
+    bgColor: "#dfe7ff",
     direction: "row-reverse" as const,
   },
   {
-    title: "Multi-Platform Ad Distribution",
+    title: "Multi-platform ad distribution",
     tags: [
-      { label: "Instagram", color: "#d946ef", bg: "#fdf4ff" },
-      { label: "Facebook", color: "#2563eb", bg: "#eff6ff" },
-      { label: "LinkedIn", color: "#0891b2", bg: "#ecfeff" },
-      { label: "Twitter/X", color: "#374151", bg: "#f3f4f6" },
+      { label: "Instagram", color: "#0a1e7a", bg: "#cfd8ff" },
+      { label: "LinkedIn", color: "#0a1e7a", bg: "#dbe3ff" },
+      { label: "YouTube", color: "#0a1e7a", bg: "#e4edff" },
+      { label: "Reels + Stories", color: "#0a1e7a", bg: "#cfd8ff" },
     ],
     description:
-      "Generate and schedule ads optimized for every major platform simultaneously. AdForge ensures each ad is perfectly formatted, timed, and targeted for the right audience on each channel.",
+      "Generate and schedule ads for every platform at once, with formats and captions tuned to what each audience expects.",
     image: "/usecase-social-ads.png",
-    bgColor: "#ecfeff",
+    bgColor: "#e3ebff",
     direction: "row" as const,
   },
   {
-    title: "AI-Powered Ad Creative Generation",
+    title: "AI-powered creative generation",
     tags: [
-      { label: "smart copy", color: "#059669", bg: "#ecfdf5" },
-      { label: "visual ads", color: "#2563eb", bg: "#eff6ff" },
-      { label: "A/B variants", color: "#ea580c", bg: "#fff7ed" },
+      { label: "smart copy", color: "#0a1e7a", bg: "#dbe3ff" },
+      { label: "visual ads", color: "#0a1e7a", bg: "#cfd8ff" },
+      { label: "A/B variants", color: "#0a1e7a", bg: "#e1e7ff" },
     ],
     description:
-      "Select your campaign context and goals. AdForge generates multiple ad creative variations — compelling visuals and high-conversion copy — all aligned with your brand voice and audience.",
+      "Choose your campaign context and AdForge outputs multiple visual and copy variations that keep your tone and goals aligned.",
     image: "/usecase-html-banners.png",
-    bgColor: "#ecfdf5",
+    bgColor: "#e8f0ff",
     direction: "row-reverse" as const,
   },
 ] as const;
@@ -64,34 +64,38 @@ export const HOW_IT_WORKS_STEPS = [
   {
     num: "01",
     icon: Globe,
-    title: "Paste Your Website URL",
-    description: "Enter your website URL and AdForge instantly crawls your brand — scanning your messaging, colors, tone, and identity to build a complete brand profile.",
-    color: "#8a2ce2",
-    bgColor: "#f3e8ff",
+    title: "Paste your website URL",
+    description:
+      "Point AdForge at your website and it crawls your brand to understand tone, messaging, and positioning.",
+    color: "#0F4BF3",
+    bgColor: "rgba(15, 75, 243, 0.12)",
   },
   {
     num: "02",
     icon: BrainCircuit,
-    title: "Get Your Brand Analysis Report",
-    description: "Receive a detailed AI-generated brand analysis report covering your audience, tone of voice, key value propositions, and competitor positioning.",
-    color: "#ea580c",
-    bgColor: "#fff7ed",
+    title: "Review the brand analysis",
+    description:
+      "See a tailored report summarizing your audience, values, and creative direction before generating ads.",
+    color: "#0F4BF3",
+    bgColor: "rgba(15, 75, 243, 0.16)",
   },
   {
     num: "03",
     icon: LayoutTemplate,
-    title: "Generate Tailored Ad Creatives",
-    description: "Select your campaign goals and target context. AdForge generates multiple ad creatives — images, copy, and formats — precisely matched to your brand.",
-    color: "#0891b2",
-    bgColor: "#ecfeff",
+    title: "Generate tailored creatives",
+    description:
+      "Choose your campaign context and let AdForge output reels, carousels, captions, and copy aligned with your identity.",
+    color: "#0F4BF3",
+    bgColor: "rgba(15, 75, 243, 0.1)",
   },
   {
     num: "04",
     icon: CalendarClock,
-    title: "Schedule & Run Your Campaign",
-    description: "Pick your platforms, set your schedule, and launch. AdForge publishes and manages your ad campaign automatically across all selected channels.",
-    color: "#059669",
-    bgColor: "#ecfdf5",
+    title: "Schedule & launch",
+    description:
+      "Pick the platforms, set the calendar, and watch AdForge publish your campaigns automatically.",
+    color: "#0F4BF3",
+    bgColor: "rgba(15, 75, 243, 0.18)",
   },
 ] as const;
 

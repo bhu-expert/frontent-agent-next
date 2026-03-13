@@ -1,28 +1,20 @@
 import type { ContextBlock } from "@/types/onboarding.types";
 
-const SPLIT_PATTERN = /\n## \d+\.\s.*?\n/;
+const SECTION_PATTERN = /^##\s*(\d+)\.\s*(.+)$/gm;
 
 export function splitContextMd(contextMd: string): ContextBlock[] {
-  // Prepend newline so the first heading is captured by the split pattern
-  const prepared = "\n" + contextMd;
-  const blocks = prepared.split(SPLIT_PATTERN);
+  const matches = Array.from(contextMd.matchAll(SECTION_PATTERN));
 
-  // blocks[0] is the document header — skip it
-  // blocks[1..5] map to context_index 1..5
-  const result: ContextBlock[] = [];
+  return matches.slice(0, 5).map((match, index) => {
+    const sectionStart = match.index ?? 0;
+    const contentStart = sectionStart + match[0].length;
+    const nextSectionStart = matches[index + 1]?.index ?? contextMd.length;
+    const content = contextMd.slice(contentStart, nextSectionStart).trim();
 
-  for (let i = 1; i <= Math.min(blocks.length - 1, 5); i++) {
-    const raw = blocks[i].trim();
-    const lines = raw.split("\n");
-    const title = lines[0]?.replace(/^#+\s*/, "").trim() || `Context ${i}`;
-    const content = lines.slice(1).join("\n").trim();
-
-    result.push({
-      context_index: i as 1 | 2 | 3 | 4 | 5,
+    return {
+      context_index: (index + 1) as 1 | 2 | 3 | 4 | 5,
+      title: match[2].trim() || `Context ${index + 1}`,
       content,
-      title,
-    });
-  }
-
-  return result;
+    };
+  });
 }

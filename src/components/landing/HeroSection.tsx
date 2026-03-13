@@ -1,256 +1,392 @@
 "use client";
 
-import { Box, Flex, Heading, Text, Container } from "@chakra-ui/react";
-import Link from "next/link";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Text,
+  VStack,
+  SimpleGrid,
+} from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { Check, Zap, ArrowRight } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MotionBox = motion.create(Box as React.ComponentType<any>);
+const MotionBox = motion.create(Box as any);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MotionFlex = motion.create(Flex as React.ComponentType<any>);
+const MotionFlex = motion.create(Flex as any);
 
-import { CONTAINER_VARIANTS, ITEM_VARIANTS } from "@/constants";
-
-/**
- * Full-width hero section for the landing page with animated headline,
- * CTA buttons, and a simulated dashboard mockup.
- */
 export default function HeroSection() {
   return (
     <Box
       as="section"
-      position="relative"
-      pt={{ base: "28", md: "40" }}
-      pb={{ base: "16", md: "24" }}
-      bg="#faf5ff"
+      pt={{ base: 24, md: 32 }}
+      pb={{ base: 16, md: 20 }}
+      bg="white"
       overflow="hidden"
-      overflowX="hidden"
-      textAlign="center"
+      style={{ textAlign: "center" }}
     >
-      {/* Background blurs */}
-      <Box position="absolute" top="5%" left={{ base: "-20%", md: "10%" }} w={{ base: "300px", md: "420px" }} h={{ base: "300px", md: "420px" }} bg="#e0e7ff" filter="blur(80px)" borderRadius="full" opacity={0.55} pointerEvents="none" />
-      <Box position="absolute" bottom="5%" right={{ base: "-20%", md: "10%" }} w={{ base: "300px", md: "480px" }} h={{ base: "300px", md: "480px" }} bg="#fae8ff" filter="blur(100px)" borderRadius="full" opacity={0.55} pointerEvents="none" />
+      {/* Subtle dot grid */}
+      <Box
+        position="absolute"
+        inset={0}
+        bgImage="radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)"
+        bgSize="28px 28px"
+        pointerEvents="none"
+        zIndex={0}
+      />
 
-      <Container maxW="6xl" mx="auto" position="relative" zIndex={1} px={{ base: "4", md: "8" }}>
-        <MotionFlex direction="column" align="center" variants={CONTAINER_VARIANTS} initial="hidden" animate="visible">
+      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "32px" }}>
 
-          {/* Badge */}
-          <MotionBox variants={ITEM_VARIANTS}>
+          {/* Pill badge */}
+          <MotionBox
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+          >
             <Flex
               display="inline-flex"
               align="center"
-              gap="2"
-              bg="white"
+              gap={2}
+              px={4}
+              py={1.5}
+              bg="blue.50"
               border="1px solid"
-              borderColor="gray.200"
-              color="gray.700"
-              px={{ base: "3", md: "4" }}
-              py="1.5"
+              borderColor="blue.100"
               borderRadius="full"
-              fontSize={{ base: "xs", md: "sm" }}
-              fontWeight="600"
-              boxShadow="0 2px 10px rgba(0,0,0,0.04)"
-              mb={{ base: "6", md: "8" }}
             >
-              <Box w="2" h="2" borderRadius="full" bg="#8a2ce2" flexShrink={0} />
-              Plug and Play Agent — AI-Powered Ad Automation
+              <Box w={2} h={2} bg="blue.500" borderRadius="full" flexShrink={0} />
+              <Text fontSize="sm" fontWeight="600" color="blue.700" letterSpacing="0.01em">
+                Instagram-only AI content workspace
+              </Text>
             </Flex>
           </MotionBox>
 
           {/* Headline */}
-          <MotionBox variants={ITEM_VARIANTS}>
+          <MotionBox
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
+          >
             <Heading
               as="h1"
               fontSize={{ base: "4xl", sm: "5xl", md: "6xl", lg: "7xl" }}
               fontWeight="800"
-              lineHeight="1.1"
-              letterSpacing="-0.03em"
+              lineHeight="1.0"
+              letterSpacing="-0.04em"
               color="gray.900"
-              mb={{ base: "4", md: "6" }}
-              maxW={{ base: "100%", md: "4xl" }}
-              px={{ base: "2", md: "0" }}
+              textAlign="center"
+              mx="auto"
             >
-              Analyze. Generate.{" "}
-              <Box as="span" bgGradient="to-r" gradientFrom="#8a2ce2" gradientTo="#ea580c" backgroundClip="text" color="transparent">
-                Schedule & Run
-              </Box>{" "}
-              your ads automatically.
+              Turn your website into{" "}
+              <Box as="span" color="blue.600">
+                30 days of Instagram content
+              </Box>
             </Heading>
           </MotionBox>
 
-          {/* Subheading */}
-          <MotionBox variants={ITEM_VARIANTS}>
+          {/* Sub-copy */}
+          <MotionBox
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.14 }}
+          >
             <Text
-              fontSize={{ base: "md", md: "xl" }}
+              fontSize={{ base: "md", md: "lg" }}
               color="gray.500"
-              lineHeight="1.7"
-              maxW={{ base: "100%", md: "2xl" }}
+              lineHeight="1.75"
+              maxW="480px"
               mx="auto"
-              mb={{ base: "8", md: "10" }}
-              px={{ base: "2", md: "0" }}
+              textAlign="center"
             >
-              Enter your website URL. Plug and Play analyzes your brand, generates a tailored report, creates ad creatives, and schedules your entire campaign — all in one place.
+              Paste your URL. Get reel hooks, carousel ideas, captions, CTAs, and
+              hashtags — all in one clean workflow, in under 60 seconds.
             </Text>
           </MotionBox>
 
-          {/* CTA Buttons */}
+          {/* CTA buttons */}
           <MotionFlex
-            variants={ITEM_VARIANTS}
-            gap={{ base: "3", md: "4" }}
-            wrap="wrap"
-            justify="center"
-            mb={{ base: "12", md: "20" }}
             direction={{ base: "column", sm: "row" }}
+            gap={3}
+            justify="center"
             align="center"
-            w={{ base: "full", sm: "auto" }}
-            px={{ base: "4", sm: "0" }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
           >
             <Link href="/onboarding">
-              <Box
-                as="button"
-                bg="#8a2ce2"
-                color="white"
+              <Button
+                h="52px"
+                px={8}
+                fontSize="md"
                 fontWeight="700"
-                px={{ base: "6", md: "8" }}
-                py={{ base: "3.5", md: "4" }}
-                borderRadius="full"
-                fontSize={{ base: "sm", md: "md" }}
+                bg="blue.600"
+                color="white"
+                borderRadius="14px"
+                _hover={{
+                  bg: "blue.700",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 10px 24px rgba(37,99,235,0.3)",
+                }}
+                _active={{ transform: "translateY(0)" }}
                 transition="all 0.2s"
-                boxShadow="0 4px 14px rgba(138,44,226,0.3)"
-                w={{ base: "full", sm: "auto" }}
-                _hover={{ bg: "#7c28cb", transform: "translateY(-2px)", boxShadow: "0 6px 20px rgba(138,44,226,0.4)" }}
+                gap={2}
               >
-                Analyze My Brand →
-              </Box>
+                Start for free
+                <ArrowRight size={16} />
+              </Button>
             </Link>
-            <Flex
-              as="button"
-              align="center"
-              justify="center"
-              gap="2"
+            <Button
+              h="52px"
+              px={8}
+              fontSize="md"
+              fontWeight="600"
+              variant="outline"
+              borderColor="gray.200"
               bg="white"
               color="gray.700"
-              fontWeight="600"
-              px={{ base: "6", md: "8" }}
-              py={{ base: "3.5", md: "4" }}
+              borderRadius="14px"
+              _hover={{ bg: "gray.50", borderColor: "gray.300" }}
+              transition="all 0.2s"
+            >
+              See how it works
+            </Button>
+          </MotionFlex>
+
+          {/* Trust row */}
+          <MotionFlex
+            gap={{ base: 4, sm: 8 }}
+            justify="center"
+            align="center"
+            wrap="wrap"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+          >
+            {[
+              "No credit card required",
+              "30 posts in one run",
+              "Built only for Instagram",
+            ].map((item) => (
+              <Flex key={item} align="center" gap={1.5}>
+                <Check size={14} color="#2563EB" strokeWidth={2.5} />
+                <Text fontSize="sm" fontWeight="500" color="gray.500">
+                  {item}
+                </Text>
+              </Flex>
+            ))}
+          </MotionFlex>
+
+      </div>
+
+      {/* Dashboard mockup — wider than text */}
+      <MotionBox
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65, delay: 0.3 }}
+        position="relative"
+        maxW="1000px"
+        mx="auto"
+        mt={16}
+        px={{ base: 4, md: 8 }}
+        zIndex={1}
+      >
+        {/* Blue glow */}
+        <Box
+          position="absolute"
+          top="15%"
+          left="15%"
+          right="15%"
+          bottom="-5%"
+          bg="blue.400"
+          opacity={0.07}
+          filter="blur(72px)"
+          borderRadius="full"
+          pointerEvents="none"
+        />
+
+        {/* Browser shell */}
+        <Box
+          position="relative"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+          borderRadius={{ base: "16px", md: "24px" }}
+          overflow="hidden"
+          boxShadow="0 24px 64px rgba(0,0,0,0.10), 0 1px 0 rgba(0,0,0,0.04)"
+          zIndex={1}
+        >
+          {/* Browser top bar */}
+          <Flex
+            h="42px"
+            bg="#F4F4F2"
+            borderBottom="1px solid"
+            borderColor="gray.200"
+            align="center"
+            px={4}
+            gap={2}
+          >
+            <Box w={3} h={3} borderRadius="full" bg="#FF5F57" />
+            <Box w={3} h={3} borderRadius="full" bg="#FEBC2E" />
+            <Box w={3} h={3} borderRadius="full" bg="#28C840" />
+            <Box
+              flex={1}
+              maxW="280px"
+              mx={4}
+              h="22px"
+              bg="white"
               borderRadius="full"
               border="1px solid"
               borderColor="gray.200"
-              fontSize={{ base: "sm", md: "md" }}
-              transition="all 0.2s"
-              boxShadow="0 2px 10px rgba(0,0,0,0.04)"
-              w={{ base: "full", sm: "auto" }}
-              _hover={{ bg: "gray.50", transform: "translateY(-2px)" }}
-            >
-              ▶ Watch Demo
-            </Flex>
-          </MotionFlex>
+            />
+          </Flex>
 
-          {/* App Mockup */}
-          <MotionBox variants={ITEM_VARIANTS} w="full" maxW="5xl" mx="auto">
+          {/* App layout */}
+          <Flex h={{ base: "320px", sm: "380px", md: "440px" }}>
+            {/* Sidebar */}
             <Box
-              bg="white"
-              p={{ base: "2", md: "3" }}
-              rounded={{ base: "2xl", md: "3xl" }}
-              border="1px solid"
-              borderColor="gray.200"
-              boxShadow="0 24px 60px rgba(138,44,226,0.08), 0 4px 20px rgba(0,0,0,0.06)"
+              w="196px"
+              flexShrink={0}
+              borderRight="1px solid"
+              borderColor="gray.100"
+              p={4}
+              bg="#FAFAF9"
+              display={{ base: "none", md: "flex" }}
+              flexDirection="column"
+              gap={1}
             >
-              <Box
-                bg="gray.50"
-                rounded={{ base: "xl", md: "2xl" }}
-                overflow="hidden"
-                border="1px solid"
-                borderColor="gray.100"
-                h={{ base: "240px", sm: "320px", md: "480px" }}
-                position="relative"
-              >
-                {/* Window bar */}
-                <Flex bg="white" px={{ base: "3", md: "4" }} py="2.5" borderBottom="1px solid" borderColor="gray.100" align="center" gap="2">
-                  <Box w={{ base: "2", md: "3" }} h={{ base: "2", md: "3" }} rounded="full" bg="#ff5f56" />
-                  <Box w={{ base: "2", md: "3" }} h={{ base: "2", md: "3" }} rounded="full" bg="#ffbd2e" />
-                  <Box w={{ base: "2", md: "3" }} h={{ base: "2", md: "3" }} rounded="full" bg="#27c93f" />
-                  <Flex flex="1" justify="center" display={{ base: "none", sm: "flex" }}>
-                    <Box bg="gray.100" rounded="md" px="4" py="1" fontSize="xs" color="gray.400">
-                      app.plugandplayagent.com/campaign
-                    </Box>
-                  </Flex>
+              <Box h="26px" w="100px" bg="gray.200" borderRadius="md" mb={5} />
+              <Flex align="center" gap={3} px={3} py={2.5} bg="blue.50" borderRadius="lg">
+                <Box w={4} h={4} bg="blue.200" borderRadius="sm" flexShrink={0} />
+                <Box h="11px" w="52px" bg="blue.200" borderRadius="sm" />
+              </Flex>
+              {[56, 44, 64, 48, 36, 52].map((w, i) => (
+                <Flex key={i} align="center" gap={3} px={3} py={2.5}>
+                  <Box w={4} h={4} bg="gray.100" borderRadius="sm" flexShrink={0} />
+                  <Box h="11px" bg="gray.100" borderRadius="sm" w={`${w}px`} />
                 </Flex>
-
-                {/* Simulated Dashboard */}
-                <Flex flex="1" p={{ base: "3", md: "6" }} gap={{ base: "3", md: "6" }} h="calc(100% - 40px)">
-                  {/* Sidebar */}
-                  <Flex direction="column" gap="3" w="52" display={{ base: "none", md: "flex" }}>
-                    <Box h="8" w="full" bg="gray.200" rounded="md" />
-                    <Box h="4" w="3/4" bg="gray.100" rounded="md" />
-                    <Box h="4" w="2/3" bg="gray.100" rounded="md" />
-                    <Box h="4" w="3/4" bg="gray.100" rounded="md" />
-                    <Box mt="4" h="4" w="1/2" bg="#f3e8ff" rounded="md" />
-                  </Flex>
-
-                  {/* Main content */}
-                  <Flex direction="column" gap={{ base: "3", md: "5" }} flex="1">
-                    {/* Campaign cards row */}
-                    <Flex gap={{ base: "2", md: "4" }}>
-                      <Flex direction="column" h={{ base: "20", md: "28" }} flex="1" bg="#f3e8ff" rounded="xl" p="3" justify="space-between">
-                        <Box h="2" w="12" bg="#8a2ce2" rounded="full" opacity={0.4} />
-                        <Box>
-                          <Box h="2" w="3/4" bg="#8a2ce2" rounded="full" opacity={0.3} mb="1" />
-                          <Box h="2" w="1/2" bg="#8a2ce2" rounded="full" opacity={0.2} />
-                        </Box>
-                      </Flex>
-                      <Flex direction="column" h={{ base: "20", md: "28" }} flex="1" bg="#fff7ed" rounded="xl" p="3" justify="space-between">
-                        <Box h="2" w="12" bg="#ea580c" rounded="full" opacity={0.4} />
-                        <Box>
-                          <Box h="2" w="3/4" bg="#ea580c" rounded="full" opacity={0.3} mb="1" />
-                          <Box h="2" w="1/2" bg="#ea580c" rounded="full" opacity={0.2} />
-                        </Box>
-                      </Flex>
-                      <Box h={{ base: "20", md: "28" }} flex="1" bg="#ecfeff" rounded="xl" display={{ base: "none", sm: "block" }} />
-                    </Flex>
-
-                    {/* Dashboard inner */}
-                    <Box flex="1" w="full" bg="white" border="1px solid" borderColor="gray.100" rounded="xl" shadow="sm" p={{ base: "3", md: "5" }}>
-                      <Box h={{ base: "4", md: "5" }} w="1/3" bg="gray.200" rounded="md" mb="4" />
-                      <Flex gap="3">
-                        <Box h={{ base: "14", md: "16" }} flex="1" bg="#f3e8ff" rounded="lg" />
-                        <Box h={{ base: "14", md: "16" }} flex="1" bg="#fff7ed" rounded="lg" />
-                        <Box h={{ base: "14", md: "16" }} flex="1" display={{ base: "none", sm: "block" }} bg="#ecfdf5" rounded="lg" />
-                      </Flex>
-                    </Box>
-                  </Flex>
-                </Flex>
-
-                {/* Floating badge */}
-                <MotionFlex
-                  position="absolute"
-                  bottom={{ base: "3", md: "6" }}
-                  right={{ base: "3", md: "6" }}
-                  bg="white"
-                  p={{ base: "3", md: "4" }}
-                  rounded="xl"
-                  shadow="lg"
-                  border="1px solid"
-                  borderColor="gray.100"
-                  align="center"
-                  gap="2"
-                  initial={{ y: 16, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1.2, duration: 0.5 }}
-                >
-                  <Box w={{ base: "5", md: "7" }} h={{ base: "5", md: "7" }} rounded="full" bg="#ecfdf5" display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-                    <Box w="2" h="2" rounded="full" bg="#059669" />
-                  </Box>
-                  <Box>
-                    <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="gray.800">Campaign scheduled</Text>
-                    <Text fontSize="xs" color="gray.500" display={{ base: "none", md: "block" }}>32 ads across 4 platforms</Text>
-                  </Box>
-                </MotionFlex>
-              </Box>
+              ))}
             </Box>
-          </MotionBox>
-        </MotionFlex>
-      </Container>
+
+            {/* Main content area */}
+            <Box flex={1} p={{ base: 4, md: 6 }} overflowY="hidden" bg="white">
+              {/* Header */}
+              <Flex justify="space-between" align="center" mb={5}>
+                <Box>
+                  <Box h="16px" w="130px" bg="gray.800" borderRadius="md" mb={2} opacity={0.85} />
+                  <Box h="11px" w="170px" bg="gray.200" borderRadius="sm" />
+                </Box>
+                <Box px={3} py={1.5} bg="#ECFDF5" borderRadius="full">
+                  <Box h="10px" w="80px" bg="#6EE7B7" borderRadius="sm" />
+                </Box>
+              </Flex>
+
+              {/* Stat cards */}
+              <SimpleGrid columns={{ base: 2, sm: 3 }} gap={3} mb={5}>
+                {[
+                  { label: "Captions Ready", val: "30" },
+                  { label: "Approved", val: "18" },
+                  { label: "Scheduled", val: "12" },
+                ].map((s) => (
+                  <Box
+                    key={s.label}
+                    bg="#FAFAF9"
+                    p={{ base: 3, md: 4 }}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor="gray.100"
+                  >
+                    <Box h="9px" w="56px" bg="gray.200" borderRadius="sm" mb={2} />
+                    <Box h="20px" w="28px" bg="gray.700" borderRadius="sm" opacity={0.8} />
+                  </Box>
+                ))}
+              </SimpleGrid>
+
+              {/* Content rows */}
+              <VStack gap={2} align="stretch">
+                {[
+                  { type: "Reel", bg: "#EFF6FF", fg: "#3B82F6" },
+                  { type: "Carousel", bg: "#F0FDF4", fg: "#16A34A" },
+                  { type: "Post", bg: "#FFF7ED", fg: "#EA580C" },
+                ].map((row) => (
+                  <Flex
+                    key={row.type}
+                    bg="white"
+                    p={{ base: 2.5, md: 3 }}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor="gray.100"
+                    align="center"
+                    justify="space-between"
+                    gap={3}
+                  >
+                    <Flex align="center" gap={3}>
+                      <Box
+                        px={3}
+                        py={1}
+                        bg={row.bg}
+                        borderRadius="full"
+                        fontSize="11px"
+                        fontWeight="700"
+                        color={row.fg}
+                        whiteSpace="nowrap"
+                        flexShrink={0}
+                      >
+                        {row.type}
+                      </Box>
+                      <Box>
+                        <Box h="11px" w={{ base: "80px", md: "180px" }} bg="gray.200" borderRadius="sm" mb={1.5} />
+                        <Box h="9px" w={{ base: "60px", md: "140px" }} bg="gray.100" borderRadius="sm" />
+                      </Box>
+                    </Flex>
+                    <Box h="11px" w="40px" bg="blue.200" borderRadius="sm" flexShrink={0} />
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
+          </Flex>
+        </Box>
+
+        {/* Floating speed badge */}
+        <MotionBox
+          animate={{ y: [0, -7, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          position="absolute"
+          top="-18px"
+          right={{ base: "12px", md: "48px" }}
+          bg="blue.600"
+          px={4}
+          py={3}
+          borderRadius="16px"
+          color="white"
+          boxShadow="0 12px 32px rgba(37,99,235,0.35)"
+          zIndex={10}
+        >
+          <Flex align="center" gap={2.5}>
+            <Flex
+              w={8}
+              h={8}
+              bg="whiteAlpha.300"
+              borderRadius="lg"
+              align="center"
+              justify="center"
+              flexShrink={0}
+            >
+              <Zap size={15} fill="currentColor" />
+            </Flex>
+            <Box style={{ textAlign: "left" }}>
+              <Text fontSize="9px" fontWeight="700" opacity={0.75} letterSpacing="0.07em" mb={0.5}>
+                GENERATION TIME
+              </Text>
+              <Text fontSize="sm" fontWeight="800" lineHeight={1}>
+                12s / post
+              </Text>
+            </Box>
+          </Flex>
+        </MotionBox>
+      </MotionBox>
     </Box>
   );
 }

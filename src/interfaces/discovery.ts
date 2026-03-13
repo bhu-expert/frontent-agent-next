@@ -23,7 +23,7 @@ export interface DiscoveryStreamResult {
   browserImage: string;
   error: string | null;
   brandId: string | null;
-  startDiscovery: (url: string, brandName: string) => void;
+  startDiscovery: (url: string, brandName: string, guardrails?: string) => void;
   stopDiscovery: () => void;
   resetDiscovery: () => void;
 }

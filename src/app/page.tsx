@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { Box, Spinner } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import FeatureGrid from "@/components/landing/FeatureGrid";
+import Pricing from "@/components/landing/Pricing";
+import FinalCTA from "@/components/landing/FinalCTA";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import UseCases from "@/components/landing/UseCases";
 import HowItWorks from "@/components/landing/HowItWorks";
-import FeatureGrid from "@/components/landing/FeatureGrid";
-import FinalCTA from "@/components/landing/FinalCTA";
+import Footer from "@/components/layout/Footer";
 
 export default function Home() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50">
-        <Spinner size="xl" color="#8a2ce2" />
+        <Spinner size="xl" color="#4F46E5" />
       </Box>
     );
   }
@@ -45,7 +46,7 @@ export default function Home() {
     return (
       <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50">
         <Box textAlign="center">
-          <Spinner size="xl" color="#8a2ce2" mb={4} />
+          <Spinner size="xl" color="#4F46E5" mb={4} />
           <Box fontSize="lg" fontWeight="medium" color="gray.600">
             Redirecting to dashboard...
           </Box>
@@ -54,17 +55,17 @@ export default function Home() {
     );
   }
 
-  // Show landing page for non-logged-in users
+  // Show landing page with all sections directly
   return (
-    <Box bg="brandSoft" color="brandDark" minH="100vh" className="antialiased">
+    <Box minH="100vh" bg="white">
       <Navbar />
       <HeroSection />
       <UseCases />
       <HowItWorks />
       <FeatureGrid />
+      <Pricing />
       <FinalCTA />
       <Footer />
     </Box>
   );
 }
-

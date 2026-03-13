@@ -140,11 +140,28 @@ export interface ContextBlock {
 }
 
 export interface AdVariation {
-  id: string;
   headline: string;
-  body: string;
-  cta: string;
-  platform: string;
+  subheadline: string;
+  body_text: string;
+  cta_text: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  image_prompt: string;
+  image_url?: string | null;
+  offer_text?: string;
+  quote_author?: string;
+  tagline?: string;
+  launch_label?: string;
+}
+
+export interface AdTypeVariations {
+  ad_type: string;
+  variations: AdVariation[];
+}
+
+export interface AdVariationsResponse {
+  ad_types: AdTypeVariations[];
 }
 
 export interface AuthUser {
@@ -165,6 +182,38 @@ export interface AdVariationsPayload {
   context_index: 1 | 2 | 3 | 4 | 5;
   user_brief: string;
   ad_type: string | null;
+}
+
+export interface ContextFeedbackPayload {
+  context_index: 1 | 2 | 3 | 4 | 5;
+  rating: 1 | 2 | 3 | 4 | 5;
+  feedback?: string;
+}
+
+export interface ContextFeedbackResponse {
+  status: string;
+  message: string;
+  data: {
+    brand_id: string;
+    context_index: 1 | 2 | 3 | 4 | 5;
+    rating: 1 | 2 | 3 | 4 | 5;
+    regenerated: boolean;
+    context_md: string;
+    output_path?: string;
+    updated_section: ContextBlock;
+  };
+}
+
+export interface ContextFeedbackStreamEvent {
+  event: "progress" | "context_chunk" | "complete" | "error";
+  data: {
+    chunk?: string;
+    context_index?: 1 | 2 | 3 | 4 | 5;
+    message?: string;
+    step?: string;
+    status?: string;
+    data?: ContextFeedbackResponse["data"];
+  };
 }
 
 export interface PendingAction {

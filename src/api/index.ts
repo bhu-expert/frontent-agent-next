@@ -1,7 +1,10 @@
 import type {
   BrandEvent,
   AdVariationsPayload,
-  AdVariation,
+  AdVariationsResponse,
+  ContextFeedbackPayload,
+  ContextFeedbackResponse,
+  ContextFeedbackStreamEvent,
 } from "@/types/onboarding.types";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants";
 
@@ -125,8 +128,19 @@ export async function* createBrandStream(
 /**
  * Gets the SSE URL for brand discovery (GET utility)
  */
-export function getBrandStreamUrl(websiteUrl: string, name: string = ""): string {
-  return `${BASE_URL}${API_ENDPOINTS.BRANDS}?website_url=${encodeURIComponent(websiteUrl)}&name=${encodeURIComponent(name)}`;
+export function getBrandStreamUrl(
+  websiteUrl: string,
+  name: string = "",
+  guardrails?: string
+): string {
+  const params = new URLSearchParams({
+    website_url: websiteUrl,
+    name,
+  });
+  if (guardrails) {
+    params.set("guardrails", guardrails);
+  }
+  return `${BASE_URL}${API_ENDPOINTS.BRANDS}?${params.toString()}`;
 }
 
 // ─── Brand context ───────────────────────────────────────────────────
@@ -150,6 +164,92 @@ export async function getBrandContext(
     apiError(body.message || "Failed to fetch brand context", res.status);
   }
   return res.json();
+}
+
+export async function submitContextFeedback(
+  brandId: string,
+  payload: ContextFeedbackPayload,
+  token: string
+): Promise<ContextFeedbackResponse> {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_CONTEXT_FEEDBACK(brandId)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to submit context feedback", res.status);
+  }
+
+  return res.json();
+}
+
+export async function* streamContextFeedback(
+  brandId: string,
+  payload: ContextFeedbackPayload,
+  token: string
+): AsyncGenerator<ContextFeedbackStreamEvent, void, unknown> {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_CONTEXT_FEEDBACK(brandId)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to stream context feedback", res.status);
+  }
+
+  if (!res.body) {
+    apiError("ReadableStream not supported in this browser.", 0);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() || "";
+
+      for (const rawEvent of events) {
+        const lines = rawEvent.split("\n");
+        let eventName = "";
+        let dataPayload = "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) eventName = line.slice(7).trim();
+          if (line.startsWith("data: ")) dataPayload += line.slice(6).trim();
+        }
+
+        if (!eventName || !dataPayload) continue;
+
+        try {
+          yield {
+            event: eventName as ContextFeedbackStreamEvent["event"],
+            data: JSON.parse(dataPayload),
+          };
+        } catch {
+          // Ignore malformed events
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 // ─── Claim brand ─────────────────────────────────────────────────────
@@ -183,7 +283,7 @@ export async function generateAdVariations(
   brandId: string,
   payload: AdVariationsPayload,
   token: string
-): Promise<AdVariation[]> {
+): Promise<AdVariationsResponse> {
   const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_VARIATIONS(brandId)}`, {
     method: "POST",
     headers: {

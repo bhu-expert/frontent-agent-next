@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import type { BrandContext, GeneratedContent, PendingAction } from "@/types/onboarding.types";
 import { CTXS } from "@/constants";
-import { savePendingAction } from "@/lib/delayedAuth";
+import { saveClaimedBrandId, savePendingAction } from "@/lib/delayedAuth";
 import { buildAdVariationsPayload } from "@/utils/payloadBuilder";
 import { supabase } from "@/lib/supabase";
 import { claimBrand } from "@/api";
@@ -105,6 +105,7 @@ export function useOnboardingFlow() {
           claimBrand(pendingBrandId, session.access_token)
             .then(() => {
               console.log("✓ Brand claimed immediately after analysis");
+              saveClaimedBrandId(pendingBrandId);
               // Clear pending state
               localStorage.removeItem('pending_brand_id');
               localStorage.removeItem('pending_action');

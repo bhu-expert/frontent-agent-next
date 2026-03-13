@@ -36,12 +36,12 @@ export function useDiscoveryStream(): DiscoveryStreamResult {
     fullMarkdownRef.current = "";
   }, [stopDiscovery]);
 
-  const startDiscovery = useCallback((url: string, brandName: string) => {
+  const startDiscovery = useCallback((url: string, brandName: string, guardrails?: string) => {
     resetDiscovery();
     setIsRunning(true);
     setStatus("browsing");
 
-    const eventSource = new EventSource(getBrandStreamUrl(url, brandName));
+    const eventSource = new EventSource(getBrandStreamUrl(url, brandName, guardrails));
     eventSourceRef.current = eventSource;
 
     eventSource.addEventListener("agent_thought", (e) => {

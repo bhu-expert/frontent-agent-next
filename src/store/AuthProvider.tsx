@@ -16,6 +16,7 @@ import {
   getPendingBrandId,
   getPendingAction,
   clearDelayedAuthState,
+  saveClaimedBrandId,
 } from "@/lib/delayedAuth";
 import type { AuthUser } from "@/types/onboarding.types";
 
@@ -81,6 +82,7 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
           console.log("Claiming brand:", pendingBrandId);
           await claimBrand(pendingBrandId, token);
           console.log("✓ Brand claimed successfully:", pendingBrandId);
+          saveClaimedBrandId(pendingBrandId);
           onClaimComplete?.();
 
           // Step 2: Generate ad variations if pending action exists
@@ -233,17 +235,19 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
   );
 
   const signInWithGoogle = useCallback(async () => {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/onboarding` },
+      options: { redirectTo },
     });
     if (error) throw { message: error.message, status: 400 };
   }, []);
 
   const signInWithMagicLink = useCallback(async (email: string) => {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+      options: { emailRedirectTo: redirectTo },
     });
     if (error) throw { message: error.message, status: 400 };
   }, []);

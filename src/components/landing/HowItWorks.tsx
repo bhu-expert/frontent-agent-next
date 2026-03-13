@@ -20,7 +20,7 @@ export default function HowItWorks() {
       as="section"
       py={{ base: "14", md: "24" }}
       px={{ base: "4", md: "6" }}
-      bg="linear-gradient(180deg, #faf5ff 0%, #ffffff 100%)"
+      bg="linear-gradient(180deg, #F8FAFF 0%, #ffffff 100%)"
       id="how-it-works"
     >
       <Box maxW={{ base: "100%", md: "6xl" }} mx="auto">
@@ -34,16 +34,16 @@ export default function HowItWorks() {
           transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
         >
           <Flex justify="center" mb="4">
-            <Box px="4" py="1.5" bg="#ede9fe" color="#7c3aed" rounded="full" fontSize={{ base: "xs", md: "sm" }} fontWeight="600">
+            <Box px="4" py="1.5" bg="blue.50" color="blue.600" rounded="full" fontSize={{ base: "xs", md: "sm" }} fontWeight="600">
               How It Works
             </Box>
           </Flex>
           <Heading as="h2" fontSize={{ base: "2xl", sm: "3xl", md: "5xl" }} fontWeight="800" mb="4" lineHeight="1.1" color="gray.900">
-            From brand scan to live campaign in{" "}
-            <Box as="span" color="#8a2ce2">4 steps</Box>
+            From brand scan to live content in{" "}
+            <Box as="span" color="#4F46E5">3 steps</Box>
           </Heading>
           <Text color="gray.500" fontSize={{ base: "sm", md: "lg" }} maxW="2xl" mx="auto">
-            No marketing expertise needed. AdForge handles the strategy, creatives, and scheduling automatically.
+            No marketing expertise needed. Insta Agent handles the insights, creatives, and scheduling automatically.
           </Text>
         </MotionBox>
 
@@ -63,7 +63,7 @@ export default function HowItWorks() {
             top="40px"
             bottom="40px"
             w="2px"
-            bg="linear-gradient(180deg, #e9d5ff, #fed7aa, #bae6fd, #bbf7d0)"
+            bg="linear-gradient(180deg, #E0E7FF, #DBEAFE, #E0E7FF)"
             transform="translateX(-50%)"
             zIndex={0}
           />
@@ -76,12 +76,14 @@ export default function HowItWorks() {
             top="40px"
             bottom="40px"
             w="2px"
-            bg="linear-gradient(180deg, #e9d5ff, #fed7aa, #bae6fd, #bbf7d0)"
+            bg="linear-gradient(180deg, #E0E7FF, #DBEAFE, #E0E7FF)"
             zIndex={0}
           />
 
           {HOW_IT_WORKS_STEPS.map((step, idx) => {
             const isEven = idx % 2 === 0;
+            const stepColor = "#4F46E5";
+            const stepBg = "#EEF2FF";
             return (
               <Box key={step.num} mb={{ base: "8", md: "14" }} position="relative" zIndex={1} _last={{ mb: 0 }}>
                 {/* Mobile layout */}
@@ -90,15 +92,15 @@ export default function HowItWorks() {
                     w="12" h="12"
                     bg="white"
                     border="2px solid"
-                    borderColor={step.color}
-                    color={step.color}
+                    borderColor={stepColor}
+                    color={stepColor}
                     rounded="full"
                     align="center"
                     justify="center"
                     fontSize="sm"
                     fontWeight="800"
                     flexShrink={0}
-                    boxShadow={`0 0 0 4px ${step.bgColor}`}
+                    boxShadow={`0 0 0 4px ${stepBg}`}
                     zIndex={2}
                     position="relative"
                   >
@@ -111,13 +113,13 @@ export default function HowItWorks() {
                     rounded="2xl"
                     border="1px solid"
                     borderColor="gray.100"
-                    boxShadow="0 4px 20px rgba(0,0,0,0.04)"
+                    boxShadow="0 4px 20px rgba(79,70,229,0.04)"
                     flex="1"
-                    _hover={{ boxShadow: "0 12px 32px rgba(0,0,0,0.08)" }}
+                    _hover={{ boxShadow: "0 12px 32px rgba(79,70,229,0.08)" }}
                     transition="all 0.3s ease"
                   >
-                    <Flex w="12" h="12" bg={step.bgColor} rounded="xl" align="center" justify="center" mb="3">
-                      <step.icon size={20} color={step.color} />
+                    <Flex w="12" h="12" bg={stepBg} rounded="xl" align="center" justify="center" mb="3">
+                      <step.icon size={20} color={stepColor} />
                     </Flex>
                     <Heading as="h3" fontSize="lg" fontWeight="700" mb="2" color="gray.900">{step.title}</Heading>
                     <Text color="gray.500" fontSize="sm" lineHeight="1.7">{step.description}</Text>
@@ -143,14 +145,14 @@ export default function HowItWorks() {
                       rounded="2xl"
                       border="1px solid"
                       borderColor="gray.100"
-                      boxShadow="0 4px 20px rgba(0,0,0,0.04)"
+                      boxShadow="0 4px 20px rgba(79,70,229,0.04)"
                       maxW="md"
                       w="full"
                       transition="all 0.3s ease"
-                      _hover={{ transform: "translateY(-4px)", boxShadow: "0 16px 40px rgba(0,0,0,0.08)" }}
+                      _hover={{ transform: "translateY(-4px)", boxShadow: "0 16px 40px rgba(79,70,229,0.08)" }}
                     >
-                      <Flex w="14" h="14" bg={step.bgColor} rounded="2xl" align="center" justify="center" mb="5">
-                        <step.icon size={26} color={step.color} />
+                      <Flex w="14" h="14" bg={stepBg} rounded="2xl" align="center" justify="center" mb="5">
+                        <step.icon size={26} color={stepColor} />
                       </Flex>
                       <Heading as="h3" fontSize="xl" fontWeight="700" mb="3" color="gray.900">{step.title}</Heading>
                       <Text color="gray.500" fontSize="md" lineHeight="1.7">{step.description}</Text>
@@ -171,14 +173,14 @@ export default function HowItWorks() {
                       w="12" h="12"
                       bg="white"
                       border="2px solid"
-                      borderColor={step.color}
-                      color={step.color}
+                      borderColor={stepColor}
+                      color={stepColor}
                       rounded="full"
                       align="center"
                       justify="center"
                       fontSize="sm"
                       fontWeight="800"
-                      boxShadow={`0 0 0 5px ${step.bgColor}`}
+                      boxShadow={`0 0 0 5px ${stepBg}`}
                     >
                       {step.num}
                     </Flex>

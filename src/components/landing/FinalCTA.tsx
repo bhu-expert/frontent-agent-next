@@ -1,176 +1,73 @@
 "use client";
 
-import { Box, Flex, Heading, Text } from "@chakra-ui/react";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import Link from "next/link";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MotionBox = motion.create(Box as React.ComponentType<any>);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MotionFlex = motion.create(Flex as React.ComponentType<any>);
-
-/**
- * Final call-to-action section with gradient purple card,
- * decorative blurs, and primary/secondary action buttons.
- */
 export default function FinalCTA() {
   return (
-    <Box
-      as="section"
-      py={{ base: "12", md: "24" }}
-      px={{ base: "4", md: "6" }}
-      position="relative"
-      overflow="hidden"
-    >
-      <MotionBox
-        maxW="5xl"
+    <Box as="section" py={{ base: 14, md: 24 }} px={{ base: 4, md: 6 }} bg="#ffffff" color="white">
+      <Box
+        maxW="6xl"
         mx="auto"
+        borderRadius="40px"
+        boxShadow="0 40px 100px rgba(79,70,229,0.15)"
+        p={{ base: 8, md: 16 }}
+        bg="#0A1E7A"
         textAlign="center"
         position="relative"
-        zIndex="1"
-        bg="linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%)"
-        py={{ base: "14", md: "20" }}
-        px={{ base: "6", md: "16" }}
-        rounded={{ base: "2xl", md: "3xl" }}
         overflow="hidden"
-        initial={{ opacity: 0, y: 40, scale: 0.98 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true, amount: 0.15 }}
-        transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Decorative blurs */}
-        <Box
-          position="absolute"
-          top="-60px"
-          right="-60px"
-          w={{ base: "120px", md: "200px" }}
-          h={{ base: "120px", md: "200px" }}
-          bg="linear-gradient(135deg, #8b5cf6, #c084fc)"
-          rounded="full"
-          filter="blur(60px)"
-          opacity="0.4"
-        />
-        <Box
-          position="absolute"
-          bottom="-40px"
-          left="-40px"
-          w={{ base: "100px", md: "160px" }}
-          h={{ base: "100px", md: "160px" }}
-          bg="linear-gradient(135deg, #6d28d9, #a78bfa)"
-          rounded="full"
-          filter="blur(50px)"
-          opacity="0.3"
-        />
-        <Box
-          position="absolute"
-          inset="0"
-          opacity="0.05"
-          bgImage="radial-gradient(circle, white 1px, transparent 1px)"
-          bgSize="24px 24px"
-        />
+        {/* Decorative elements */}
+        <Box position="absolute" top="-10%" right="-10%" w="300px" h="300px" bg="blue.600" filter="blur(100px)" opacity={0.3} borderRadius="full" />
+        <Box position="absolute" bottom="-10%" left="-10%" w="240px" h="240px" bg="blue.400" filter="blur(80px)" opacity={0.2} borderRadius="full" />
 
-        <Box position="relative" zIndex="2">
-          <Flex justify="center" mb={{ base: "4", md: "6" }}>
-            <Box
-              px={{ base: "3", md: "4" }}
-              py="1.5"
-              bg="whiteAlpha.200"
-              color="white"
-              rounded="full"
-              fontSize={{ base: "xs", md: "sm" }}
-              fontWeight="600"
-              backdropFilter="blur(8px)"
-            >
-              🚀 Start Your First Campaign Today
-            </Box>
-          </Flex>
-          <Heading
-            as="h2"
-            fontSize={{ base: "3xl", sm: "4xl", md: "5xl" }}
-            fontWeight="800"
-            color="white"
-            mb={{ base: "4", md: "5" }}
-            lineHeight="1.15"
-          >
-            From URL to live campaign{" "}
-            <Box
-              as="span"
-              bgGradient="to-r"
-              gradientFrom="#c084fc"
-              gradientTo="#f472b6"
-            >
-              in minutes.
-            </Box>
-          </Heading>
-          <Text
-            color="whiteAlpha.800"
-            fontSize={{ base: "sm", md: "lg" }}
-            mb={{ base: "8", md: "10" }}
-            maxW="lg"
-            mx="auto"
-          >
-            Enter your website URL, get a brand analysis report, generate
-            targeted ad creatives, and schedule your campaign across all
-            platforms — automatically.
+        <Box position="relative" zIndex={1}>
+          <Text fontSize="sm" letterSpacing="0.2em" textTransform="uppercase" color="blue.200" fontWeight="700">
+            Ready to scale?
           </Text>
-          <MotionFlex
-            justify="center"
-            gap={{ base: "3", md: "4" }}
-            direction={{ base: "column", sm: "row" }}
-            align="center"
-          >
-            <MotionBox
-              as="button"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              bg="white"
-              color="#4c1d95"
-              px={{ base: "6", md: "8" }}
-              py={{ base: "3.5", md: "4" }}
-              rounded="full"
-              fontSize={{ base: "sm", md: "md" }}
-              fontWeight="700"
-              display="inline-flex"
-              alignItems="center"
-              justifyContent="center"
-              gap="2"
-              boxShadow="0 4px 20px rgba(0,0,0,0.2)"
-              cursor="pointer"
-              _hover={{ bg: "gray.50" }}
-              w={{ base: "full", sm: "auto" }}
-            >
-              Analyze My Brand
-              <ArrowRight size={18} />
-            </MotionBox>
-            <MotionBox
-              as="button"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              bg="transparent"
-              color="white"
-              px={{ base: "6", md: "8" }}
-              py={{ base: "3.5", md: "4" }}
-              rounded="full"
-              fontSize={{ base: "sm", md: "md" }}
-              fontWeight="600"
-              border="1px solid"
+          <Heading mt={4} fontSize={{ base: "3xl", md: "5xl" }} fontWeight="800" lineHeight="1.2">
+            Turn your website into 30 days of <br /> Instagram content in minutes.
+          </Heading>
+          <Text mt={6} color="blue.100" maxW="700px" mx="auto" fontSize={{ base: "md", md: "lg" }}>
+            Stop wasting hours on content creation. Let Insta Agent handle the heavy lifting while you focus on growing your brand.
+          </Text>
+          <Flex mt={10} gap={4} flexWrap="wrap" justify="center">
+            <Link href="/onboarding">
+              <Button
+                bg="#4F46E5"
+                color="white"
+                boxShadow="0 20px 50px rgba(79,70,229,0.4)"
+                borderRadius="full"
+                px={10}
+                py={7}
+                fontSize="lg"
+                fontWeight="700"
+                _hover={{ bg: "#4338CA", transform: "translateY(-2px)", boxShadow: "0 30px 60px rgba(79,70,229,0.45)" }}
+                transition="all 0.2s"
+              >
+                Start Free Trial
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
               borderColor="whiteAlpha.400"
-              cursor="pointer"
-              _hover={{ bg: "whiteAlpha.100" }}
-              w={{ base: "full", sm: "auto" }}
+              color="white"
+              borderRadius="full"
+              px={10}
+              py={7}
+              fontSize="lg"
+              fontWeight="700"
+              _hover={{ bg: "whiteAlpha.100", transform: "translateY(-2px)" }}
+              transition="all 0.2s"
             >
-              See How It Works
-            </MotionBox>
-          </MotionFlex>
-          <Text
-            color="whiteAlpha.500"
-            fontSize="xs"
-            mt={{ base: "5", md: "6" }}
-          >
-            No credit card required · Free to start · First campaign in minutes
+              Watch Video
+            </Button>
+          </Flex>
+          <Text mt={8} fontSize="sm" color="whiteAlpha.600" fontWeight="500">
+            No credit card required · Instant setup · Cancel anytime
           </Text>
         </Box>
-      </MotionBox>
+      </Box>
     </Box>
   );
 }
