@@ -60,7 +60,6 @@ export default function Home() {
     <Box minH="100vh" bg="white">
       <Navbar />
       <HeroSection />
-      <UseCases />
       <HowItWorks />
       <FeatureGrid />
       <Pricing />

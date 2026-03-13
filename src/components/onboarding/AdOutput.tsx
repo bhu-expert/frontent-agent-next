@@ -52,7 +52,7 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
               </Box>
             </Flex>
             <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="black" color="#111827" letterSpacing="tight" mb={1}>
-              Your <Text as="span" color="#8a2ce2">Content</Text>
+              Your <Text as="span" color="#4F46E5">Content</Text>
             </Text>
             <Text fontSize="md" color="#6b7280">
               Review your generated carousel, caption, hashtags, and image prompts.
@@ -72,13 +72,13 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
               <Box as={Download} boxSize="16px" /> Export JSON
             </Button>
             <Button
-              bg="#8a2ce2"
+              bg="#4F46E5"
               color="white"
               onClick={onNewAnalysis}
               rounded="full"
               fontWeight="bold"
-              boxShadow="0 4px 14px rgba(138,44,226,0.3)"
-              _hover={{ bg: "#7c28cb", transform: "translateY(-1px)" }}
+              boxShadow="0 4px 14px rgba(79,70,229,0.3)"
+              _hover={{ bg: "#4338CA", transform: "translateY(-1px)" }}
               transition="all 0.2s"
               gap={2}
             >
@@ -90,7 +90,7 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
         {/* Slides */}
         <Box mb={8} bg="white" border="1px solid" borderColor="gray.100" rounded="2xl" overflow="hidden" boxShadow="0 4px 20px rgba(0,0,0,0.06)">
           <Flex bg="gray.50" px={6} py={4} borderBottom="1px solid" borderColor="gray.100" align="center" gap={3}>
-            <Flex w={8} h={8} rounded="lg" bg="rgba(138,44,226,0.1)" color="#8a2ce2" align="center" justify="center">
+            <Flex w={8} h={8} rounded="lg" bg="rgba(79,70,229,0.1)" color="#4F46E5" align="center" justify="center">
               <Box as={Layers} boxSize="16px" />
             </Flex>
             <Text fontSize="md" fontWeight="bold" color="#111827">Carousel Slides ({gen.slides.length})</Text>
@@ -102,24 +102,24 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
                   key={s.num}
                   bg="white"
                   border="1px solid"
-                  borderColor={s.cov ? "rgba(138,44,226,0.3)" : "gray.100"}
+                  borderColor={s.cov ? "rgba(79,70,229,0.3)" : "gray.100"}
                   rounded="xl"
                   p={5}
                   position="relative"
-                  boxShadow={s.cov ? "0 4px 12px rgba(138,44,226,0.1)" : "none"}
+                  boxShadow={s.cov ? "0 4px 12px rgba(79,70,229,0.1)" : "none"}
                   display="flex"
                   flexDirection="column"
                 >
                   {s.cov && (
-                    <Box position="absolute" top={0} left={0} right={0} h="4px" bg="#8a2ce2" borderTopRadius="md" />
+                    <Box position="absolute" top={0} left={0} right={0} h="4px" bg="#4F46E5" borderTopRadius="md" />
                   )}
                   <Flex justify="space-between" align="center" mb={3}>
-                    <Flex w={6} h={6} rounded="full" bg={s.cov ? "rgba(138,44,226,0.1)" : "gray.100"} color={s.cov ? "#8a2ce2" : "gray.600"} align="center" justify="center" fontSize="xs" fontWeight="black">
+                    <Flex w={6} h={6} rounded="full" bg={s.cov ? "rgba(79,70,229,0.1)" : "gray.100"} color={s.cov ? "#4F46E5" : "gray.600"} align="center" justify="center" fontSize="xs" fontWeight="black">
                       {s.num}
                     </Flex>
                     <Badge
-                      bg={s.cov ? "rgba(138,44,226,0.08)" : "gray.100"}
-                      color={s.cov ? "#8a2ce2" : "gray.600"}
+                      bg={s.cov ? "rgba(79,70,229,0.08)" : "gray.100"}
+                      color={s.cov ? "#4F46E5" : "gray.600"}
                       fontSize="9px"
                       fontWeight="bold"
                       px={2}
@@ -142,12 +142,12 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
           <Box bg="white" border="1px solid" borderColor="gray.100" rounded="2xl" overflow="hidden" boxShadow="0 4px 20px rgba(0,0,0,0.06)">
             <Flex bg="gray.50" px={6} py={4} borderBottom="1px solid" borderColor="gray.100" align="center" justify="space-between">
               <Flex align="center" gap={3}>
-                <Flex w={8} h={8} rounded="lg" bg="rgba(138,44,226,0.1)" color="#8a2ce2" align="center" justify="center">
+                <Flex w={8} h={8} rounded="lg" bg="rgba(79,70,229,0.1)" color="#4F46E5" align="center" justify="center">
                   <Box as={MessageSquare} boxSize="16px" />
                 </Flex>
                 <Text fontSize="md" fontWeight="bold" color="#111827">Caption</Text>
               </Flex>
-              <Button size="sm" variant="ghost" color="#8a2ce2" onClick={() => onCopy(gen.caption)} _hover={{ bg: "rgba(138,44,226,0.06)" }} gap={1}>
+              <Button size="sm" variant="ghost" color="#4F46E5" onClick={() => onCopy(gen.caption)} _hover={{ bg: "rgba(79,70,229,0.06)" }} gap={1}>
                 <Box as={Copy} boxSize="14px" /> Copy
               </Button>
             </Flex>
@@ -168,14 +168,14 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
                   </Flex>
                   <Text fontSize="md" fontWeight="bold" color="#111827">Hashtags ({gen.hashtags.length})</Text>
                 </Flex>
-                <Button size="sm" variant="ghost" color="#8a2ce2" onClick={() => onCopy(gen.hashtags.join(" "))} _hover={{ bg: "rgba(138,44,226,0.06)" }} gap={1}>
+                <Button size="sm" variant="ghost" color="#4F46E5" onClick={() => onCopy(gen.hashtags.join(" "))} _hover={{ bg: "rgba(79,70,229,0.06)" }} gap={1}>
                   <Box as={Copy} boxSize="14px" /> Copy all
                 </Button>
               </Flex>
               <Box p={6}>
                 <Flex flexWrap="wrap" gap={2}>
                   {gen.hashtags.map((h, i) => (
-                    <Text key={i} color="#8a2ce2" fontSize="sm" fontWeight="medium" bg="rgba(138,44,226,0.06)" px={2} py={1} rounded="md">
+                    <Text key={i} color="#4F46E5" fontSize="sm" fontWeight="medium" bg="rgba(79,70,229,0.06)" px={2} py={1} rounded="md">
                       {h}
                     </Text>
                   ))}
@@ -199,7 +199,7 @@ export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutpu
                         <Badge bg="rgba(234,88,12,0.08)" color="#ea580c" border="1px solid" borderColor="rgba(234,88,12,0.2)" fontSize="10px" fontWeight="bold" px={2} py={0.5} rounded="md">
                           {p.lbl}
                         </Badge>
-                        <IconButton aria-label="Copy prompt" size="xs" variant="ghost" onClick={() => onCopy(p.txt)} color="#8a2ce2" _hover={{ bg: "rgba(138,44,226,0.06)" }}>
+                        <IconButton aria-label="Copy prompt" size="xs" variant="ghost" onClick={() => onCopy(p.txt)} color="#4F46E5" _hover={{ bg: "rgba(79,70,229,0.06)" }}>
                           <Box as={Copy} boxSize="14px" />
                         </IconButton>
                       </Flex>

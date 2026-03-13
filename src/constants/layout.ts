@@ -37,7 +37,7 @@ export const FOOTER_LINKS = {
 
 export const HEADING_COLORS: Record<string, string> = {
   Product: "#a78bfa",
-  Resources: "#34d399",
-  Download: "#fbbf24",
-  "Get in touch": "#fb923c",
+  Resources: "#818cf8",
+  Download: "#c4b5fd",
+  "Get in touch": "#e879f9",
 } as const;

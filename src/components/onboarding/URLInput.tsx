@@ -52,26 +52,6 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
       />
 
       <Box position="relative" zIndex="1" w="full" maxW="600px" mx="auto" textAlign="center">
-        {/* Badge */}
-        <Box
-          display="inline-flex"
-          alignItems="center"
-          px={3}
-          py={1}
-          rounded="full"
-          bg="rgba(138,44,226,0.08)"
-          border="1px solid"
-          borderColor="rgba(138,44,226,0.2)"
-          color="#8a2ce2"
-          fontSize="11px"
-          fontWeight="bold"
-          textTransform="uppercase"
-          letterSpacing="widest"
-          mb={6}
-        >
-          <Box w="6px" h="6px" rounded="full" bg="#8a2ce2" mr={2} className="animate-pulse" />
-          AI-Powered Brand Analysis
-        </Box>
 
         {/* Heading */}
         <Text
@@ -84,7 +64,7 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
           mb={4}
         >
           Decode Your{" "}
-          <Text as="span" color="#8a2ce2">
+          <Text as="span" color="#4F46E5">
             Brand DNA
           </Text>
         </Text>
@@ -133,7 +113,7 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
                   borderColor={err ? "red.300" : "gray.200"}
                   rounded="xl"
                   fontSize="15px"
-                  _focus={{ borderColor: "#8a2ce2", boxShadow: "0 0 0 3px rgba(138,44,226,0.12)" }}
+                  _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 3px rgba(79,70,229,0.12)" }}
                   value={url}
                   onChange={(e) => { setUrl(e.target.value); setErr(false); }}
                 />
@@ -160,7 +140,7 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
                 borderColor="gray.200"
                 rounded="xl"
                 fontSize="15px"
-                _focus={{ borderColor: "#8a2ce2", boxShadow: "0 0 0 3px rgba(138,44,226,0.12)" }}
+                _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 3px rgba(79,70,229,0.12)" }}
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
               />
@@ -172,16 +152,16 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
             data-testid="submit-btn"
             w="full"
             h="52px"
-            bg="#8a2ce2"
+            bg="#4F46E5"
             color="white"
-            _hover={{ bg: "#7c28cb", transform: "translateY(-1px)", boxShadow: "0 8px 25px rgba(138,44,226,0.35)" }}
+            _hover={{ bg: "#4338CA", transform: "translateY(-1px)", boxShadow: "0 8px 25px rgba(79,70,229,0.35)" }}
             _active={{ transform: "translateY(0)" }}
             rounded="full"
             fontSize="16px"
             fontWeight="bold"
             onClick={go}
             transition="all 0.2s"
-            boxShadow="0 4px 14px rgba(138,44,226,0.3)"
+            boxShadow="0 4px 14px rgba(79,70,229,0.3)"
           >
             Analyse My Brand →
           </Button>

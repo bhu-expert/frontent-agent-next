@@ -14,12 +14,12 @@ export default function Navbar() {
     <Box as="nav" position="fixed" top="0" left="0" right="0" zIndex="50">
       {/* Main Navbar Bar */}
       <Box
-        bg="linear-gradient(135deg, #3B30D4 0%, #4F46E5 50%, #6366F1 100%)"
+        bg="white"
         px={{ base: "4", md: "8" }}
-        pt="4"
-        pb="6"
-        boxShadow="0 4px 24px rgba(79,70,229,0.35)"
-        position="relative"
+        py="3"
+        borderBottom="1px solid"
+        borderColor="gray.100"
+        boxShadow="0 1px 12px rgba(79,70,229,0.08)"
       >
         <Box
           maxW="7xl"
@@ -31,23 +31,21 @@ export default function Navbar() {
           {/* Logo */}
           <Flex align="center" gap="2.5">
             <Flex
-              w="9"
-              h="9"
-              bg="rgba(255,255,255,0.2)"
-              rounded="xl"
+              w="8"
+              h="8"
+              bg="#4F46E5"
+              rounded="lg"
               align="center"
               justify="center"
-              border="1px solid rgba(255,255,255,0.3)"
-              backdropFilter="blur(8px)"
             >
-              <Text color="white" fontWeight="800" fontSize="md">
+              <Text color="white" fontWeight="800" fontSize="sm">
                 I
               </Text>
             </Flex>
             <Text
               fontSize="lg"
               fontWeight="800"
-              color="white"
+              color="#1a1a2e"
               letterSpacing="-0.02em"
             >
               Insta Agent
@@ -64,8 +62,8 @@ export default function Navbar() {
             {NAV_LINKS.map((link) => (
               <Link key={link.label} href={link.href}>
                 <Text
-                  color="rgba(255,255,255,0.8)"
-                  _hover={{ color: "white" }}
+                  color="gray.500"
+                  _hover={{ color: "#4F46E5" }}
                   transition="color 0.2s"
                   cursor="pointer"
                 >
@@ -81,30 +79,30 @@ export default function Navbar() {
               <Text
                 fontSize="sm"
                 fontWeight="500"
-                color="rgba(255,255,255,0.8)"
-                _hover={{ color: "white" }}
+                color="gray.500"
+                _hover={{ color: "#4F46E5" }}
                 transition="color 0.2s"
               >
-                Log in
+                Sign In
               </Text>
             </Link>
             <Link href="/onboarding">
               <Box
-                bg="white"
-                color="#4F46E5"
+                bg="#4F46E5"
+                color="white"
                 px="5"
                 py="2"
                 rounded="full"
                 fontSize="sm"
-                fontWeight="700"
+                fontWeight="600"
                 _hover={{
-                  bg: "rgba(255,255,255,0.9)",
+                  bg: "#4338CA",
                   transform: "translateY(-1px)",
                 }}
                 transition="all 0.2s"
-                boxShadow="0 4px 14px rgba(0,0,0,0.15)"
+                boxShadow="0 4px 14px rgba(79,70,229,0.3)"
               >
-                Start for free
+                Get Started
               </Box>
             </Link>
           </Flex>
@@ -115,7 +113,7 @@ export default function Navbar() {
             as="button"
             aria-label="Toggle Navigation"
             onClick={() => setMobileOpen(!mobileOpen)}
-            color="white"
+            color="gray.600"
             p="1"
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -123,33 +121,18 @@ export default function Navbar() {
         </Box>
       </Box>
 
-      {/* Curvy bottom edge — SVG wave */}
-      <Box position="relative" mt="-1px" lineHeight="0" pointerEvents="none">
-        <svg
-          viewBox="0 0 1440 48"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="none"
-          style={{ display: "block", width: "100%", height: "48px" }}
-        >
-          <path
-            d="M0,0 C240,48 480,48 720,24 C960,0 1200,0 1440,32 L1440,0 L0,0 Z"
-            fill="#4F46E5"
-          />
-        </svg>
-      </Box>
-
       {/* Mobile Menu */}
       {mobileOpen && (
         <Box
           mx="4"
-          mt="-8"
+          mt="0"
           position="relative"
           zIndex="10"
           bg="white"
           rounded="2xl"
           border="1px solid"
-          borderColor="indigo.100"
-          boxShadow="0 12px 40px rgba(79,70,229,0.15)"
+          borderColor="gray.100"
+          boxShadow="0 12px 40px rgba(79,70,229,0.12)"
           p="5"
           display={{ md: "none" }}
         >
@@ -163,7 +146,7 @@ export default function Navbar() {
                 <Text
                   fontSize="sm"
                   fontWeight="500"
-                  color="gray.700"
+                  color="gray.600"
                   _hover={{ color: "#4F46E5" }}
                 >
                   {link.label}
@@ -173,8 +156,8 @@ export default function Navbar() {
             <Box h="1px" bg="gray.100" />
             <Flex gap="3" direction="column">
               <Link href="/login">
-                <Text fontSize="sm" fontWeight="500" color="gray.600">
-                  Log in
+                <Text fontSize="sm" fontWeight="500" color="gray.500">
+                  Sign In
                 </Text>
               </Link>
               <Link href="/onboarding">
@@ -189,7 +172,7 @@ export default function Navbar() {
                   textAlign="center"
                   boxShadow="0 4px 14px rgba(79,70,229,0.3)"
                 >
-                  Start for free
+                  Get Started
                 </Box>
               </Link>
             </Flex>

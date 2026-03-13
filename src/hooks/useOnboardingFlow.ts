@@ -154,8 +154,11 @@ export function useOnboardingFlow() {
   }, [selCtx, goTo]);
 
   const handleGoTemplates = useCallback(() => {
-    if (selCtx !== null) goTo(4);
-  }, [selCtx, goTo]);
+    if (selCtx !== null) {
+      setModalMode("signup");
+      setModalOpen(true);
+    }
+  }, [selCtx]);
 
   const setField = useCallback((fieldId: string, value: string) => {
     setDynFields((prev) => ({ ...prev, [fieldId]: value }));

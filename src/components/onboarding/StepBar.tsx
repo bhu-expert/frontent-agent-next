@@ -51,15 +51,15 @@ export default function StepBar({ curStep, maxReached, onNav }: StepBarProps) {
 
           if (active) {
             circleColor = "white";
-            circleBg = "#8a2ce2";
-            circleBorder = "#8a2ce2";
+            circleBg = "#4F46E5";
+            circleBorder = "#4F46E5";
           } else if (done) {
             circleColor = "white";
             circleBg = "#059669";
             circleBorder = "#059669";
           } else if (reachable) {
-            circleColor = "#8a2ce2";
-            circleBorder = "#8a2ce2";
+            circleColor = "#4F46E5";
+            circleBorder = "#4F46E5";
           }
 
           return (
@@ -93,7 +93,7 @@ export default function StepBar({ curStep, maxReached, onNav }: StepBarProps) {
                 <Text
                   fontSize="10px"
                   fontWeight={active ? "700" : "medium"}
-                  color={active ? "#8a2ce2" : "gray.500"}
+                  color={active ? "#4F46E5" : "gray.500"}
                   textAlign="center"
                   whiteSpace="nowrap"
                   display={{ base: "none", sm: "block" }}

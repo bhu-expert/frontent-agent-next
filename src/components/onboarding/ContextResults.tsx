@@ -6,7 +6,7 @@ import { Star, Bookmark, Heart, Copy, ChevronDown, ChevronUp, ArrowRight, Rotate
 import { ContextResultsProps } from "@/props/ContextResults";
 
 const BADGE_COLORS = [
-  { bg: "rgba(138,44,226,0.08)", text: "#8a2ce2", border: "rgba(138,44,226,0.2)" },
+  { bg: "rgba(79,70,229,0.08)", text: "#4F46E5", border: "rgba(79,70,229,0.2)" },
   { bg: "rgba(234,88,12,0.08)", text: "#ea580c", border: "rgba(234,88,12,0.2)" },
   { bg: "rgba(5,150,105,0.08)", text: "#059669", border: "rgba(5,150,105,0.2)" },
   { bg: "rgba(219,39,119,0.08)", text: "#db2777", border: "rgba(219,39,119,0.2)" },
@@ -65,7 +65,7 @@ export default function ContextResults({
               <Box as={RotateCcw} boxSize="12px" /> New Analysis
             </Button>
             <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="black" letterSpacing="tight" color="#111827" mb={1}>
-              Brand DNA <Text as="span" color="#8a2ce2">Results</Text>
+              Brand DNA <Text as="span" color="#4F46E5">Results</Text>
             </Text>
             <Flex align="center" gap={3} flexWrap="wrap">
               <Text color="#6b7280" fontSize="13px" fontWeight="medium">{url}</Text>
@@ -74,10 +74,10 @@ export default function ContextResults({
                   display="inline-flex"
                   alignItems="center"
                   gap={1.5}
-                  bg="rgba(138,44,226,0.08)"
+                  bg="rgba(79,70,229,0.08)"
                   border="1px solid"
-                  borderColor="rgba(138,44,226,0.2)"
-                  color="#8a2ce2"
+                  borderColor="rgba(79,70,229,0.2)"
+                  color="#4F46E5"
                   px={2.5}
                   py={0.5}
                   rounded="full"
@@ -114,20 +114,20 @@ export default function ContextResults({
               <Text fontSize="xl" fontWeight="black" color="#111827">{selCtx != null ? "1" : "—"}</Text>
             </Box>
             <Button
-              bg="#8a2ce2"
+              bg="#4F46E5"
               color="white"
               rounded="full"
               fontWeight="bold"
               px={6}
               disabled={selCtx === null}
               onClick={onUseSelected}
-              boxShadow="0 4px 14px rgba(138,44,226,0.3)"
-              _hover={{ bg: "#7c28cb", transform: "translateY(-1px)" }}
+              boxShadow="0 4px 14px rgba(79,70,229,0.3)"
+              _hover={{ bg: "#4338CA", transform: "translateY(-1px)" }}
               _active={{ transform: "translateY(0)" }}
               transition="all 0.2s"
               gap={2}
             >
-              Use Selected <Box as={ArrowRight} boxSize="14px" />
+              Create Account to Generate <Box as={ArrowRight} boxSize="14px" />
             </Button>
           </Flex>
         </Flex>
@@ -153,13 +153,13 @@ export default function ContextResults({
                 key={f}
                 size="sm"
                 rounded="full"
-                bg={filter === f ? "#8a2ce2" : "transparent"}
+                bg={filter === f ? "#4F46E5" : "transparent"}
                 color={filter === f ? "white" : "#6b7280"}
                 border="1px solid"
-                borderColor={filter === f ? "#8a2ce2" : "gray.200"}
+                borderColor={filter === f ? "#4F46E5" : "gray.200"}
                 fontWeight="semibold"
                 fontSize="12px"
-                _hover={{ bg: filter === f ? "#7c28cb" : "gray.50" }}
+                _hover={{ bg: filter === f ? "#4338CA" : "gray.50" }}
                 onClick={() => setFilter(f)}
                 px={4}
               >
@@ -178,11 +178,11 @@ export default function ContextResults({
                 p={0}
                 minW="30px"
                 rounded="lg"
-                bg={view === v ? "#8a2ce2" : "white"}
+                bg={view === v ? "#4F46E5" : "white"}
                 color={view === v ? "white" : "#6b7280"}
                 border="1px solid"
-                borderColor={view === v ? "#8a2ce2" : "gray.200"}
-                _hover={{ bg: view === v ? "#7c28cb" : "gray.50" }}
+                borderColor={view === v ? "#4F46E5" : "gray.200"}
+                _hover={{ bg: view === v ? "#4338CA" : "gray.50" }}
                 onClick={() => setView(v)}
               >
                 {v === "list" ? (
@@ -208,12 +208,12 @@ export default function ContextResults({
                 key={c.id}
                 bg="white"
                 border={isSel ? "2px solid" : "1px solid"}
-                borderColor={isSel ? "#8a2ce2" : "gray.100"}
+                borderColor={isSel ? "#4F46E5" : "gray.100"}
                 rounded="2xl"
                 overflow="hidden"
-                boxShadow={isSel ? "0 4px 20px rgba(138,44,226,0.15)" : "0 4px 20px rgba(0,0,0,0.06)"}
+                boxShadow={isSel ? "0 4px 20px rgba(79,70,229,0.15)" : "0 4px 20px rgba(0,0,0,0.06)"}
                 transition="all 0.2s"
-                _hover={{ boxShadow: "0 4px 20px rgba(138,44,226,0.15)", transform: "translateY(-2px)" }}
+                _hover={{ boxShadow: "0 4px 20px rgba(79,70,229,0.15)", transform: "translateY(-2px)" }}
               >
                 <Flex direction={{ base: "column", md: view === "list" ? "row" : "column" }}>
                   {/* Content area */}
@@ -255,7 +255,7 @@ export default function ContextResults({
                     <Button
                       variant="ghost"
                       size="sm"
-                      color="#8a2ce2"
+                      color="#4F46E5"
                       fontWeight="semibold"
                       fontSize="12px"
                       mt={2}
@@ -281,15 +281,15 @@ export default function ContextResults({
                     minW={{ base: "auto", md: view === "list" ? "180px" : "auto" }}
                   >
                     <Button
-                      bg={isSel ? "#8a2ce2" : "white"}
-                      color={isSel ? "white" : "#8a2ce2"}
+                      bg={isSel ? "#4F46E5" : "white"}
+                      color={isSel ? "white" : "#4F46E5"}
                       border="1px solid"
-                      borderColor={isSel ? "#8a2ce2" : "rgba(138,44,226,0.3)"}
+                      borderColor={isSel ? "#4F46E5" : "rgba(79,70,229,0.3)"}
                       rounded="full"
                       size="sm"
                       fontWeight="bold"
                       onClick={() => onSelect(c.id)}
-                      _hover={{ bg: isSel ? "#7c28cb" : "rgba(138,44,226,0.06)" }}
+                      _hover={{ bg: isSel ? "#4338CA" : "rgba(79,70,229,0.06)" }}
                       transition="all 0.2s"
                     >
                       {isSel ? "✓ Selected" : "Select"}
@@ -335,8 +335,8 @@ export default function ContextResults({
                         p={1}
                         minW="32px"
                         h="32px"
-                        color={bm.has(c.id) ? "#8a2ce2" : "gray.400"}
-                        _hover={{ color: "#8a2ce2", bg: "rgba(138,44,226,0.06)" }}
+                        color={bm.has(c.id) ? "#4F46E5" : "gray.400"}
+                        _hover={{ color: "#4F46E5", bg: "rgba(79,70,229,0.06)" }}
                         onClick={() => onToggleBm(c.id)}
                         title="Bookmark"
                       >
@@ -349,7 +349,7 @@ export default function ContextResults({
                         minW="32px"
                         h="32px"
                         color="gray.400"
-                        _hover={{ color: "#8a2ce2", bg: "rgba(138,44,226,0.06)" }}
+                        _hover={{ color: "#4F46E5", bg: "rgba(79,70,229,0.06)" }}
                         onClick={() => onCopy(c.body)}
                         title="Copy"
                       >
@@ -381,10 +381,10 @@ export default function ContextResults({
             <Flex maxW="1140px" w="full" align="center" justify="space-between" gap={4}>
               <Flex align="center" gap={3}>
                 <Box
-                  bg="rgba(138,44,226,0.08)"
-                  color="#8a2ce2"
+                  bg="rgba(79,70,229,0.08)"
+                  color="#4F46E5"
                   border="1px solid"
-                  borderColor="rgba(138,44,226,0.2)"
+                  borderColor="rgba(79,70,229,0.2)"
                   px={3}
                   py={1}
                   rounded="full"
@@ -394,22 +394,22 @@ export default function ContextResults({
                   Context {String(selCtx).padStart(2, "0")} selected
                 </Box>
                 <Text fontSize="13px" color="#6b7280" display={{ base: "none", md: "block" }}>
-                  Ready to generate content from this positioning angle
+                  Create a free account to generate content from this context
                 </Text>
               </Flex>
               <Button
-                bg="#8a2ce2"
+                bg="#4F46E5"
                 color="white"
                 rounded="full"
                 fontWeight="bold"
                 px={6}
                 onClick={onUseSelected}
-                boxShadow="0 4px 14px rgba(138,44,226,0.3)"
-                _hover={{ bg: "#7c28cb", transform: "translateY(-1px)" }}
+                boxShadow="0 4px 14px rgba(79,70,229,0.3)"
+                _hover={{ bg: "#4338CA", transform: "translateY(-1px)" }}
                 transition="all 0.2s"
                 gap={2}
               >
-                Continue to Templates <Box as={ArrowRight} boxSize="14px" />
+                Create Account to Generate <Box as={ArrowRight} boxSize="14px" />
               </Button>
             </Flex>
           </Flex>

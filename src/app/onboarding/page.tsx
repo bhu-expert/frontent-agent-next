@@ -4,8 +4,6 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import { useOnboardingFlow } from "@/hooks";
 import { AuthProvider, useAuth } from "@/store/AuthProvider";
 
-import ToolNavbar from "@/components/onboarding/ToolNavbar";
-import StepBar from "@/components/onboarding/StepBar";
 import Footer from "@/components/layout/Footer";
 import AuthModal from "@/components/onboarding/AuthModal";
 import URLInput from "@/components/onboarding/URLInput";
@@ -29,16 +27,9 @@ function ToolContent() {
   };
 
   return (
-    <Box bg="#faf5ff" minH="100vh" overflowX="hidden">
+    <Box bg="white" minH="100vh" overflowX="hidden">
       {/* Tool Navbar */}
       <Navbar />
-
-      {/* Step Bar */}
-      <StepBar
-        curStep={ts.curStep}
-        maxReached={ts.maxReached}
-        onNav={ts.goTo}
-      />
 
       {/* Auth Modal */}
       <AuthModal

@@ -13,13 +13,13 @@ export default function Footer() {
   return (
     <Box bg="#F8FAFF" p={{ base: "4", md: "10" }}>
       <Box
-        bg="#0A1E7A"
+        bg="#1e1b4b"
         borderRadius={{ base: "3xl", md: "40px" }}
         px={{ base: "6", md: "16", lg: "24" }}
         py={{ base: "10", md: "20" }}
         maxW="100%"
         mx="auto"
-        color="blue.100"
+        color="purple.100"
         minH={{ md: "350px" }}
         position="relative"
         overflow="hidden"
@@ -57,7 +57,7 @@ export default function Footer() {
                     <Link key={link.label} href={link.href}>
                       <Text
                         fontSize={{ base: "12px", md: "13px" }}
-                        color="blue.200"
+                        color="purple.200"
                         _hover={{ color: "white" }}
                         transition="0.2s"
                         cursor="pointer"
@@ -84,13 +84,13 @@ export default function Footer() {
               borderColor="whiteAlpha.200"
               backdropFilter="blur(10px)"
             >
-              <Text fontSize="11px" mb="1" color="blue.300" fontWeight="600" textTransform="uppercase" letterSpacing="0.1em">
+              <Text fontSize="11px" mb="1" color="purple.300" fontWeight="600" textTransform="uppercase" letterSpacing="0.1em">
                 Latest Update
               </Text>
               <Text color="white" fontSize={{ base: "13px", md: "14px" }} mb="1" fontWeight="600">
                 Insta Agent v2.4
               </Text>
-              <Text fontSize="11px" color="blue.200">
+              <Text fontSize="11px" color="purple.200">
                 Released March 2026
               </Text>
             </Box>
@@ -98,7 +98,7 @@ export default function Footer() {
         </Flex>
         
         <Box mt={20} pt={8} borderTop="1px solid" borderColor="whiteAlpha.100" textAlign="center">
-          <Text fontSize="xs" color="blue.300">
+          <Text fontSize="xs" color="purple.300">
             © {new Date().getFullYear()} Insta Agent. Built for Instagram growth.
           </Text>
         </Box>
