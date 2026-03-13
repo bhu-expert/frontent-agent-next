@@ -9,14 +9,18 @@ const KEY_ACTION = STORAGE_KEYS.PENDING_ACTION;
 // ─── Brand ID helpers ────────────────────────────────────────────────
 
 export function savePendingBrandId(id: string): void {
+  console.log("Saving pending brand ID:", id);
   localStorage.setItem(KEY_BRAND_ID, id);
 }
 
 export function getPendingBrandId(): string | null {
-  return localStorage.getItem(KEY_BRAND_ID);
+  const id = localStorage.getItem(KEY_BRAND_ID);
+  console.log("Getting pending brand ID:", id);
+  return id;
 }
 
 export function clearPendingBrandId(): void {
+  console.log("Clearing pending brand ID");
   localStorage.removeItem(KEY_BRAND_ID);
 }
 

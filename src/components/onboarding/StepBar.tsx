@@ -3,17 +3,16 @@
 import { Flex, Box, Text, HStack, VStack } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 
-import { TOOL_STEPS } from "@/config";
+import { TOOL_STEPS } from "@/constants";
+import { StepBarProps } from "@/props/StepBar";
 
 const STEPS = TOOL_STEPS;
 
-interface Props {
-  curStep: number;
-  maxReached: number;
-  onNav: (step: number) => void;
-}
-
-export default function StepBar({ curStep, maxReached, onNav }: Props) {
+/**
+ * Horizontal step progress bar for the onboarding tool flow.
+ * Displays numbered steps with checkmarks, active states, and click navigation.
+ */
+export default function StepBar({ curStep, maxReached, onNav }: StepBarProps) {
   return (
     <Box
       data-testid="step-bar"

@@ -1,10 +1,14 @@
 "use client";
 
 import { Box, Flex, Text, VStack, HStack } from "@chakra-ui/react";
-import { Terminal, X } from "lucide-react";
+import { X } from "lucide-react";
 import { AgentThoughtsPopupProps } from "@/props/AgentThoughtsPopup";
-import { STATUS_COLORS } from "@/constants/page2";
+import { STATUS_COLORS } from "@/constants";
 
+/**
+ * Fixed-position popup displaying the full log of agent thoughts.
+ * Appears at the bottom-right corner of the screen during analysis.
+ */
 export default function AgentThoughtsPopup({ thoughts, status, isOpen, onClose }: AgentThoughtsPopupProps) {
   if (!isOpen) return null;
 

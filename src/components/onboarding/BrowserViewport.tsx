@@ -4,6 +4,10 @@ import { Box, Flex, Spinner, Image } from "@chakra-ui/react";
 import { Globe } from "lucide-react";
 import { BrowserViewportProps } from "@/props/BrowserViewport";
 
+/**
+ * Simulated browser chrome viewport displaying live screenshots
+ * from the AI agent as it browses the target website.
+ */
 export default function BrowserViewport({ imageUrl, status }: BrowserViewportProps) {
   return (
     <Box
@@ -56,6 +60,7 @@ export default function BrowserViewport({ imageUrl, status }: BrowserViewportPro
           <>
             <Image
               src={imageUrl ? `data:image/jpeg;base64,${imageUrl}` : undefined}
+              alt="Website preview"
               w="full"
               h="full"
               objectFit="contain"

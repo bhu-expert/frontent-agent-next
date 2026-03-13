@@ -3,8 +3,12 @@
 import { Box, Flex, Text, VStack, HStack } from "@chakra-ui/react";
 import { Terminal, X, Sparkles } from "lucide-react";
 import { AgentThoughtsPopoverProps } from "@/props/AgentThoughtsPopover";
-import { STATUS_COLORS } from "@/constants/page2";
+import { STATUS_COLORS } from "@/constants";
 
+/**
+ * Compact popover overlay showing the last 5 agent thoughts during analysis.
+ * Positioned over the browser viewport with status-colored accents.
+ */
 export default function AgentThoughtsPopover({ thoughts, status, onClose }: AgentThoughtsPopoverProps) {
   const getStatusColor = () => {
     return STATUS_COLORS[status] || "gray";

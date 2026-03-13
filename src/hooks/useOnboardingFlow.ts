@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from "react";
 import type { BrandContext, GeneratedContent, PendingAction } from "@/types/onboarding.types";
-import { CTXS } from "@/config";
-import { buildContent } from "@/utils/contentEngine";
+import { CTXS } from "@/constants";
 import { savePendingAction } from "@/lib/delayedAuth";
 import { buildAdVariationsPayload } from "@/utils/payloadBuilder";
+import { supabase } from "@/lib/supabase";
+import { claimBrand } from "@/api";
 
 export function useOnboardingFlow() {
   // Step navigation
@@ -93,6 +94,31 @@ export function useOnboardingFlow() {
       });
       setCtx(newContexts);
     }
+    
+    // Check if user is already logged in - if so, trigger claim immediately and redirect
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        const pendingBrandId = localStorage.getItem('pending_brand_id');
+        console.log("Analysis complete - user logged in, checking pending brand:", pendingBrandId);
+        if (pendingBrandId) {
+          console.log("Triggering immediate claim for brand:", pendingBrandId);
+          claimBrand(pendingBrandId, session.access_token)
+            .then(() => {
+              console.log("✓ Brand claimed immediately after analysis");
+              // Clear pending state
+              localStorage.removeItem('pending_brand_id');
+              localStorage.removeItem('pending_action');
+              // Redirect to dashboard
+              console.log("Redirecting to dashboard...");
+              window.location.href = "/dashboard";
+            })
+            .catch((err) => {
+              console.error("Immediate claim failed:", err);
+            });
+        }
+      }
+    });
+    
     goTo(3);
   }, [goTo]);
 

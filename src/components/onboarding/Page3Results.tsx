@@ -1,25 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { BrandContext } from "@/types/onboarding.types";
+import { Page3ResultsProps } from "@/props/Page3Results";
 
-interface Props {
-  url: string;
-  ctx: BrandContext[];
-  ratings: Record<number, number>;
-  bm: Set<number>;
-  likes: Set<number>;
-  selCtx: number | null;
-  onSelect: (id: number) => void;
-  onRate: (id: number, stars: number) => void;
-  onToggleBm: (id: number) => void;
-  onToggleLike: (id: number) => void;
-  onUseSelected: () => void;
-  onNewAnalysis: () => void;
-  onCopy: (text: string) => void;
-}
-
-export default function Page3Results({ url, ctx, ratings, bm, likes, selCtx, onSelect, onRate, onToggleBm, onToggleLike, onUseSelected, onNewAnalysis, onCopy }: Props) {
+/**
+ * Legacy results page displaying brand DNA contexts with filtering, rating,
+ * bookmarking, and selection capabilities. Uses vanilla CSS styling.
+ */
+export default function Page3Results({ url, ctx, ratings, bm, likes, selCtx, onSelect, onRate, onToggleBm, onToggleLike, onUseSelected, onNewAnalysis, onCopy }: Page3ResultsProps) {
   const [view, setView] = useState<"list" | "grid">("list");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [filter, setFilter] = useState<"all" | "fav" | "bm">("all");
@@ -27,7 +15,11 @@ export default function Page3Results({ url, ctx, ratings, bm, likes, selCtx, onS
   const toggle = useCallback((id: number) => {
     setExpanded((p) => {
       const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+      }
       return n;
     });
   }, []);

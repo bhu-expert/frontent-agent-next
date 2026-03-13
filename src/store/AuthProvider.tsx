@@ -8,9 +8,10 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { claimBrand, generateAdVariations } from "@/lib/api";
+import { claimBrand, generateAdVariations } from "@/api";
 import {
   getPendingBrandId,
   getPendingAction,
@@ -24,6 +25,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   session: Session | null;
   isLoading: boolean;
+  isClaiming: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -51,23 +53,35 @@ interface AuthProviderProps {
   children: ReactNode;
   onDelayedAuthComplete?: () => void;
   onDelayedAuthError?: (error: { code: string; message: string }) => void;
+  onClaimStart?: () => void;
+  onClaimComplete?: () => void;
+  redirectToDashboard?: boolean;
 }
 
-export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthError }: AuthProviderProps) {
+export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthError, onClaimStart, onClaimComplete, redirectToDashboard = false }: AuthProviderProps) {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   // ── Delayed-auth handler (guest → claim) ─────────────────────────
   const handleDelayedAuth = useCallback(
     async (token: string) => {
       const pendingBrandId = getPendingBrandId();
-      
+
+      console.log("handleDelayedAuth called, pendingBrandId:", pendingBrandId);
+
       if (pendingBrandId) {
+        setIsClaiming(true);
+        onClaimStart?.();
+
         try {
           // Step 1: Claim the brand
+          console.log("Claiming brand:", pendingBrandId);
           await claimBrand(pendingBrandId, token);
           console.log("✓ Brand claimed successfully:", pendingBrandId);
+          onClaimComplete?.();
 
           // Step 2: Generate ad variations if pending action exists
           const pendingAction = getPendingAction();
@@ -83,9 +97,15 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
 
           // Success callback
           onDelayedAuthComplete?.();
+          
+          // Redirect to dashboard if enabled
+          if (redirectToDashboard) {
+            console.log("Redirecting to dashboard...");
+            router.push("/dashboard");
+          }
         } catch (err) {
           const error = err as { message?: string; status?: number };
-          
+
           // Determine error type
           let errorCode = "UNKNOWN_ERROR";
           let errorMessage = error.message || "Failed to complete authentication flow";
@@ -116,14 +136,17 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
           onDelayedAuthError?.({ code: errorCode, message: errorMessage });
         } finally {
           // Always clear pending state (success or error)
+          console.log("Clearing delayed auth state");
           clearDelayedAuthState();
+          setIsClaiming(false);
         }
       } else {
+        console.log("No pending brand ID found, skipping claim");
         // No pending brand - just call complete callback
         onDelayedAuthComplete?.();
       }
     },
-    [onDelayedAuthComplete, onDelayedAuthError]
+    [onDelayedAuthComplete, onDelayedAuthError, onClaimStart, onClaimComplete, redirectToDashboard, router]
   );
 
   // ── Bootstrap session + listen for auth changes ──────────────────
@@ -133,6 +156,13 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
       if (s?.user) {
         setUser(toAuthUser(s.user));
         setSession(s);
+        
+        // Check for pending brand on initial load (for page refresh after signup)
+        const pendingBrandId = getPendingBrandId();
+        if (pendingBrandId && s.access_token) {
+          console.log("Initial session found with pending brand:", pendingBrandId);
+          handleDelayedAuth(s.access_token);
+        }
       }
       setIsLoading(false);
     });
@@ -141,12 +171,34 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, s) => {
+      console.log("Auth event:", event, s?.user?.email);
+      
       if (s?.user) {
         setUser(toAuthUser(s.user));
         setSession(s);
 
+        // Trigger claim on SIGNED_IN (covers both login and signup when email confirmation is off)
         if (event === "SIGNED_IN" && s.access_token) {
-          await handleDelayedAuth(s.access_token);
+          // Small delay to ensure localStorage is synced
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const pendingBrandId = getPendingBrandId();
+          console.log("SIGNED_IN event - pending brand ID:", pendingBrandId);
+          
+          if (pendingBrandId) {
+            console.log("Starting claim flow for brand:", pendingBrandId);
+            await handleDelayedAuth(s.access_token);
+          } else {
+            console.log("No pending brand ID found after sign-in");
+          }
+        }
+        
+        // Handle initial session (page refresh) - only if we haven't already processed it
+        if (event === "INITIAL_SESSION" && s.access_token) {
+          const pendingBrandId = getPendingBrandId();
+          console.log("INITIAL_SESSION event - pending brand ID:", pendingBrandId);
+          if (pendingBrandId) {
+            handleDelayedAuth(s.access_token);
+          }
         }
       } else {
         setUser(null);
@@ -209,6 +261,7 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
         user,
         session,
         isLoading,
+        isClaiming,
         signInWithEmail,
         signUpWithEmail,
         signInWithGoogle,

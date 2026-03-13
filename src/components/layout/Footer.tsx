@@ -3,40 +3,12 @@
 import { Box, Flex, Grid, Heading, Text } from "@chakra-ui/react";
 import Link from "next/link";
 
-const footerLinks = {
-  Product: [
-    { label: "Updates", href: "#" },
-    { label: "Blog", href: "#" },
-  ],
-  Resources: [
-    { label: "Support", href: "#" },
-    { label: "Affiliate program", href: "#" },
-    { label: "Privacy Policy", href: "#" },
-    { label: "Cookie Preferences", href: "#" },
-    { label: "Terms of service", href: "#" },
-    { label: "Contacts", href: "#" },
-  ],
-  Download: [
-    { label: "iOS", href: "#" },
-    { label: "Android", href: "#" },
-    { label: "Mac", href: "#" },
-    { label: "Sign In", href: "#" },
-  ],
-  "Get in touch": [
-    { label: "hi@adforge.ai", href: "#" },
-    { label: "Discord", href: "#" },
-    { label: "Instagram", href: "#" },
-    { label: "X", href: "#" },
-  ],
-};
+import { FOOTER_LINKS, HEADING_COLORS } from "@/constants";
 
-const headingColors: Record<string, string> = {
-  Product: "#a78bfa",
-  Resources: "#34d399",
-  Download: "#fbbf24",
-  "Get in touch": "#fb923c",
-};
-
+/**
+ * Site-wide footer with multi-column link grid and a "last update" card.
+ * Uses dark theme with color-coded section headings.
+ */
 export default function Footer() {
   return (
     <Box bg="#fadcf2" p={{ base: "4", md: "10" }}>
@@ -66,12 +38,12 @@ export default function Footer() {
             gap={{ base: "8", md: "12", lg: "20" }}
             w={{ lg: "70%" }}
           >
-            {Object.entries(footerLinks).map(([title, links]) => (
+            {Object.entries(FOOTER_LINKS).map(([title, links]) => (
               <Box key={title}>
                 <Heading
                   fontSize={{ base: "13px", md: "15px" }}
                   mb={{ base: "4", md: "5" }}
-                  color={headingColors[title]}
+                  color={HEADING_COLORS[title] || "gray.900"}
                   fontWeight="600"
                 >
                   {title}

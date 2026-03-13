@@ -4,16 +4,13 @@ import { useState } from "react";
 import { Box, Flex, Text, Button, Input, VStack, IconButton, Spinner } from "@chakra-ui/react";
 import { X, Check, Mail } from "lucide-react";
 import { useAuth } from "@/store/AuthProvider";
+import { AuthModalProps } from "@/props/AuthModal";
 
-interface Props {
-  open: boolean;
-  mode: "login" | "signup";
-  onClose: () => void;
-  onSwitch: (mode: "login" | "signup") => void;
-  onAuthSuccess: () => void;
-}
-
-export default function AuthModal({ open, mode, onClose, onSwitch, onAuthSuccess }: Props) {
+/**
+ * Authentication modal supporting login, signup, magic link, and Google OAuth.
+ * Toggles between sign-in and create-account modes.
+ */
+export default function AuthModal({ open, mode, onClose, onSwitch, onAuthSuccess }: AuthModalProps) {
   const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithMagicLink } = useAuth();
 
   const [name, setName] = useState("");
@@ -44,15 +41,18 @@ export default function AuthModal({ open, mode, onClose, onSwitch, onAuthSuccess
     setErr("");
     setLoading(true);
     try {
+      console.log("AuthModal: Starting", mode, "for", email);
       if (mode === "login") {
         await signInWithEmail(email, pass);
       } else {
         await signUpWithEmail(email, pass, name);
       }
+      console.log("AuthModal:", mode, "successful - calling onAuthSuccess");
       resetForm();
       onAuthSuccess();
     } catch (e: unknown) {
       const error = e as { message?: string };
+      console.error("AuthModal error:", error);
       setErr(error.message || "Authentication failed. Please try again.");
     } finally {
       setLoading(false);

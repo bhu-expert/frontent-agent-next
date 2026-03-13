@@ -158,8 +158,7 @@ export interface BrandEvent {
   message: string;
   brand_id?: string;
   progress?: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface AdVariationsPayload {

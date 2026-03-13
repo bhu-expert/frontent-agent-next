@@ -2,16 +2,13 @@
 
 import { Box, Flex, Text, Button, SimpleGrid, Badge, IconButton } from "@chakra-ui/react";
 import { ArrowLeft, Download, RotateCcw, Copy, MessageSquare, Hash, Image as ImageIcon, Layers, CheckCircle2 } from "lucide-react";
-import { GeneratedContent } from "@/types/onboarding.types";
+import { AdOutputProps } from "@/props/AdOutput";
 
-interface Props {
-  gen: GeneratedContent;
-  onCopy: (text: string) => void;
-  onBack: () => void;
-  onNewAnalysis: () => void;
-}
-
-export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: Props) {
+/**
+ * Displays generated ad content with slides, caption, hashtags, and image prompts.
+ * Provides copy, export, and navigation actions.
+ */
+export default function AdOutput({ gen, onCopy, onBack, onNewAnalysis }: AdOutputProps) {
   return (
     <Box w="full" px={4} py={12} minH="calc(100vh - 140px)" position="relative">
       {/* Background blobs */}

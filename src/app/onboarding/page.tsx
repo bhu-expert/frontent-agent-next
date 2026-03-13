@@ -2,21 +2,30 @@
 
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { useOnboardingFlow } from "@/hooks";
-import { AuthProvider } from "@/store/AuthProvider";
+import { AuthProvider, useAuth } from "@/store/AuthProvider";
 
-import ToolNavbar from "@/components/tool/ToolNavbar";
-import StepBar from "@/components/tool/StepBar";
+import ToolNavbar from "@/components/onboarding/ToolNavbar";
+import StepBar from "@/components/onboarding/StepBar";
 import Footer from "@/components/layout/Footer";
-import AuthModal from "@/components/tool/AuthModal";
-import URLInput from "@/components/tool/URLInput";
-import BrandAnalysis from "@/components/tool/BrandAnalysis";
-import ContextResults from "@/components/tool/ContextResults";
-import TemplateOptions from "@/components/tool/TemplateOptions";
-import AdGeneration from "@/components/tool/AdGeneration";
-import AdOutput from "@/components/tool/AdOutput";
+import AuthModal from "@/components/onboarding/AuthModal";
+import URLInput from "@/components/onboarding/URLInput";
+import BrandAnalysis from "@/components/onboarding/BrandAnalysis";
+import ContextResults from "@/components/onboarding/ContextResults";
+import TemplateOptions from "@/components/onboarding/TemplateOptions";
+import AdGeneration from "@/components/onboarding/AdGeneration";
+import AdOutput from "@/components/onboarding/AdOutput";
 
 function ToolContent() {
   const ts = useOnboardingFlow();
+  const { isClaiming } = useAuth();
+
+  // Handle successful authentication (triggers claim flow in AuthProvider)
+  const handleAuthSuccess = () => {
+    console.log("✓ onAuthSuccess called - user signed up/logged in");
+    console.log("  Pending brand ID should be in localStorage");
+    // Close modal after successful auth
+    ts.closeModal();
+  };
 
   return (
     <Box bg="#faf5ff" minH="100vh" overflowX="hidden">
@@ -42,7 +51,7 @@ function ToolContent() {
         mode={ts.modalMode}
         onClose={ts.closeModal}
         onSwitch={ts.setModalMode}
-        onAuthSuccess={() => {}}
+        onAuthSuccess={handleAuthSuccess}
       />
 
       {/* Pages */}
@@ -71,6 +80,7 @@ function ToolContent() {
           onUseSelected={ts.handleGoTemplates}
           onNewAnalysis={ts.newAnalysis}
           onCopy={ts.copyText}
+          isClaiming={isClaiming}
         />
       )}
 
@@ -147,7 +157,22 @@ function ToolContent() {
 
 export default function OnboardingPage() {
   return (
-    <AuthProvider>
+    <AuthProvider
+      redirectToDashboard={true}
+      onClaimStart={() => {
+        console.log("🔄 Claiming brand...");
+      }}
+      onClaimComplete={() => {
+        console.log("✓ Brand claimed successfully!");
+      }}
+      onDelayedAuthComplete={() => {
+        console.log("✓ Delayed auth complete - brand claimed and variations generated");
+      }}
+      onDelayedAuthError={(error) => {
+        console.error("Delayed auth error:", error);
+        // Error is handled in AuthProvider, but we can show UI feedback here
+      }}
+    >
       <ToolContent />
     </AuthProvider>
   );

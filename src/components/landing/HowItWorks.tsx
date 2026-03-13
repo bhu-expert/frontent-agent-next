@@ -2,58 +2,18 @@
 
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { Globe, BrainCircuit, LayoutTemplate, CalendarClock } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionBox = motion.create(Box as React.ComponentType<any>);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionFlex = motion.create(Flex as React.ComponentType<any>);
 
-const steps = [
-  {
-    num: "01",
-    icon: Globe,
-    title: "Paste Your Website URL",
-    description: "Enter your website URL and AdForge instantly crawls your brand — scanning your messaging, colors, tone, and identity to build a complete brand profile.",
-    color: "#8a2ce2",
-    bgColor: "#f3e8ff",
-  },
-  {
-    num: "02",
-    icon: BrainCircuit,
-    title: "Get Your Brand Analysis Report",
-    description: "Receive a detailed AI-generated brand analysis report covering your audience, tone of voice, key value propositions, and competitor positioning.",
-    color: "#ea580c",
-    bgColor: "#fff7ed",
-  },
-  {
-    num: "03",
-    icon: LayoutTemplate,
-    title: "Generate Tailored Ad Creatives",
-    description: "Select your campaign goals and target context. AdForge generates multiple ad creatives — images, copy, and formats — precisely matched to your brand.",
-    color: "#0891b2",
-    bgColor: "#ecfeff",
-  },
-  {
-    num: "04",
-    icon: CalendarClock,
-    title: "Schedule & Run Your Campaign",
-    description: "Pick your platforms, set your schedule, and launch. AdForge publishes and manages your ad campaign automatically across all selected channels.",
-    color: "#059669",
-    bgColor: "#ecfdf5",
-  },
-];
+import { HOW_IT_WORKS_STEPS, CONTAINER_VARIANTS, ITEM_VARIANTS } from "@/constants";
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.2 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 60, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
-};
-
+/**
+ * Alternating timeline section illustrating the 4-step brand-to-campaign workflow.
+ * Responsive layout with mobile vertical and desktop zigzag timelines.
+ */
 export default function HowItWorks() {
   return (
     <Box
@@ -90,7 +50,7 @@ export default function HowItWorks() {
         {/* Timeline */}
         <MotionBox
           position="relative"
-          variants={containerVariants}
+          variants={CONTAINER_VARIANTS}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.1 }}
@@ -120,7 +80,7 @@ export default function HowItWorks() {
             zIndex={0}
           />
 
-          {steps.map((step, idx) => {
+          {HOW_IT_WORKS_STEPS.map((step, idx) => {
             const isEven = idx % 2 === 0;
             return (
               <Box key={step.num} mb={{ base: "8", md: "14" }} position="relative" zIndex={1} _last={{ mb: 0 }}>
@@ -145,7 +105,7 @@ export default function HowItWorks() {
                     {step.num}
                   </Flex>
                   <MotionBox
-                    variants={itemVariants}
+                    variants={ITEM_VARIANTS}
                     bg="white"
                     p="5"
                     rounded="2xl"
@@ -172,7 +132,7 @@ export default function HowItWorks() {
                   position="relative"
                 >
                   <MotionBox
-                    variants={itemVariants}
+                    variants={ITEM_VARIANTS}
                     w="45%"
                     display="flex"
                     justifyContent={isEven ? "flex-end" : "flex-start"}
@@ -199,7 +159,7 @@ export default function HowItWorks() {
 
                   {/* Node */}
                   <MotionFlex
-                    variants={itemVariants}
+                    variants={ITEM_VARIANTS}
                     w="10%"
                     justify="center"
                     position="absolute"

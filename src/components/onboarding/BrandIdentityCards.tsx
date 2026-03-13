@@ -1,11 +1,15 @@
 "use client";
 
-import { Box, SimpleGrid, VStack, Text, Flex } from "@chakra-ui/react";
+import { Box, SimpleGrid, Text, Flex } from "@chakra-ui/react";
 import { marked } from "marked";
 import { CheckCircle2 } from "lucide-react";
 import { BrandIdentityCardsProps } from "@/props/BrandIdentityCards";
-import { IDENTITY_ACCENTS } from "@/constants/page2";
+import { IDENTITY_ACCENTS } from "@/constants";
 
+/**
+ * Grid of brand identity cards rendered from streamed markdown contexts.
+ * Shows generation progress and renders parsed markdown content.
+ */
 export default function BrandIdentityCards({ contexts, status }: BrandIdentityCardsProps) {
   if (contexts.length === 0) return null;
 

@@ -90,11 +90,27 @@ export function useToolState() {
   }, []);
 
   const handleToggleBm = useCallback((id: number) => {
-    setBm((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setBm((p) => {
+      const n = new Set(p);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+      }
+      return n;
+    });
   }, []);
 
   const handleToggleLike = useCallback((id: number) => {
-    setLikes((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setLikes((p) => {
+      const n = new Set(p);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+      }
+      return n;
+    });
   }, []);
 
   const handleUseSelected = useCallback(() => { if (selCtx != null) goStep(4); }, [selCtx, goStep]);

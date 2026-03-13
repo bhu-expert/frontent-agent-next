@@ -19,6 +19,10 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
 };
 
+/**
+ * Bento-grid style feature showcase section with staggered scroll animations.
+ * Highlights six core AdForge capabilities.
+ */
 export default function FeatureGrid() {
   return (
     <Box as="section" py={{ base: "14", md: "24" }} px={{ base: "4", md: "6" }} bg="gray.50" id="features">

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Box, Flex, Text, Button, Input, VStack } from "@chakra-ui/react";
 import { Globe } from "lucide-react";
+import { URLInputProps } from "@/props/URLInput";
 
-interface Props {
-  onAnalyse: (url: string, brandName: string) => void;
-}
-
-export default function URLInput({ onAnalyse }: Props) {
+/**
+ * URL and brand name input form for starting a brand analysis.
+ * Validates input and triggers the analysis flow.
+ */
+export default function URLInput({ onAnalyse }: URLInputProps) {
   const [url, setUrl] = useState("");
   const [brandName, setBrandName] = useState("");
   const [err, setErr] = useState(false);
@@ -127,6 +128,7 @@ export default function URLInput({ onAnalyse }: Props) {
                   type="url"
                   placeholder="https://yourwebsite.com"
                   bg="white"
+                  color="gray.900"
                   border="1px solid"
                   borderColor={err ? "red.300" : "gray.200"}
                   rounded="xl"

@@ -2,16 +2,8 @@
 
 import { Box, Flex, Text, Button, SimpleGrid, Badge, HStack } from "@chakra-ui/react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
-import { BrandContext } from "@/types/onboarding.types";
 import { CTX_META } from "@/config";
-
-interface Props {
-  ctx: BrandContext[];
-  selCtx: number | null;
-  onSelect: (id: number) => void;
-  onBack: () => void;
-  onNext: () => void;
-}
+import { ContextSelectorProps } from "@/props/ContextSelector";
 
 const COLORS = [
   { bg: "rgba(138,44,226,0.06)", text: "#8a2ce2", border: "rgba(138,44,226,0.2)", accent: "#8a2ce2" },
@@ -21,7 +13,11 @@ const COLORS = [
   { bg: "rgba(79,70,229,0.06)", text: "#4f46e5", border: "rgba(79,70,229,0.2)", accent: "#4f46e5" },
 ];
 
-export default function ContextSelector({ ctx, selCtx, onSelect, onBack, onNext }: Props) {
+/**
+ * Card-based context selector for choosing a brand positioning angle.
+ * Displays context cards with color-coded badges and selection state.
+ */
+export default function ContextSelector({ ctx, selCtx, onSelect, onBack, onNext }: ContextSelectorProps) {
   return (
     <Box w="full" px={4} py={12} minH="calc(100vh - 140px)" position="relative">
       {/* Background blobs */}

@@ -9,16 +9,12 @@ const MotionBox = motion.create(Box as React.ComponentType<any>);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionFlex = motion.create(Flex as React.ComponentType<any>);
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.15 } },
-};
+import { CONTAINER_VARIANTS, ITEM_VARIANTS } from "@/constants";
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 60, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
-};
-
+/**
+ * Full-width hero section for the landing page with animated headline,
+ * CTA buttons, and a simulated dashboard mockup.
+ */
 export default function HeroSection() {
   return (
     <Box
@@ -36,10 +32,10 @@ export default function HeroSection() {
       <Box position="absolute" bottom="5%" right={{ base: "-20%", md: "10%" }} w={{ base: "300px", md: "480px" }} h={{ base: "300px", md: "480px" }} bg="#fae8ff" filter="blur(100px)" borderRadius="full" opacity={0.55} pointerEvents="none" />
 
       <Container maxW="6xl" mx="auto" position="relative" zIndex={1} px={{ base: "4", md: "8" }}>
-        <MotionFlex direction="column" align="center" variants={containerVariants} initial="hidden" animate="visible">
+        <MotionFlex direction="column" align="center" variants={CONTAINER_VARIANTS} initial="hidden" animate="visible">
 
           {/* Badge */}
-          <MotionBox variants={itemVariants}>
+          <MotionBox variants={ITEM_VARIANTS}>
             <Flex
               display="inline-flex"
               align="center"
@@ -62,7 +58,7 @@ export default function HeroSection() {
           </MotionBox>
 
           {/* Headline */}
-          <MotionBox variants={itemVariants}>
+          <MotionBox variants={ITEM_VARIANTS}>
             <Heading
               as="h1"
               fontSize={{ base: "4xl", sm: "5xl", md: "6xl", lg: "7xl" }}
@@ -83,7 +79,7 @@ export default function HeroSection() {
           </MotionBox>
 
           {/* Subheading */}
-          <MotionBox variants={itemVariants}>
+          <MotionBox variants={ITEM_VARIANTS}>
             <Text
               fontSize={{ base: "md", md: "xl" }}
               color="gray.500"
@@ -93,13 +89,13 @@ export default function HeroSection() {
               mb={{ base: "8", md: "10" }}
               px={{ base: "2", md: "0" }}
             >
-              Enter your website URL. AdForge analyzes your brand, generates a tailored report, creates ad creatives, and schedules your entire campaign — all in one place.
+              Enter your website URL. Plug and Play analyzes your brand, generates a tailored report, creates ad creatives, and schedules your entire campaign — all in one place.
             </Text>
           </MotionBox>
 
           {/* CTA Buttons */}
           <MotionFlex
-            variants={itemVariants}
+            variants={ITEM_VARIANTS}
             gap={{ base: "3", md: "4" }}
             wrap="wrap"
             justify="center"
@@ -151,7 +147,7 @@ export default function HeroSection() {
           </MotionFlex>
 
           {/* App Mockup */}
-          <MotionBox variants={itemVariants} w="full" maxW="5xl" mx="auto">
+          <MotionBox variants={ITEM_VARIANTS} w="full" maxW="5xl" mx="auto">
             <Box
               bg="white"
               p={{ base: "2", md: "3" }}
@@ -176,7 +172,7 @@ export default function HeroSection() {
                   <Box w={{ base: "2", md: "3" }} h={{ base: "2", md: "3" }} rounded="full" bg="#27c93f" />
                   <Flex flex="1" justify="center" display={{ base: "none", sm: "flex" }}>
                     <Box bg="gray.100" rounded="md" px="4" py="1" fontSize="xs" color="gray.400">
-                      app.adforge.ai/campaign
+                      app.plugandplayagent.com/campaign
                     </Box>
                   </Flex>
                 </Flex>

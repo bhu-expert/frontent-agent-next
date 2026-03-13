@@ -1,5 +1,104 @@
+/**
+ * Onboarding Flow Constants
+ */
 import { BrandContext, Template, IGTemplate, ContextMeta } from "@/types/onboarding.types";
 
+export const TOOL_STEPS = [
+  "URL",
+  "Analyse",
+  "Results",
+  "Template",
+  "Generate",
+  "Output",
+] as const;
+
+export type ToolStep = typeof TOOL_STEPS[number];
+export const TOTAL_STEPS = TOOL_STEPS.length;
+
+export const ANALYSIS_PROGRESS_STEPS = [
+  "Scraping website content",
+  "Extracting brand signals",
+  "Analysing tone & positioning",
+  "Generating 5 brand contexts",
+  "Finalising output",
+] as const;
+
+export const GENERATION_PROGRESS_STEPS = [
+  "Loading selected context",
+  "Applying template structure",
+  "Composing slides",
+  "Writing caption & hashtags",
+  "Finalising output",
+] as const;
+
+export const CONTEXT_INDEX_TITLES = {
+  1: "Brand Overview",
+  2: "Target Audience",
+  3: "Value Proposition",
+  4: "Tone & Voice",
+  5: "Key Differentiators",
+} as const;
+
+export type ContextIndex = keyof typeof CONTEXT_INDEX_TITLES;
+
+// From page2.ts (Analysis View)
+export const STATUS_COLORS = {
+  idle: "gray",
+  browsing: "emerald",
+  generating: "violet",
+  finished: "blue",
+  error: "red",
+} as const;
+
+export const STATUS_LABELS = {
+  idle: "IDLE",
+  browsing: "BROWSING",
+  generating: "GENERATING",
+  finished: "FINISHED",
+  error: "ERROR",
+} as const;
+
+export const IDENTITY_ACCENTS = [
+  { bg: "bg.blue.500/10", border: "border.blue.500/30", text: "text.blue.600", numBg: "bg.blue.500" },
+  { bg: "bg.emerald.500/10", border: "border.emerald.500/30", text: "text.emerald.600", numBg: "bg.emerald.500" },
+  { bg: "bg.violet.500/10", border: "border.violet.500/30", text: "text.violet.600", numBg: "bg.violet.500" },
+  { bg: "bg.orange.500/10", border: "border.orange.500/30", text: "text.orange.600", numBg: "bg.orange.500" },
+  { bg: "bg.pink.500/10", border: "border.pink.500/30", text: "text.pink.600", numBg: "bg.pink.500" },
+] as const;
+
+export const PROGRESS_WIDTHS = {
+  idle: "0%",
+  browsing: "40%",
+  generating: "75%",
+  finished: "100%",
+  error: "0%",
+} as const;
+
+// From TemplateOptions.tsx
+export const PLATFORMS = [
+  { id: "linkedin", label: "💼 LinkedIn", color: "blue" },
+  { id: "instagram", label: "📸 Instagram", color: "pink" },
+  { id: "twitter", label: "𝕏 Twitter/X", color: "gray" },
+  { id: "facebook", label: "👥 Facebook", color: "facebook" },
+] as const;
+
+export const TONES = [
+  { id: "luxury", label: "👑 Luxury" },
+  { id: "fun", label: "🎉 Fun & Playful" },
+  { id: "authority", label: "🎯 Authority" },
+  { id: "bold", label: "⚡ Bold & Direct" },
+  { id: "warm", label: "🤝 Warm & Human" },
+  { id: "educational", label: "📚 Educational" },
+] as const;
+
+export const EMOJIS = [
+  { id: "none", label: "None", samp: "—" },
+  { id: "minimal", label: "Minimal", samp: "✨" },
+  { id: "moderate", label: "Moderate", samp: "🔥💡" },
+  { id: "heavy", label: "Heavy", samp: "🚀🎯🔥" },
+] as const;
+
+// From toolConfig.ts
 export const CTXS: BrandContext[] = [
   {
     id: 1,

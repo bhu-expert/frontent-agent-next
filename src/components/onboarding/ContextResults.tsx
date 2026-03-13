@@ -1,25 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Box, Flex, Text, Button, HStack, VStack, SimpleGrid } from "@chakra-ui/react";
+import { Box, Flex, Text, Button, HStack, VStack, SimpleGrid, Spinner } from "@chakra-ui/react";
 import { Star, Bookmark, Heart, Copy, ChevronDown, ChevronUp, ArrowRight, RotateCcw } from "lucide-react";
-import { BrandContext } from "@/types/onboarding.types";
-
-interface Props {
-  url: string;
-  ctx: BrandContext[];
-  ratings: Record<number, number>;
-  bm: Set<number>;
-  likes: Set<number>;
-  selCtx: number | null;
-  onSelect: (id: number) => void;
-  onRate: (id: number, stars: number) => void;
-  onToggleBm: (id: number) => void;
-  onToggleLike: (id: number) => void;
-  onUseSelected: () => void;
-  onNewAnalysis: () => void;
-  onCopy: (text: string) => void;
-}
+import { ContextResultsProps } from "@/props/ContextResults";
 
 const BADGE_COLORS = [
   { bg: "rgba(138,44,226,0.08)", text: "#8a2ce2", border: "rgba(138,44,226,0.2)" },
@@ -29,10 +13,15 @@ const BADGE_COLORS = [
   { bg: "rgba(79,70,229,0.08)", text: "#4f46e5", border: "rgba(79,70,229,0.2)" },
 ];
 
+/**
+ * Displays brand DNA context results in list or grid view.
+ * Supports selecting, rating, bookmarking, liking, copying, and filtering contexts.
+ */
 export default function ContextResults({
   url, ctx, ratings, bm, likes, selCtx,
   onSelect, onRate, onToggleBm, onToggleLike, onUseSelected, onNewAnalysis, onCopy,
-}: Props) {
+  isClaiming = false,
+}: ContextResultsProps) {
   const [view, setView] = useState<"list" | "grid">("list");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [filter, setFilter] = useState<"all" | "fav" | "bm">("all");
@@ -80,23 +69,43 @@ export default function ContextResults({
             </Text>
             <Flex align="center" gap={3} flexWrap="wrap">
               <Text color="#6b7280" fontSize="13px" fontWeight="medium">{url}</Text>
-              <Box
-                display="inline-flex"
-                alignItems="center"
-                gap={1.5}
-                bg="rgba(5,150,105,0.08)"
-                border="1px solid"
-                borderColor="rgba(5,150,105,0.2)"
-                color="#059669"
-                px={2.5}
-                py={0.5}
-                rounded="full"
-                fontSize="11px"
-                fontWeight="bold"
-              >
-                <Box w="5px" h="5px" rounded="full" bg="#059669" className="animate-pulse" />
-                5 Contexts Generated
-              </Box>
+              {isClaiming ? (
+                <Box
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1.5}
+                  bg="rgba(138,44,226,0.08)"
+                  border="1px solid"
+                  borderColor="rgba(138,44,226,0.2)"
+                  color="#8a2ce2"
+                  px={2.5}
+                  py={0.5}
+                  rounded="full"
+                  fontSize="11px"
+                  fontWeight="bold"
+                >
+                  <Spinner size="xs" />
+                  Linking brand to your account...
+                </Box>
+              ) : (
+                <Box
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1.5}
+                  bg="rgba(5,150,105,0.08)"
+                  border="1px solid"
+                  borderColor="rgba(5,150,105,0.2)"
+                  color="#059669"
+                  px={2.5}
+                  py={0.5}
+                  rounded="full"
+                  fontSize="11px"
+                  fontWeight="bold"
+                >
+                  <Box w="5px" h="5px" rounded="full" bg="#059669" className="animate-pulse" />
+                  5 Contexts Generated
+                </Box>
+              )}
             </Flex>
           </Box>
           <Flex align="center" gap={5} flexWrap="wrap">

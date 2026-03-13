@@ -5,11 +5,14 @@ import { Box, Flex, Text, VStack, HStack, Button, SimpleGrid } from "@chakra-ui/
 import { useDiscoveryStream } from "@/hooks/useDiscoveryStream";
 import BrowserViewport from "./BrowserViewport";
 import AgentThoughtsPopover from "./AgentThoughtsPopover";
-import BrandIdentityCards from "./BrandIdentityCards";
 import { Sparkles, Globe, CheckCircle2, X } from "lucide-react";
 import { Page2AnalysingProps } from "@/props/Page2Analysing";
-import { STATUS_COLORS } from "@/constants/page2";
+import { STATUS_COLORS } from "@/constants";
 
+/**
+ * Split-screen brand analysis page showing browser viewport and agent progress.
+ * Streams real-time discovery results from the AI agent via SSE.
+ */
 export default function Page2Analysing({ url, brandName, onDone }: Page2AnalysingProps) {
   const [showThoughts, setShowThoughts] = useState(true);
   const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
@@ -271,10 +274,10 @@ export default function Page2Analysing({ url, brandName, onDone }: Page2Analysin
                 </Flex>
                 <Box p={4} bg="white" borderRadius="lg" border="1px solid" borderColor="gray.200">
                   <Text fontSize="sm" color="gray.600" lineHeight="relaxed" mb={3}>
-                    We've generated <strong>5 unique brand identities</strong> for your website. Each captures a different positioning angle to help you connect with your audience.
+                    We&apos;ve generated <strong>5 unique brand identities</strong> for your website. Each captures a different positioning angle to help you connect with your audience.
                   </Text>
                   <Text fontSize="sm" color="gray.600" lineHeight="relaxed">
-                    Click <strong>"View All Results"</strong> to see the complete analysis with detailed breakdowns, ratings, and recommendations.
+                    Click <strong>&quot;View All Results&quot;</strong> to see the complete analysis with detailed breakdowns, ratings, and recommendations.
                   </Text>
                 </Box>
                 <Button
@@ -529,7 +532,7 @@ export default function Page2Analysing({ url, brandName, onDone }: Page2Analysin
                     maxW="500px"
                     mb={6}
                   >
-                    We've generated 5 unique brand identities for your website. Each one captures a different positioning angle that can help you connect with your audience.
+                    We&apos;ve generated 5 unique brand identities for your website. Each one captures a different positioning angle that can help you connect with your audience.
                   </Text>
                   <Flex gap={4} wrap="wrap" justify="center" mb={8}>
                     <Flex align="center" gap={2} px={4} py={2} bg="blue.50" borderRadius="xl" border="1px solid" borderColor="blue.200">

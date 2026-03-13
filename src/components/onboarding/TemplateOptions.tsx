@@ -1,7 +1,6 @@
 "use client";
 
-import { BrandContext } from "@/types/onboarding.types";
-import { TPLS, IG_TPLS, TPL_META, TPL_EXAMPLES } from "@/config";
+import { TPLS, IG_TPLS, TPL_META, TPL_EXAMPLES, PLATFORMS, TONES, EMOJIS } from "@/constants";
 import {
   Box,
   Flex,
@@ -18,57 +17,17 @@ import {
   Slider,
 } from "@chakra-ui/react";
 import { ArrowLeft, CheckCircle2, TrendingUp } from "lucide-react";
+import { TemplateOptionsProps } from "@/props/TemplateOptions";
+import type { Template, IGTemplate, TemplateOption } from "@/types/onboarding.types";
 
-interface Props {
-  ctx: BrandContext[];
-  selCtx: number | null;
-  selTpl: string | null;
-  selIgTpl: string | null;
-  platform: string;
-  tone: string | null;
-  emoji: string;
-  cta: string;
-  offer: string;
-  slideN: number;
-  userBrief: string;
-  isLoggedIn: boolean;
-  onBack: () => void;
-  onSelPlatform: (p: string) => void;
-  onSelTpl: (id: string) => void;
-  onSelIgTpl: (id: string) => void;
-  onSelTone: (t: string) => void;
-  onSelEmoji: (e: string) => void;
-  onSetCta: (v: string) => void;
-  onSetOffer: (v: string) => void;
-  onSetSlideN: (n: number) => void;
-  onSetUserBrief: (v: string) => void;
-  onSetField: (key: string, val: string) => void;
-  onGenerate: () => void;
-  onOpenLogin: () => void;
-}
+// PLATFORMS, TONES, EMOJIS are now imported from @/constants
 
-const PLATFORMS = [
-  { id: "linkedin", label: "💼 LinkedIn", color: "blue" },
-  { id: "instagram", label: "📸 Instagram", color: "pink" },
-  { id: "twitter", label: "𝕏 Twitter/X", color: "gray" },
-  { id: "facebook", label: "👥 Facebook", color: "facebook" },
-];
-const TONES = [
-  { id: "luxury", label: "👑 Luxury" },
-  { id: "fun", label: "🎉 Fun & Playful" },
-  { id: "authority", label: "🎯 Authority" },
-  { id: "bold", label: "⚡ Bold & Direct" },
-  { id: "warm", label: "🤝 Warm & Human" },
-  { id: "educational", label: "📚 Educational" },
-];
-const EMOJIS = [
-  { id: "none", label: "None", samp: "—" },
-  { id: "minimal", label: "Minimal", samp: "✨" },
-  { id: "moderate", label: "Moderate", samp: "🔥💡" },
-  { id: "heavy", label: "Heavy", samp: "🚀🎯🔥" },
-];
-
-export default function TemplateOptions(props: Props) {
+/**
+ * Template and options configuration step for content generation.
+ * Supports platform selection, template picking, tone/emoji customisation,
+ * and Instagram-specific template fields.
+ */
+export default function TemplateOptions(props: TemplateOptionsProps) {
   const {
     ctx,
     selCtx,
@@ -263,7 +222,7 @@ export default function TemplateOptions(props: Props) {
                   </Text>
 
                   <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
-                    {TPLS.map((t) => {
+                    {TPLS.map((t: Template) => {
                       const meta = TPL_META[t.id];
                       const isSel = selTpl === t.id;
                       return (
@@ -399,7 +358,7 @@ export default function TemplateOptions(props: Props) {
                       {TPLS.find((t) => t.id === selTpl)?.name} Options
                     </Text>
                     <VStack gap={4} align="stretch">
-                      {TPLS.find((t) => t.id === selTpl)?.dynOpts.map((opt: { id: string; lbl: string; ph: string; type?: string }) => (
+                      {TPLS.find((t) => t.id === selTpl)?.dynOpts.map((opt: TemplateOption) => (
                         <Box key={opt.id}>
                           <Text
                             fontSize="xs"
@@ -487,7 +446,7 @@ export default function TemplateOptions(props: Props) {
                 </Text>
 
                 <SimpleGrid columns={{ base: 2, sm: 3, md: 5 }} gap={3} mb={6}>
-                  {IG_TPLS.map((t) => {
+                  {IG_TPLS.map((t: IGTemplate) => {
                     const isSel = selIgTpl === t.id;
                     return (
                       <Box

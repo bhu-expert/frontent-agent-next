@@ -8,72 +8,12 @@ const MotionBox = motion.create(Box as React.ComponentType<any>);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionFlex = motion.create(Flex as React.ComponentType<any>);
 
-const useCases = [
-  {
-    title: "Know Your Brand Before You Advertise",
-    tags: [
-      { label: "brand analysis", color: "#8a2ce2", bg: "#f3e8ff" },
-      { label: "AI insights", color: "#ea580c", bg: "#fff7ed" },
-      { label: "competitor scan", color: "#0891b2", bg: "#ecfeff" },
-    ],
-    description:
-      "AdForge reads your website and generates a full brand analysis report — your tone of voice, target audience, core messaging, and competitive positioning — all before you spend a dollar on ads.",
-    image: "/usecase-website-ads.png",
-    bgColor: "#f3e8ff",
-    direction: "row" as const,
-  },
-  {
-    title: "Launch Campaigns in Minutes, Not Days",
-    tags: [
-      { label: "quick launch", color: "#ea580c", bg: "#fff7ed" },
-      { label: "multi-platform", color: "#d946ef", bg: "#fdf4ff" },
-      { label: "auto-schedule", color: "#059669", bg: "#ecfdf5" },
-    ],
-    description:
-      "Go from brand analysis to a live, scheduled ad campaign in under 10 minutes. AdForge handles the creative strategy, copywriting, and publishing so you can focus on results.",
-    image: "/usecase-campaign-launch.png",
-    bgColor: "#fff7ed",
-    direction: "row-reverse" as const,
-  },
-  {
-    title: "Multi-Platform Ad Distribution",
-    tags: [
-      { label: "Instagram", color: "#d946ef", bg: "#fdf4ff" },
-      { label: "Facebook", color: "#2563eb", bg: "#eff6ff" },
-      { label: "LinkedIn", color: "#0891b2", bg: "#ecfeff" },
-      { label: "Twitter/X", color: "#374151", bg: "#f3f4f6" },
-    ],
-    description:
-      "Generate and schedule ads optimized for every major platform simultaneously. AdForge ensures each ad is perfectly formatted, timed, and targeted for the right audience on each channel.",
-    image: "/usecase-social-ads.png",
-    bgColor: "#ecfeff",
-    direction: "row" as const,
-  },
-  {
-    title: "AI-Powered Ad Creative Generation",
-    tags: [
-      { label: "smart copy", color: "#059669", bg: "#ecfdf5" },
-      { label: "visual ads", color: "#2563eb", bg: "#eff6ff" },
-      { label: "A/B variants", color: "#ea580c", bg: "#fff7ed" },
-    ],
-    description:
-      "Select your campaign context and goals. AdForge generates multiple ad creative variations — compelling visuals and high-conversion copy — all aligned with your brand voice and audience.",
-    image: "/usecase-html-banners.png",
-    bgColor: "#ecfdf5",
-    direction: "row-reverse" as const,
-  },
-];
+import { USE_CASES, CONTAINER_VARIANTS, CARD_VARIANTS } from "@/constants";
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.15 } },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 70, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
-};
-
+/**
+ * Use-cases section with alternating image/text cards showing
+ * real-world applications of AdForge across platforms.
+ */
 export default function UseCases() {
   return (
     <Box as="section" py={{ base: "14", md: "24" }} px={{ base: "4", md: "6" }} id="use-cases">
@@ -106,12 +46,12 @@ export default function UseCases() {
         <MotionFlex
           direction="column"
           gap={{ base: "5", md: "8" }}
-          variants={containerVariants}
+          variants={CONTAINER_VARIANTS}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.1 }}
         >
-          {useCases.map((uc) => (
+          {USE_CASES.map((uc) => (
             <MotionFlex
               key={uc.title}
               direction={{ base: "column", md: uc.direction }}
@@ -119,7 +59,7 @@ export default function UseCases() {
               rounded={{ base: "2xl", md: "3xl" }}
               overflow="hidden"
               bg={uc.bgColor}
-              variants={cardVariants}
+              variants={CARD_VARIANTS}
               minH={{ md: "360px" }}
             >
               {/* Text */}

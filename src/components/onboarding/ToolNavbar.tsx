@@ -1,19 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { AuthUser } from "@/types/onboarding.types";
 import { Box, Flex, Text, Button } from "@chakra-ui/react";
 import { ChevronDown, LogOut } from "lucide-react";
+import { ToolNavbarProps } from "@/props/ToolNavbar";
 
-interface Props {
-  user: AuthUser | null;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onLogout: () => void;
-  onHome: () => void;
-}
-
-export default function ToolNavbar({ user, onLoginClick, onSignupClick, onLogout, onHome }: Props) {
+/**
+ * Sticky navbar for the tool pages with AdForge branding.
+ * Displays auth state (sign-in/signup buttons or user avatar dropdown).
+ */
+export default function ToolNavbar({ user, onLoginClick, onSignupClick, onLogout, onHome }: ToolNavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
 

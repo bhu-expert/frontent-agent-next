@@ -9,6 +9,10 @@ const MotionBox = motion.create(Box as React.ComponentType<any>);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionFlex = motion.create(Flex as React.ComponentType<any>);
 
+/**
+ * Final call-to-action section with gradient purple card,
+ * decorative blurs, and primary/secondary action buttons.
+ */
 export default function FinalCTA() {
   return (
     <Box

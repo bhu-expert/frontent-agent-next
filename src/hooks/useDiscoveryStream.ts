@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { DiscoveryStreamResult, DiscoveryStatus } from "@/interfaces/discovery";
-import { getBrandStreamUrl } from "@/api/brand";
+import { getBrandStreamUrl } from "@/api";
 import { savePendingBrandId } from "@/lib/delayedAuth";
 
 export function useDiscoveryStream(): DiscoveryStreamResult {
@@ -56,14 +56,16 @@ export function useDiscoveryStream(): DiscoveryStreamResult {
 
     eventSource.addEventListener("progress", (e) => {
       const data = JSON.parse(e.data);
+      console.log("SSE progress event:", data);
       setThoughts((prev) => [...prev, data.message || "Processing..."]);
-      
+
       // Save brand_id when received from the stream
       if (data.brand_id) {
+        console.log("Received brand_id from SSE:", data.brand_id);
         setBrandId(data.brand_id);
         savePendingBrandId(data.brand_id);
       }
-      
+
       if (data.step === "generating_context") {
         setStatus("generating");
       }
@@ -87,14 +89,14 @@ export function useDiscoveryStream(): DiscoveryStreamResult {
       eventSource.close();
     });
 
-    eventSource.addEventListener("error", (e: any) => {
+    eventSource.addEventListener("error", (e: Event) => {
       let msg = "Connection lost or interrupted.";
-      if (e.data) {
+      if ((e as MessageEvent).data) {
         try {
-          const data = JSON.parse(e.data);
+          const data = JSON.parse((e as MessageEvent).data);
           msg = data.message || msg;
         } catch {
-          console.error("Failed to parse SSE error data:", e.data);
+          console.error("Failed to parse SSE error data:", (e as MessageEvent).data);
         }
       }
       setError(msg);

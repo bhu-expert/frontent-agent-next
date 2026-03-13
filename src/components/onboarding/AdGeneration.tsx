@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import { Box, Flex, Text, VStack, Spinner } from "@chakra-ui/react";
 import { Check } from "lucide-react";
-import { GENERATION_PROGRESS_STEPS } from "@/config";
+import { GENERATION_PROGRESS_STEPS } from "@/constants";
+import { AdGenerationProps } from "@/props/AdGeneration";
 
 const STEPS = GENERATION_PROGRESS_STEPS;
 
-interface Props {
-  onDone: () => void;
-}
-
-export default function AdGeneration({ onDone }: Props) {
+/**
+ * Animated progress indicator for the content generation phase.
+ * Displays step-by-step status updates with a progress bar.
+ */
+export default function AdGeneration({ onDone }: AdGenerationProps) {
   const [progress, setProgress] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
 

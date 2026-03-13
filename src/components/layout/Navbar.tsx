@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Use Cases", href: "#use-cases" },
-];
+import { NAV_LINKS } from "@/constants";
 
+/**
+ * Fixed glassmorphism navbar with logo, desktop nav links, CTAs,
+ * and a collapsible mobile menu.
+ */
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -50,7 +50,7 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <Flex display={{ base: "none", md: "flex" }} gap="8" fontSize="sm" fontWeight="500" color="gray.600">
-          {navLinks.map((link) => (
+          {NAV_LINKS.map((link) => (
             <Link key={link.label} href={link.href}>
               <Text _hover={{ color: "#8a2ce2" }} transition="color 0.2s" cursor="pointer">
                 {link.label}
@@ -112,7 +112,7 @@ export default function Navbar() {
           display={{ md: "none" }}
         >
           <Flex direction="column" gap="4">
-            {navLinks.map((link) => (
+            {NAV_LINKS.map((link) => (
               <Link key={link.label} href={link.href} onClick={() => setMobileOpen(false)}>
                 <Text fontSize="sm" fontWeight="500" color="gray.700" _hover={{ color: "#8a2ce2" }}>
                   {link.label}
