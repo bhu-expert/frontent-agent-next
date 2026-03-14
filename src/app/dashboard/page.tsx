@@ -8,6 +8,9 @@ import { ROUTES } from "@/constants";
 import { getClaimedBrandId } from "@/lib/delayedAuth";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
+// Skip static generation - this page requires authentication
+export const dynamic = "force-dynamic";
+
 /**
  * DashboardGate Component
  * Enforces authentication before rendering the dashboard shell.

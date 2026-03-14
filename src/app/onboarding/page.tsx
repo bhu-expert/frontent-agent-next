@@ -14,6 +14,9 @@ import AdGeneration from "@/components/onboarding/AdGeneration";
 import AdOutput from "@/components/onboarding/AdOutput";
 import Navbar from "@/components/layout/Navbar";
 
+// Skip static generation - this page requires runtime auth
+export const dynamic = "force-dynamic";
+
 function ToolContent() {
   const ts = useOnboardingFlow();
   const { isClaiming } = useAuth();
