@@ -145,6 +145,13 @@ export interface AdVariation {
   body: string;
   cta: string;
   platform: string;
+  image_url?: string;
+}
+
+export interface AdVariationsResponse {
+  status: string;
+  rendered_ads: AdVariation[];
+  variations_data: AdVariation[];
 }
 
 export interface AuthUser {

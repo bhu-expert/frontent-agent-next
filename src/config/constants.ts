@@ -30,8 +30,6 @@ export const API_BASE_URL =
   "https://content.bhuexpert.com/api/v1/data";
 
 export const API_ENDPOINTS = {
-  SIGNUP:           "/auth/signup",
-  SIGNIN:           "/auth/signin",
   BRANDS:           "/brands",
   BRAND_CONTEXT:    (id: string | number) => `/brands/${id}/context`,
   BRAND_CLAIM:      (id: string | number) => `/brands/${id}/claim`,

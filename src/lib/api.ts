@@ -1,7 +1,7 @@
 import type {
   BrandEvent,
   AdVariationsPayload,
-  AdVariation,
+  AdVariationsResponse,
 } from "@/types/onboarding.types";
 import { API_BASE_URL, API_ENDPOINTS } from "@/config";
 
@@ -11,40 +11,6 @@ const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
 function apiError(message: string, status: number): never {
   throw { message, status } as { message: string; status: number };
-}
-
-// ─── Auth endpoints ──────────────────────────────────────────────────
-
-export async function signUp(
-  email: string,
-  password: string
-): Promise<{ token: string; user_id: string }> {
-  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.SIGNUP}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    apiError(body.message || "Sign-up failed", res.status);
-  }
-  return res.json();
-}
-
-export async function signIn(
-  email: string,
-  password: string
-): Promise<{ token: string; user_id: string }> {
-  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.SIGNIN}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    apiError(body.message || "Sign-in failed", res.status);
-  }
-  return res.json();
 }
 
 // ─── Brand SSE stream ────────────────────────────────────────────────
@@ -155,7 +121,7 @@ export async function generateAdVariations(
   brandId: string,
   payload: AdVariationsPayload,
   token: string
-): Promise<AdVariation[]> {
+): Promise<AdVariationsResponse> {
   const res = await fetch(`${BASE_URL}${API_ENDPOINTS.BRAND_VARIATIONS(brandId)}`, {
     method: "POST",
     headers: {
