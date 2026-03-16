@@ -400,13 +400,29 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
               templateLabel: template?.label || templateId,
             });
 
+            // Transform variations_data from [{ad_type, variations: [AdVariation...]}]
+            // into flat RenderedAd[] for rendering
+            const flatVariations: RenderedAd[] = [];
+            for (const group of response.variations_data as Array<{ ad_type?: string; variations?: AdVariation[] }>) {
+              if (group?.variations) {
+                for (const v of group.variations) {
+                  flatVariations.push({
+                    variation_id: `${response.campaign_id}-${flatVariations.length}`,
+                    ad_type: group.ad_type || templateId,
+                    variation: v,
+                    html: "",
+                  });
+                }
+              }
+            }
+
             return {
               campaignId: response.campaign_id,
               contextIndex: contextBlock.context_index,
               contextTitle: contextBlock.title,
               templateId,
               templateLabel: template?.label || templateId,
-              variations: response.variations_data,
+              variations: flatVariations,
             } satisfies GeneratedTemplateBatch;
           })
         )
