@@ -7,7 +7,7 @@ test.describe('Responsive Design', () => {
     await page.goto('/');
 
     // assert hero heading is visible
-    const heroHeading = page.getByRole('heading', { name: /Turn your website into/i });
+    const heroHeading = page.getByRole('heading', { name: /Turn your website into/i }).first();
     await expect(heroHeading).toBeVisible();
 
     // assert "Start for free" CTA is visible
@@ -29,7 +29,7 @@ test.describe('Responsive Design', () => {
     await expect(page.getByRole('link', { name: 'Features' })).toBeVisible();
 
     // assert hero layout shows heading
-    await expect(page.getByRole('heading', { name: /Turn your website into/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Turn your website into/i }).first()).toBeVisible();
   });
 
   test('onboarding tool is usable on mobile', async ({ page }) => {

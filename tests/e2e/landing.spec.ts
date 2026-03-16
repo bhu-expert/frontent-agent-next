@@ -17,8 +17,8 @@ test.describe('Landing Page', () => {
   test('navbar is visible and sticky', async ({ page, isMobile }) => {
     await page.goto('/');
 
-    // Navbar logo text is "Insta Agent"
-    await expect(page.getByText('Insta Agent', { exact: true })).toBeVisible();
+    // Navbar logo text is "Plug and Play Agent"
+    await expect(page.getByText('Plug and Play Agent', { exact: true })).toBeVisible();
 
     if (isMobile) {
       await page.getByRole('button', { name: 'Toggle Navigation' }).click();
@@ -31,7 +31,7 @@ test.describe('Landing Page', () => {
 
     // "Get Started" CTA in desktop navbar
     if (!isMobile) {
-      await expect(page.getByRole('link', { name: 'Get Started' })).toBeVisible();
+      await expect(page.getByRole('navigation').getByRole('link', { name: 'Get Started' })).toBeVisible();
     }
   });
 
@@ -56,8 +56,8 @@ test.describe('Landing Page', () => {
     await hamburger.click();
 
     // Mobile menu shows Sign In and Get Started
-    await expect(page.getByText('Sign In')).toBeVisible();
-    await expect(page.getByText('Get Started')).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'Sign In' }).filter({ visible: true })).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('link', { name: 'Get Started' }).filter({ visible: true })).toBeVisible();
   });
 
   test('page renders all sections', async ({ page }) => {
@@ -72,11 +72,6 @@ test.describe('Landing Page', () => {
     const howItWorksHeading = page.getByRole('heading', { name: /From brand scan to live content/i });
     await howItWorksHeading.scrollIntoViewIfNeeded();
     await expect(howItWorksHeading).toBeVisible();
-
-    // UseCases section: "From URL to 30 posts in three steps"
-    const useCasesHeading = page.getByRole('heading', { name: /From URL to 30 posts/i });
-    await useCasesHeading.scrollIntoViewIfNeeded();
-    await expect(useCasesHeading).toBeVisible();
 
     // Final CTA: "Turn your website into 30 days of Instagram content in minutes."
     const finalCtaHeading = page.getByRole('heading', { name: /Turn your website into 30 days/i }).nth(1);

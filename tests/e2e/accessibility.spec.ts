@@ -5,13 +5,13 @@ test.describe('Accessibility', () => {
   test('landing page has proper page title', async ({ page }) => {
     await page.goto('/');
     const title = await page.title();
-    expect(title).toContain('Insta Agent');
+    expect(title).toContain('Plug and Play Agent');
   });
 
   test('onboarding page has proper page title', async ({ page }) => {
     await page.goto('/onboarding');
     const title = await page.title();
-    expect(title).toContain('Insta Agent');
+    expect(title).toContain('Plug and Play Agent');
   });
 
   test('all images have alt text', async ({ page }) => {
