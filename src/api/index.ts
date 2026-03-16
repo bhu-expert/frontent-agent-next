@@ -302,6 +302,34 @@ export async function generateAdVariations(
 }
 
 /**
+ * Lists all campaigns for the current user, optionally filtered by brand.
+ */
+export async function listCampaigns(
+  token: string,
+  brandId?: string
+): Promise<{
+  campaigns: Array<{
+    campaign_id: string;
+    brand_id: string;
+    context_index: number;
+    ad_type: string;
+    total: number;
+    complete: number;
+    failed: number;
+    status: "queued" | "running" | "complete";
+    created_at: string;
+  }>;
+}> {
+  const url = new URL(`${BASE_URL}${API_ENDPOINTS.CAMPAIGNS}`);
+  if (brandId) url.searchParams.set("brand_id", brandId);
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) apiError("Failed to fetch campaigns", res.status);
+  return res.json();
+}
+
+/**
  * Polls per-context progress for a running campaign.
  */
 export async function pollCampaignStatus(

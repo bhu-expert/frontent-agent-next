@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { pollCampaignStatus, getCampaignAssets } from "@/api";
+import { listCampaigns, pollCampaignStatus, getCampaignAssets } from "@/api";
 import type { CampaignStatus, CampaignAsset } from "@/types/onboarding.types";
 
 const POLL_INTERVAL_MS = 4000;
@@ -29,14 +29,76 @@ export interface CampaignState {
   error: string | null;
 }
 
-export function useCampaignPolling(token: string | undefined) {
+export function useCampaignPolling(token: string | undefined, brandId?: string) {
   const [trackers, setTrackers] = useState<CampaignTracker[]>([]);
   const [statuses, setStatuses] = useState<Record<string, CampaignStatus>>({});
   const [assets, setAssets] = useState<Record<string, CampaignAsset[]>>({});
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchedCampaigns = useRef<Set<string>>(new Set());
+
+  // Load existing campaigns from DB on mount
+  useEffect(() => {
+    if (!token || !brandId || loaded) return;
+
+    (async () => {
+      try {
+        const { campaigns } = await listCampaigns(token, brandId);
+        if (campaigns.length === 0) {
+          setLoaded(true);
+          return;
+        }
+
+        const restoredTrackers: CampaignTracker[] = campaigns.map((c) => ({
+          campaignId: c.campaign_id,
+          contextIndex: c.context_index,
+          contextTitle: `Context ${c.context_index}`,
+          templateId: c.ad_type || "awareness",
+          templateLabel: c.ad_type?.replace("_", " ") || "Awareness",
+        }));
+
+        setTrackers(restoredTrackers);
+
+        // Fetch assets for completed campaigns immediately
+        const completedIds = campaigns.filter((c) => c.status === "complete").map((c) => c.campaign_id);
+        for (const cid of completedIds) {
+          fetchedCampaigns.current.add(cid);
+          try {
+            const assetData = await getCampaignAssets(cid, token);
+            const allAssets = Object.values(assetData.by_context).flat();
+            setAssets((prev) => ({ ...prev, [cid]: allAssets }));
+          } catch {
+            // ignore
+          }
+        }
+
+        // Set statuses from the list response
+        const statusMap: Record<string, CampaignStatus> = {};
+        for (const c of campaigns) {
+          statusMap[c.campaign_id] = {
+            campaign_id: c.campaign_id,
+            total: c.total,
+            complete: c.complete,
+            status: c.status,
+            by_context: {},
+          };
+        }
+        setStatuses(statusMap);
+
+        // Start polling if any campaigns are still running
+        const hasActive = campaigns.some((c) => c.status !== "complete");
+        if (hasActive) {
+          setIsPolling(true);
+        }
+      } catch {
+        // Failed to load campaigns, not critical
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, [token, brandId, loaded]);
 
   const addCampaign = useCallback((tracker: CampaignTracker) => {
     setTrackers((prev) => {

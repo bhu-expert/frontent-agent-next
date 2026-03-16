@@ -178,10 +178,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     },
   } as const;
   const [activeView, setActiveView] = useState<"brands" | "content" | "assets" | "calendar" | "integrations" | "settings" | "support">("brands");
-  const campaign = useCampaignPolling(session?.access_token);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [allBrands, setAllBrands] = useState<BrandData[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const campaign = useCampaignPolling(session?.access_token, selectedBrandId ?? undefined);
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [createdBrandId, setCreatedBrandId] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
