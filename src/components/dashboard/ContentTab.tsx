@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import {
   BadgeCheck,
+  Loader,
   Megaphone,
   Rocket,
   Sparkles,
@@ -126,51 +127,51 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     );
   };
 
-  const handleGenerateContent = () => {
+  const handleGenerateContent = async () => {
     if (!brand || !token || selectedContextIds.length === 0 || selectedTemplateIds.length === 0) return;
 
     setIsGenerating(true);
     setContentError(null);
     campaign.clearCampaigns();
 
-    // Navigate to assets page INSTANTLY
-    onNavigateToAssets();
-
-    // Fire all API calls in the background (don't await)
+    // Fire all API calls — modal is visible while these run
     const calls = selectedContextIds.flatMap((contextIndex) =>
       selectedTemplateIds.map(async (templateId) => {
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === templateId);
         const contextBlock = contextBlocks.find((b) => b.context_index === contextIndex);
         if (!contextBlock) return;
 
-        try {
-          const response = await generateAdVariations(
-            brand.id,
-            {
-              context_index: contextBlock.context_index,
-              user_brief: contentBrief.trim()
-                ? `${contentBrief.trim()}\n\nFocus context: ${contextBlock.title}\nTemplate: ${template?.label || templateId}`
-                : `Generate ${template?.label || templateId} variations for the context "${contextBlock.title}".`,
-              ad_type: templateId,
-            },
-            token
-          );
+        const response = await generateAdVariations(
+          brand.id,
+          {
+            context_index: contextBlock.context_index,
+            user_brief: contentBrief.trim()
+              ? `${contentBrief.trim()}\n\nFocus context: ${contextBlock.title}\nTemplate: ${template?.label || templateId}`
+              : `Generate ${template?.label || templateId} variations for the context "${contextBlock.title}".`,
+            ad_type: templateId,
+          },
+          token
+        );
 
-          campaign.addCampaign({
-            campaignId: response.campaign_id,
-            contextIndex: contextBlock.context_index,
-            contextTitle: contextBlock.title,
-            templateId,
-            templateLabel: template?.label || templateId,
-          });
-        } catch (error) {
-          const apiError = error as { message?: string };
-          setContentError(apiError.message || "Failed to generate content variations.");
-        }
+        campaign.addCampaign({
+          campaignId: response.campaign_id,
+          contextIndex: contextBlock.context_index,
+          contextTitle: contextBlock.title,
+          templateId,
+          templateLabel: template?.label || templateId,
+        });
       })
     );
 
-    Promise.all(calls).finally(() => setIsGenerating(false));
+    try {
+      await Promise.all(calls);
+      onNavigateToAssets();
+    } catch (error) {
+      const apiError = error as { message?: string };
+      setContentError(apiError.message || "Failed to generate content variations.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (!brand) {
@@ -344,6 +345,59 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
           {contentError}
         </Box>
       )}
+
+      {/* Generating Modal Overlay */}
+      {isGenerating && (
+        <Flex
+          position="fixed" inset={0} zIndex={1000}
+          bg="rgba(0, 0, 0, 0.5)" backdropFilter="blur(6px)"
+          align="center" justify="center"
+        >
+          <Box
+            bg="white" borderRadius="24px" p={{ base: 8, md: 10 }}
+            textAlign="center" maxW="420px" w="90%"
+            boxShadow="0 24px 64px rgba(0, 0, 0, 0.2)"
+            style={{ animation: "fadeInUp 0.3s ease-out" }}
+          >
+            <Flex
+              w="64px" h="64px" borderRadius="16px"
+              bg="#EEF2FF" align="center" justify="center"
+              mx="auto" mb={5}
+            >
+              <Loader size={28} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />
+            </Flex>
+            <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>
+              Generating Variations
+            </Text>
+            <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={4}>
+              Creating {totalPosts} ad variations across {selectedContextIds.length} context{selectedContextIds.length > 1 ? "s" : ""} and {selectedTemplateIds.length} template{selectedTemplateIds.length > 1 ? "s" : ""}. This takes a few seconds.
+            </Text>
+            <Flex justify="center" gap={1.5}>
+              {[0, 1, 2].map((i) => (
+                <Box
+                  key={i} w="8px" h="8px" borderRadius="full" bg="#4F46E5"
+                  style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                />
+              ))}
+            </Flex>
+          </Box>
+        </Flex>
+      )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </VStack>
   );
 }

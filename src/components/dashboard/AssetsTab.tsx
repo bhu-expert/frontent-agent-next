@@ -137,42 +137,64 @@ function SkeletonCard() {
   );
 }
 
-/* ─── Asset Card ─────────────────────────────────────────────────────── */
+/* ─── Ad Template Card ───────────────────────────────────────────────── */
 
 function AssetCard({ asset }: { asset: CampaignAsset }) {
-  const [expanded, setExpanded] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const vd = asset.variation_data as Record<string, string>;
+  const primary = vd.primary_color || "#4F46E5";
+  const secondary = vd.secondary_color || "#1E1B4B";
+  const accent = vd.accent_color || "#7C3AED";
 
   return (
     <Box
-      border="1px solid" borderColor="#ECECEC" borderRadius="18px"
-      overflow="hidden" bg="white" transition="all 0.3s ease"
-      _hover={{ boxShadow: "0 12px 40px rgba(0,0,0,0.08)", transform: "translateY(-2px)" }}
+      borderRadius="18px" overflow="hidden" bg="white"
+      border="1px solid" borderColor="#ECECEC"
+      transition="all 0.3s ease"
+      _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
       style={{ animation: "fadeInUp 0.4s ease-out" }}
     >
-      {asset.image_url ? (
-        <Box position="relative" bg="#F3F4F6" overflow="hidden">
+      {/* ── Ad Creative Template ── */}
+      <Box
+        position="relative"
+        bg={`linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`}
+        minH="360px"
+        p={0}
+        overflow="hidden"
+      >
+        {/* Background image layer */}
+        {asset.image_url && (
           <Image
             src={asset.image_url}
             alt={vd.headline || "Ad image"}
-            w="100%"
-            h="220px"
+            position="absolute" inset={0}
+            w="100%" h="100%"
             objectFit="cover"
-            transition="transform 0.3s ease"
-            _hover={{ transform: "scale(1.03)" }}
+            opacity={0.35}
           />
+        )}
+
+        {/* Gradient overlay for text readability */}
+        <Box
+          position="absolute" inset={0}
+          bg="linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%)"
+        />
+
+        {/* Ad type badge + download */}
+        <Flex position="absolute" top={3} left={3} right={3} justify="space-between" align="center" zIndex={2}>
           <Badge
-            position="absolute" top={3} left={3}
-            bg="rgba(0,0,0,0.65)" color="white" backdropFilter="blur(4px)"
+            bg="rgba(0,0,0,0.5)" color="white" backdropFilter="blur(4px)"
             borderRadius="8px" px={2.5} py={1} fontSize="11px" fontWeight="600"
             textTransform="capitalize"
           >
             {asset.ad_type?.replace("_", " ")}
           </Badge>
-          <Flex position="absolute" top={3} right={3} gap={1.5}>
+          {asset.image_url && (
             <Button
-              size="xs" bg="rgba(255,255,255,0.9)" color="#111" borderRadius="8px"
-              _hover={{ bg: "white" }} h="28px" w="28px" p={0} minW="28px"
+              size="xs" bg="rgba(255,255,255,0.2)" color="white" borderRadius="8px"
+              backdropFilter="blur(4px)"
+              _hover={{ bg: "rgba(255,255,255,0.35)" }}
+              h="28px" w="28px" p={0} minW="28px"
               onClick={(e) => {
                 e.stopPropagation();
                 if (asset.image_url) window.open(asset.image_url, "_blank");
@@ -180,66 +202,107 @@ function AssetCard({ asset }: { asset: CampaignAsset }) {
             >
               <Download size={13} />
             </Button>
-          </Flex>
-        </Box>
-      ) : (
-        <Flex h="220px" bg="#F9FAFB" align="center" justify="center">
-          <VStack gap={1}>
-            <Loader size={20} color="#D1D5DB" style={{ animation: "spin 1.5s linear infinite" }} />
-            <Text fontSize="11px" color="#D1D5DB">Processing...</Text>
-          </VStack>
+          )}
         </Flex>
-      )}
 
-      <Box p={4}>
-        <Text fontSize="15px" fontWeight="700" color="#111" mb={1} lineClamp={2}>
-          {vd.headline || "Untitled"}
-        </Text>
-        {vd.subheadline && (
-          <Text fontSize="13px" fontWeight="500" color="#4F46E5" mb={1.5}>
-            {vd.subheadline}
-          </Text>
-        )}
-
-        {/* Color swatches */}
-        {(vd.primary_color || vd.secondary_color || vd.accent_color) && (
-          <Flex gap={1.5} mb={2}>
-            {[vd.primary_color, vd.secondary_color, vd.accent_color]
-              .filter(Boolean)
-              .map((c, i) => (
-                <Box key={i} w="18px" h="18px" borderRadius="5px" bg={c} border="1px solid" borderColor="#E5E7EB" />
-              ))}
+        {/* Processing overlay when no image yet */}
+        {!asset.image_url && (
+          <Flex position="absolute" inset={0} align="center" justify="center" zIndex={1}>
+            <VStack gap={1}>
+              <Loader size={24} color="white" style={{ animation: "spin 1.5s linear infinite" }} />
+              <Text fontSize="12px" color="rgba(255,255,255,0.7)">Generating image...</Text>
+            </VStack>
           </Flex>
         )}
 
-        {expanded && (
-          <Box mt={2} pt={2} borderTop="1px solid" borderColor="#F3F4F6">
-            {vd.body_text && (
-              <Text fontSize="13px" color="#5B6472" mb={2} lineHeight="1.5">{vd.body_text}</Text>
-            )}
-            {vd.cta_text && (
-              <Badge bg="#EEF2FF" color="#4338CA" borderRadius="8px" px={2.5} py={1} fontSize="12px" mb={2}>
+        {/* Ad content overlay */}
+        <Flex
+          position="relative" zIndex={2}
+          direction="column" justify="flex-end"
+          minH="360px" p={6} pb={5}
+        >
+          {/* Tagline */}
+          {vd.tagline && (
+            <Text
+              fontSize="11px" fontWeight="600" textTransform="uppercase"
+              letterSpacing="0.1em" color={accent} mb={2}
+            >
+              {vd.tagline}
+            </Text>
+          )}
+
+          {/* Headline */}
+          <Text
+            fontSize="22px" fontWeight="800" color="white"
+            lineHeight="1.15" mb={1.5}
+            textShadow="0 2px 8px rgba(0,0,0,0.3)"
+          >
+            {vd.headline || "Untitled"}
+          </Text>
+
+          {/* Subheadline */}
+          {vd.subheadline && (
+            <Text
+              fontSize="13px" fontWeight="500" color="rgba(255,255,255,0.85)"
+              mb={3} lineHeight="1.4"
+            >
+              {vd.subheadline}
+            </Text>
+          )}
+
+          {/* Body text */}
+          {vd.body_text && (
+            <Text
+              fontSize="12px" color="rgba(255,255,255,0.7)"
+              mb={4} lineHeight="1.5" lineClamp={3}
+            >
+              {vd.body_text}
+            </Text>
+          )}
+
+          {/* CTA Button */}
+          {vd.cta_text && (
+            <Box>
+              <Box
+                display="inline-block"
+                bg={accent} color="white"
+                px={5} py={2.5}
+                borderRadius="10px"
+                fontSize="13px" fontWeight="700"
+                letterSpacing="0.02em"
+              >
                 {vd.cta_text}
-              </Badge>
-            )}
-            {vd.image_prompt && (
-              <Box mt={2} bg="#F9FAFB" borderRadius="10px" p={3}>
-                <Text fontSize="11px" fontWeight="600" color="#9CA3AF" mb={1}>IMAGE PROMPT</Text>
-                <Text fontSize="12px" color="#6B7280" lineHeight="1.4">{vd.image_prompt}</Text>
               </Box>
-            )}
+            </Box>
+          )}
+        </Flex>
+      </Box>
+
+      {/* ── Footer: colors + prompt toggle ── */}
+      <Box p={3.5}>
+        <Flex align="center" justify="space-between">
+          <Flex gap={1.5}>
+            {[primary, secondary, accent].map((c, i) => (
+              <Box key={i} w="16px" h="16px" borderRadius="4px" bg={c} border="1px solid" borderColor="#E5E7EB" />
+            ))}
+          </Flex>
+          <Button
+            variant="ghost" size="xs"
+            fontSize="11px" color="#9CA3AF" h="26px" px={2}
+            _hover={{ color: "#6B7280", bg: "#F9FAFB" }}
+            onClick={() => setShowPrompt(!showPrompt)}
+          >
+            {showPrompt ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <Text ml={1}>{showPrompt ? "Hide" : "Prompt"}</Text>
+          </Button>
+        </Flex>
+
+        {showPrompt && vd.image_prompt && (
+          <Box mt={2.5} bg="#F9FAFB" borderRadius="10px" p={3}>
+            <Text fontSize="11px" fontWeight="600" color="#9CA3AF" mb={1}>IMAGE PROMPT</Text>
+            <Text fontSize="12px" color="#6B7280" lineHeight="1.4">{vd.image_prompt}</Text>
           </Box>
         )}
-
-        <Button
-          variant="ghost" size="sm" w="100%" mt={2}
-          fontSize="12px" color="#9CA3AF" h="30px"
-          _hover={{ color: "#6B7280", bg: "#F9FAFB" }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          <Text ml={1}>{expanded ? "Less" : "Details"}</Text>
-        </Button>
       </Box>
     </Box>
   );
