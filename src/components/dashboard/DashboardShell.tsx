@@ -8,6 +8,7 @@ import { navItems } from "@/constants/dashboard";
 import { DashboardShellProps } from "@/props/DashboardShell";
 import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
 import ContentTab from "@/components/dashboard/ContentTab";
+import AssetsTab from "@/components/dashboard/AssetsTab";
 import CalendarTab from "@/components/dashboard/CalendarTab";
 import IntegrationsTab from "@/components/dashboard/IntegrationsTab";
 import SettingsTab from "@/components/dashboard/SettingsTab";
@@ -16,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { splitContextMd } from "@/lib/contextSplitter";
 import { useAuth } from "@/store/AuthProvider";
 import type { ContextBlock } from "@/types/onboarding.types";
+import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 
 interface BrandData {
   id: string;
@@ -175,7 +177,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       boxShadow: "0 0 0 4px rgba(79, 70, 229, 0.14)",
     },
   } as const;
-  const [activeView, setActiveView] = useState<"brands" | "content" | "calendar" | "integrations" | "settings" | "support">("brands");
+  const [activeView, setActiveView] = useState<"brands" | "content" | "assets" | "calendar" | "integrations" | "settings" | "support">("brands");
+  const campaign = useCampaignPolling(session?.access_token);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [allBrands, setAllBrands] = useState<BrandData[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
@@ -913,19 +916,9 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         <VStack gap={1} align="stretch" px={3} flex={1}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const viewKey =
-              item.label === "Brands"
-                ? "brands"
-                : item.label === "Content"
-                  ? "content"
-                  : item.label === "Calendar"
-                    ? "calendar"
-                    : item.label === "Integrations"
-                      ? "integrations"
-                      : item.label === "Settings"
-                        ? "settings"
-                        : "support";
+            const viewKey = item.label.toLowerCase() as typeof activeView;
             const isActive = activeView === viewKey;
+            const hasAssetsBadge = viewKey === "assets" && campaign.isPolling;
 
             return (
               <Flex
@@ -949,6 +942,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               >
                 <Icon size={18} />
                 <Text>{item.label}</Text>
+                {hasAssetsBadge && (
+                  <Box w="8px" h="8px" borderRadius="full" bg="#4F46E5" ml="auto"
+                    style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
+                )}
               </Flex>
             );
           })}
@@ -1024,18 +1021,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           <VStack gap={1} align="stretch" mt={3} pb={2}>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const viewKey =
-                item.label === "Brands"
-                  ? "brands"
-                  : item.label === "Content"
-                    ? "content"
-                    : item.label === "Calendar"
-                      ? "calendar"
-                      : item.label === "Integrations"
-                        ? "integrations"
-                        : item.label === "Settings"
-                          ? "settings"
-                          : "support";
+              const viewKey = item.label.toLowerCase() as typeof activeView;
               const isActive = activeView === viewKey;
 
               return (
@@ -1155,6 +1141,16 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               brand={selectedBrand ? { id: selectedBrand.id, name: selectedBrand.name, industry: selectedBrand.industry } : null}
               contextBlocks={contextBlocks}
               token={session?.access_token}
+              campaign={campaign}
+              onNavigateToAssets={() => setActiveView("assets")}
+            />
+          ) : activeView === "assets" ? (
+            <AssetsTab
+              trackers={campaign.trackers}
+              statuses={campaign.statuses}
+              assets={campaign.assets}
+              progress={campaign.progress}
+              isPolling={campaign.isPolling}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />

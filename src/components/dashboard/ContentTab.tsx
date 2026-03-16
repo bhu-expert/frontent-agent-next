@@ -9,13 +9,9 @@ import {
   Text,
   Textarea,
   VStack,
-  Image,
 } from "@chakra-ui/react";
 import {
   BadgeCheck,
-  ChevronDown,
-  ChevronUp,
-  ImageIcon,
   Megaphone,
   Rocket,
   Sparkles,
@@ -23,12 +19,7 @@ import {
 } from "lucide-react";
 import { generateAdVariations } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
-import type {
-  AdVariation,
-  CampaignAsset,
-  ContextBlock,
-  RenderedAd,
-} from "@/types/onboarding.types";
+import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -38,15 +29,6 @@ interface TemplateOption {
   label: string;
   description: string;
   icon: LucideIcon;
-}
-
-interface GeneratedTemplateBatch {
-  campaignId: string;
-  contextIndex: number;
-  contextTitle: string;
-  templateId: string;
-  templateLabel: string;
-  variations: RenderedAd[];
 }
 
 interface ContentTabBrand {
@@ -59,6 +41,8 @@ interface ContentTabProps {
   brand: ContentTabBrand | null;
   contextBlocks: ContextBlock[];
   token?: string;
+  campaign: ReturnType<typeof useCampaignPolling>;
+  onNavigateToAssets: () => void;
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
@@ -92,234 +76,14 @@ function getContextTags(block: { title: string; content: string }, industry: str
   return [...baseTags, ...derivedTags].slice(0, 2);
 }
 
-/* ─── Sub-components ─────────────────────────────────────────────────── */
-
-function ProgressBar({ value, label }: { value: number; label: string }) {
-  return (
-    <Box>
-      <Flex justify="space-between" mb={1.5}>
-        <Text fontSize="13px" color="#6B7280" fontWeight="500">{label}</Text>
-        <Text fontSize="13px" color="#4F46E5" fontWeight="600">{value}%</Text>
-      </Flex>
-      <Box bg="#F3F4F6" borderRadius="999px" h="8px" overflow="hidden">
-        <Box
-          bg="linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)"
-          h="100%"
-          borderRadius="999px"
-          w={`${value}%`}
-          transition="width 0.6s ease"
-        />
-      </Box>
-    </Box>
-  );
-}
-
-function CampaignProgressPanel({
-  statuses,
-  trackers,
-  progress,
-}: {
-  statuses: Record<string, { total: number; complete: number; status: string; by_context: Record<string, { complete: number; total: number }> }>;
-  trackers: { campaignId: string; contextTitle: string; templateLabel: string }[];
-  progress: number;
-}) {
-  const allComplete = progress === 100;
-  return (
-    <Box
-      bg={allComplete ? "#F0FDF4" : "white"}
-      border="1px solid"
-      borderColor={allComplete ? "#BBF7D0" : "#E5E7EB"}
-      borderRadius="20px"
-      p={{ base: 5, md: 6 }}
-    >
-      <Flex align="center" gap={3} mb={4}>
-        <Flex
-          w="36px" h="36px" borderRadius="10px"
-          bg={allComplete ? "#DCFCE7" : "#EEF2FF"}
-          align="center" justify="center"
-        >
-          {allComplete ? (
-            <Text fontSize="16px">&#10003;</Text>
-          ) : (
-            <ImageIcon size={16} color="#4F46E5" />
-          )}
-        </Flex>
-        <Box>
-          <Text fontSize="16px" fontWeight="600" color="#111111">
-            {allComplete ? "Images Ready" : "Generating Images..."}
-          </Text>
-          <Text fontSize="13px" color="#6B7280">
-            {allComplete
-              ? "All ad images have been generated and uploaded."
-              : "Background image generation in progress. You can keep working."}
-          </Text>
-        </Box>
-      </Flex>
-
-      <ProgressBar value={progress} label="Overall Progress" />
-
-      <Box mt={4} display="grid" gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={3}>
-        {trackers.map((t) => {
-          const status = statuses[t.campaignId];
-          if (!status) return null;
-          const pct = status.total > 0 ? Math.round((status.complete / status.total) * 100) : 0;
-          return (
-            <Flex
-              key={t.campaignId}
-              bg="#F9FAFB" border="1px solid" borderColor="#F3F4F6"
-              borderRadius="12px" px={3} py={2.5} align="center" gap={2}
-            >
-              <Box flex="1" minW={0}>
-                <Text fontSize="12px" fontWeight="600" color="#111" truncate>
-                  {t.contextTitle}
-                </Text>
-                <Text fontSize="11px" color="#9CA3AF">{t.templateLabel}</Text>
-              </Box>
-              <Badge
-                bg={pct === 100 ? "#DCFCE7" : "#EEF2FF"}
-                color={pct === 100 ? "#166534" : "#4338CA"}
-                borderRadius="8px" px={2} py={0.5} fontSize="11px"
-              >
-                {status.complete}/{status.total}
-              </Badge>
-            </Flex>
-          );
-        })}
-      </Box>
-    </Box>
-  );
-}
-
-function AssetCard({ asset }: { asset: CampaignAsset }) {
-  const [expanded, setExpanded] = useState(false);
-  const vd = asset.variation_data as Record<string, string>;
-
-  return (
-    <Box
-      border="1px solid" borderColor="#ECECEC" borderRadius="18px"
-      overflow="hidden" bg="white" transition="all 0.2s ease"
-      _hover={{ boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}
-    >
-      {asset.image_url ? (
-        <Box position="relative" bg="#F3F4F6">
-          <Image
-            src={asset.image_url}
-            alt={vd.headline || "Ad image"}
-            w="100%"
-            h="220px"
-            objectFit="cover"
-          />
-          <Badge
-            position="absolute" top={3} right={3}
-            bg="rgba(0,0,0,0.6)" color="white"
-            borderRadius="8px" px={2} py={0.5} fontSize="10px"
-          >
-            {asset.ad_type}
-          </Badge>
-        </Box>
-      ) : (
-        <Flex h="120px" bg="#F9FAFB" align="center" justify="center">
-          <ImageIcon size={24} color="#D1D5DB" />
-        </Flex>
-      )}
-
-      <Box p={4}>
-        <Text fontSize="15px" fontWeight="700" color="#111" mb={1} lineClamp={2}>
-          {vd.headline || "Untitled"}
-        </Text>
-        {vd.subheadline && (
-          <Text fontSize="13px" fontWeight="500" color="#4F46E5" mb={2}>
-            {vd.subheadline}
-          </Text>
-        )}
-
-        {expanded && (
-          <Box mt={2}>
-            {vd.body_text && (
-              <Text fontSize="13px" color="#5B6472" mb={2}>{vd.body_text}</Text>
-            )}
-            {vd.cta_text && (
-              <Badge bg="#EEF2FF" color="#4338CA" borderRadius="8px" px={2.5} py={1} fontSize="12px">
-                {vd.cta_text}
-              </Badge>
-            )}
-            {(vd.primary_color || vd.secondary_color || vd.accent_color) && (
-              <Flex gap={2} mt={3}>
-                {[vd.primary_color, vd.secondary_color, vd.accent_color]
-                  .filter(Boolean)
-                  .map((c, i) => (
-                    <Box key={i} w="24px" h="24px" borderRadius="6px" bg={c} border="1px solid" borderColor="#E5E7EB" />
-                  ))}
-              </Flex>
-            )}
-          </Box>
-        )}
-
-        <Button
-          variant="ghost" size="sm" w="100%" mt={2}
-          fontSize="12px" color="#6B7280"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          <Text ml={1}>{expanded ? "Less" : "More"}</Text>
-        </Button>
-      </Box>
-    </Box>
-  );
-}
-
-function AssetGallery({
-  assets,
-  trackers,
-}: {
-  assets: Record<string, CampaignAsset[]>;
-  trackers: { campaignId: string; contextTitle: string; templateLabel: string }[];
-}) {
-  const allAssets = trackers.flatMap((t) => {
-    const campaignAssets = assets[t.campaignId] || [];
-    return campaignAssets.map((a) => ({
-      ...a,
-      contextTitle: t.contextTitle,
-      templateLabel: t.templateLabel,
-    }));
-  });
-
-  if (allAssets.length === 0) return null;
-
-  return (
-    <Box>
-      <Flex align="center" justify="space-between" mb={4}>
-        <Text fontSize="20px" fontWeight="600" color="#111">
-          Generated Assets
-        </Text>
-        <Badge bg="#EEF2FF" color="#4338CA" px={3} py={1.5} borderRadius="999px">
-          {allAssets.length} images
-        </Badge>
-      </Flex>
-      <Box
-        display="grid"
-        gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
-        gap={5}
-      >
-        {allAssets.map((asset) => (
-          <AssetCard key={asset.variation_id} asset={asset} />
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function ContentTab({ brand, contextBlocks, token }: ContentTabProps) {
+export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets }: ContentTabProps) {
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
-  const [generatedTemplateBatches, setGeneratedTemplateBatches] = useState<GeneratedTemplateBatch[]>([]);
-
-  const campaign = useCampaignPolling(token);
 
   const totalPosts = useMemo(
     () => selectedContextIds.length * selectedTemplateIds.length * 5,
@@ -332,9 +96,7 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
       return;
     }
     setSelectedContextIds(contextBlocks.slice(0, 2).map((block) => block.context_index));
-    setGeneratedTemplateBatches([]);
     setContentError(null);
-    campaign.clearCampaigns();
   }, [contextBlocks]);
 
   const fieldChrome = {
@@ -372,12 +134,12 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
     campaign.clearCampaigns();
 
     try {
-      const responses = await Promise.all(
+      await Promise.all(
         selectedContextIds.flatMap((contextIndex) =>
           selectedTemplateIds.map(async (templateId) => {
             const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === templateId);
             const contextBlock = contextBlocks.find((b) => b.context_index === contextIndex);
-            if (!contextBlock) return null;
+            if (!contextBlock) return;
 
             const response = await generateAdVariations(
               brand.id,
@@ -391,7 +153,6 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
               token
             );
 
-            // Track this campaign for polling
             campaign.addCampaign({
               campaignId: response.campaign_id,
               contextIndex: contextBlock.context_index,
@@ -399,36 +160,12 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
               templateId,
               templateLabel: template?.label || templateId,
             });
-
-            // Transform variations_data from [{ad_type, variations: [AdVariation...]}]
-            // into flat RenderedAd[] for rendering
-            const flatVariations: RenderedAd[] = [];
-            for (const group of response.variations_data as Array<{ ad_type?: string; variations?: AdVariation[] }>) {
-              if (group?.variations) {
-                for (const v of group.variations) {
-                  flatVariations.push({
-                    variation_id: `${response.campaign_id}-${flatVariations.length}`,
-                    ad_type: group.ad_type || templateId,
-                    variation: v,
-                    html: "",
-                  });
-                }
-              }
-            }
-
-            return {
-              campaignId: response.campaign_id,
-              contextIndex: contextBlock.context_index,
-              contextTitle: contextBlock.title,
-              templateId,
-              templateLabel: template?.label || templateId,
-              variations: flatVariations,
-            } satisfies GeneratedTemplateBatch;
           })
         )
       );
 
-      setGeneratedTemplateBatches(responses.filter(Boolean) as GeneratedTemplateBatch[]);
+      // Navigate to assets page to show live progress
+      onNavigateToAssets();
     } catch (error) {
       const apiError = error as { message?: string };
       setContentError(apiError.message || "Failed to generate content variations.");
@@ -446,8 +183,6 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
       </Box>
     );
   }
-
-  const hasAssets = Object.keys(campaign.assets).length > 0;
 
   return (
     <VStack align="stretch" gap={6}>
@@ -609,51 +344,6 @@ export default function ContentTab({ brand, contextBlocks, token }: ContentTabPr
         <Box mt={4} bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
           {contentError}
         </Box>
-      )}
-
-      {/* Campaign Progress */}
-      {campaign.trackers.length > 0 && (
-        <CampaignProgressPanel
-          statuses={campaign.statuses}
-          trackers={campaign.trackers}
-          progress={campaign.progress}
-        />
-      )}
-
-      {/* Asset Gallery (appears when images are ready) */}
-      {hasAssets && (
-        <AssetGallery assets={campaign.assets} trackers={campaign.trackers} />
-      )}
-
-      {/* LLM text variations (shown immediately) */}
-      {generatedTemplateBatches.length > 0 && (
-        <VStack align="stretch" gap={5}>
-          <Text fontSize="20px" fontWeight="600" color="#111">Ad Copy</Text>
-          {generatedTemplateBatches.map((batch) => (
-            <Box key={`${batch.contextIndex}-${batch.templateId}`} bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px" p={{ base: 5, md: 8 }}>
-              <Flex align={{ base: "flex-start", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={3} mb={5}>
-                <Box>
-                  <Text fontSize="xl" fontWeight="700" color="#111111">{batch.contextTitle}</Text>
-                  <Text fontSize="14px" color="#6B7280">{batch.templateLabel}</Text>
-                </Box>
-                <Badge bg="#ECFDF5" color="#166534" px={3} py={1.5} borderRadius="999px">
-                  {batch.variations.length} variations
-                </Badge>
-              </Flex>
-              <VStack align="stretch" gap={4}>
-                {batch.variations.map((renderedAd: RenderedAd, index: number) => (
-                  <Box key={`${batch.templateId}-${index}`} border="1px solid" borderColor="#ECECEC" borderRadius="18px" p={4} bg="#FAFAFA">
-                    <Text fontSize="16px" fontWeight="700" color="#111111" mb={1}>{renderedAd.variation.headline}</Text>
-                    <Text fontSize="14px" fontWeight="600" color="#4F46E5" mb={2}>{renderedAd.variation.subheadline}</Text>
-                    <Text fontSize="14px" color="#5B6472" mb={3}>{renderedAd.variation.body_text}</Text>
-                    <Text fontSize="13px" fontWeight="700" color="#111111" mb={1}>CTA</Text>
-                    <Text fontSize="14px" color="#5B6472">{renderedAd.variation.cta_text}</Text>
-                  </Box>
-                ))}
-              </VStack>
-            </Box>
-          ))}
-        </VStack>
       )}
     </VStack>
   );
