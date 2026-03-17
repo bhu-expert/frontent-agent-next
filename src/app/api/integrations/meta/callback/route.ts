@@ -18,6 +18,14 @@ export async function GET(request: NextRequest) {
   const provider = searchParams.get("provider") || "facebook";
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
+  const accessToken = searchParams.get("access_token");
+
+  console.log("OAuth Callback received:", {
+    hasCode: !!code,
+    provider,
+    hasError: !!error,
+    hasAccessToken: !!accessToken,
+  });
 
   // Handle OAuth errors
   if (error) {
@@ -30,7 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Get the session - Supabase should have already set the session cookie
+    // Get the session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
@@ -41,17 +49,13 @@ export async function GET(request: NextRequest) {
     }
 
     const user = session.user;
+    console.log("User authenticated:", user.id, user.email);
 
-    // Get the provider token from session
-    // Supabase stores provider tokens in the user's session
-    const providerToken = session.provider_token;
-    const providerRefreshToken = session.provider_refresh_token;
+    // Get the provider token from session or URL
+    // Supabase may pass it in provider_token or we get it from URL
+    let providerToken = session.provider_token || accessToken;
 
-    if (!providerToken) {
-      console.error("No Facebook access token found in session");
-      // For now, we'll continue without the token, but in production you should handle this
-      // The token should be available if Supabase is configured correctly
-    }
+    console.log("Provider token available:", !!providerToken);
 
     // Fetch user's Facebook pages using Graph API
     let pages = [];
@@ -60,19 +64,24 @@ export async function GET(request: NextRequest) {
 
     if (providerToken) {
       try {
+        console.log("Fetching Facebook user profile...");
         // Fetch user profile
         const userResponse = await fetch(
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me?fields=id,name&access_token=${providerToken}`
         );
         const userData = await userResponse.json();
+        console.log("Facebook user data:", userData);
+        
         userFacebookId = userData.id;
         userName = userData.name;
 
+        console.log("Fetching Facebook pages...");
         // Fetch user's pages with required permissions
         const pagesResponse = await fetch(
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token,permissions,instagram_business_account{id,name}&access_token=${providerToken}`
         );
         const pagesData = await pagesResponse.json();
+        console.log("Facebook pages response:", pagesData);
         
         if (pagesData.data) {
           pages = pagesData.data.map((page: any) => ({
@@ -83,11 +92,14 @@ export async function GET(request: NextRequest) {
             instagram_id: page.instagram_business_account?.id,
             instagram_name: page.instagram_business_account?.name,
           }));
+          console.log("Processed pages:", pages.length);
         }
       } catch (graphError) {
         console.error("Error fetching Facebook pages:", graphError);
         // Continue without pages data - user can select later
       }
+    } else {
+      console.warn("No provider token available - limited functionality");
     }
 
     // Store connection data
@@ -98,12 +110,18 @@ export async function GET(request: NextRequest) {
       facebook_user_id: userFacebookId,
       facebook_name: userName,
       access_token: providerToken,
-      refresh_token: providerRefreshToken,
+      refresh_token: session.provider_refresh_token,
       pages: pages,
       selected_page_id: pages.length > 0 ? pages[0].id : null,
       instagram_connected: pages.some((p: any) => p.instagram_id),
       instagram_pages: pages.filter((p: any) => p.instagram_id),
     };
+
+    console.log("Storing meta connection:", {
+      hasToken: !!providerToken,
+      pagesCount: pages.length,
+      facebookId: userFacebookId,
+    });
 
     // Store connection in user_metadata using service role
     const adminSupabase = SUPABASE_SERVICE_ROLE_KEY 
@@ -111,7 +129,7 @@ export async function GET(request: NextRequest) {
       : supabase;
     
     try {
-      await adminSupabase.auth.admin.updateUserById(
+      const updateResult = await adminSupabase.auth.admin.updateUserById(
         user.id,
         {
           user_metadata: {
@@ -120,13 +138,14 @@ export async function GET(request: NextRequest) {
           },
         }
       );
-    } catch (e) {
-      console.error("Error updating user_metadata:", e);
+      console.log("User metadata updated:", updateResult);
+    } catch (e: any) {
+      console.error("Error updating user_metadata:", e.message);
     }
 
     // Try to save to integrations table if it exists
     try {
-      await supabase.from("integrations").insert({
+      const insertResult = await supabase.from("integrations").insert({
         user_id: user.id,
         provider: "meta",
         provider_account_id: userFacebookId || user.id,
@@ -134,8 +153,9 @@ export async function GET(request: NextRequest) {
         status: "active",
         created_at: new Date().toISOString(),
       });
-    } catch (e) {
-      console.log("Integrations table not found, using user_metadata only");
+      console.log("Integrations table insert result:", insertResult);
+    } catch (e: any) {
+      console.log("Integrations table not found or insert failed:", e.message);
     }
 
     // Redirect back to integrations tab with success and pages data
@@ -144,6 +164,7 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("pages_available", "true");
     }
     
+    console.log("Redirecting to:", redirectUrl.toString());
     return NextResponse.redirect(redirectUrl);
   } catch (error: any) {
     console.error("Error processing OAuth callback:", error);
