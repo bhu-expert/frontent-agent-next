@@ -133,19 +133,33 @@ export async function POST(request: NextRequest) {
       : supabase;
     
     try {
+      console.log("Updating user_metadata for user:", user.id);
+      const currentMetadata = user.user_metadata || {};
+      console.log("Current user_metadata:", currentMetadata);
+      
       const updateResult = await adminSupabase.auth.admin.updateUserById(
         user.id,
         {
           user_metadata: {
-            ...user.user_metadata,
+            ...currentMetadata,
             meta_connection: metaConnection,
             provider: "facebook",
           },
         }
       );
-      console.log("User metadata updated:", updateResult);
+      console.log("User metadata update result:", updateResult);
+      
+      // Verify the update worked
+      const { data: { user: updatedUser }, error: fetchError } = await adminSupabase.auth.admin.getUserById(user.id);
+      if (fetchError) {
+        console.error("Error fetching updated user:", fetchError);
+      } else {
+        console.log("Updated user_metadata:", updatedUser?.user_metadata);
+        console.log("Meta connection saved:", !!updatedUser?.user_metadata?.meta_connection);
+      }
     } catch (e: any) {
       console.error("Error updating user_metadata:", e.message);
+      console.error("Stack:", e.stack);
     }
 
     // Save to integrations table
