@@ -116,8 +116,17 @@ export default function IntegrationsTab() {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
     const pagesAvailable = searchParams.get("pages_available");
-    
-    if (code || state?.includes("facebook")) {
+    const connected = searchParams.get("connected");
+
+    console.log("IntegrationsTab: Checking for OAuth params", {
+      hasCode: !!code,
+      state,
+      pagesAvailable,
+      connected,
+    });
+
+    if (code || state?.includes("facebook") || connected === "success") {
+      console.log("IntegrationsTab: OAuth detected, checking connection status");
       // OAuth callback - check connection status
       checkConnectionStatus();
       // Clean URL
@@ -128,39 +137,55 @@ export default function IntegrationsTab() {
         type: "success",
         duration: 5000,
       });
-      
+
       // Show page selector if pages are available
       if (pagesAvailable === "true") {
         setTimeout(() => {
-          checkConnectionStatus().then(() => {
+          checkConnectionStatus().then((data) => {
+            console.log("IntegrationsTab: Pages available, showing selector", data);
             setShowPageSelector(true);
           });
         }, 500);
       }
     } else {
+      console.log("IntegrationsTab: No OAuth detected, checking connection status");
       checkConnectionStatus();
     }
   }, [searchParams]);
 
   const checkConnectionStatus = async () => {
+    console.log("IntegrationsTab: Checking connection status...");
     try {
       const response = await fetch("/api/integrations/meta/status");
       const data = await response.json();
+      console.log("IntegrationsTab: Connection status response:", data);
       setMetaConnection(data);
-      
+
       // Store pages for selector if available
       if (data.pages && data.pages.length > 0) {
         setPendingPages(data.pages);
       }
-      
+
       return data;
     } catch (error) {
-      console.error("Error checking connection status:", error);
+      console.error("IntegrationsTab: Error checking connection status:", error);
       setMetaConnection({ connected: false });
       return { connected: false };
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefreshStatus = async () => {
+    console.log("IntegrationsTab: Manual refresh triggered");
+    setIsLoading(true);
+    await checkConnectionStatus();
+    toaster.create({
+      title: "Status Refreshed",
+      description: "Connection status has been updated.",
+      type: "success",
+      duration: 3000,
+    });
   };
 
   const handleConnectFacebook = async () => {
@@ -294,9 +319,19 @@ export default function IntegrationsTab() {
     <VStack align="stretch" gap={8}>
       {/* Page heading */}
       <Box>
-        <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="700" color="#111111" lineHeight="1.05" mb={2}>
-          Integrations
-        </Text>
+        <Flex justify="space-between" align="center" mb={2}>
+          <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="700" color="#111111" lineHeight="1.05">
+            Integrations
+          </Text>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshStatus}
+            loading={isLoading}
+          >
+            Refresh Status
+          </Button>
+        </Flex>
         <Text fontSize="15px" color="#6B7280">
           Connect your social platforms to publish content directly from PostGini.
         </Text>
