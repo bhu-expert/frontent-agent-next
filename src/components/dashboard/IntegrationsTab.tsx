@@ -7,6 +7,7 @@ import { useAuth } from "@/store/AuthProvider";
 import { toaster } from "@/components/ui/toaster";
 import NextLink from "next/link";
 import PageSelectorModal from "./PageSelectorModal";
+import { supabase } from "@/lib/supabase";
 
 // ─── Inline SVG logos ────────────────────────────────────────────────────────
 
@@ -125,7 +126,34 @@ export default function IntegrationsTab() {
       connected,
     });
 
-    if (code || state?.includes("facebook") || connected === "success") {
+    // Force refresh session if OAuth callback detected
+    if (connected === "success") {
+      console.log("IntegrationsTab: OAuth success detected, forcing session refresh...");
+      // Force a fresh session fetch to get updated metadata
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log("IntegrationsTab: Refreshed session metadata:", session?.user?.user_metadata);
+        // Now check connection status with fresh session
+        checkConnectionStatus();
+      });
+      // Clean URL
+      window.history.replaceState({}, document.title, "/dashboard?tab=integrations");
+      toaster.create({
+        title: "Facebook Connected",
+        description: "Your Facebook account has been successfully connected.",
+        type: "success",
+        duration: 5000,
+      });
+
+      // Show page selector if pages are available
+      if (pagesAvailable === "true") {
+        setTimeout(() => {
+          checkConnectionStatus().then((data) => {
+            console.log("IntegrationsTab: Pages available, showing selector", data);
+            setShowPageSelector(true);
+          });
+        }, 500);
+      }
+    } else if (code || state?.includes("facebook")) {
       console.log("IntegrationsTab: OAuth detected, checking connection status");
       // OAuth callback - check connection status
       checkConnectionStatus();
