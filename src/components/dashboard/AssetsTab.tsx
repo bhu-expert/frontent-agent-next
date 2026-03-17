@@ -20,6 +20,14 @@ import {
 } from "lucide-react";
 import type { CampaignAsset } from "@/types/onboarding.types";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
+import {
+  type TemplateProps,
+  AwarenessVariation1,
+  SaleVariation1,
+  LaunchVariation1,
+  EngagementVariation1,
+  StoryNarrativeVariation1,
+} from "./templates";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
@@ -29,14 +37,6 @@ interface AssetsTabProps {
   assets: Record<string, CampaignAsset[]>;
   progress: number;
   isPolling: boolean;
-}
-
-interface TemplateProps {
-  vd: Record<string, string>;
-  imageUrl: string | null;
-  primary: string;
-  secondary: string;
-  accent: string;
 }
 
 /* ─── Progress Header ────────────────────────────────────────────────── */
@@ -151,413 +151,6 @@ function SkeletonCard() {
   );
 }
 
-/* ─── Template: AWARENESS — Editorial Hero ───────────────────────────── */
-
-function AwarenessTemplate({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
-  return (
-    <Box position="relative" w="100%" h="100%">
-      {/* Image — hero-dominant */}
-      {imageUrl ? (
-        <Image
-          src={imageUrl} alt={vd.headline || ""}
-          position="absolute" inset={0} w="100%" h="100%"
-          objectFit="cover" opacity={0.9}
-        />
-      ) : (
-        <Box position="absolute" inset={0} bg={`linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`} />
-      )}
-
-      {/* Brand name — subtle top-left */}
-      {vd.brand_name && (
-        <Text
-          position="absolute" top="20px" left="24px" zIndex={3}
-          fontSize="10px" fontWeight="600" color="rgba(255,255,255,0.6)"
-          letterSpacing="0.1em" textTransform="uppercase"
-        >
-          {vd.brand_name}
-        </Text>
-      )}
-
-      {/* Bottom text band */}
-      <Flex
-        position="absolute" bottom={0} left={0} right={0} zIndex={2}
-        direction="column" p="24px" pt="64px"
-        bg="linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)"
-      >
-        {vd.tagline && (
-          <Text
-            fontSize="10px" fontWeight="600" textTransform="uppercase"
-            letterSpacing="0.12em" color={accent} mb="6px"
-          >
-            {vd.tagline}
-          </Text>
-        )}
-        <Text
-          fontSize="22px" fontWeight="800" color="white"
-          lineHeight="1.15" mb="4px"
-          overflow="hidden"
-          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-        >
-          {vd.headline || "Untitled"}
-        </Text>
-        {vd.subheadline && (
-          <Text
-            fontSize="12px" fontWeight="400" color="rgba(255,255,255,0.75)"
-            lineHeight="1.4"
-            overflow="hidden"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-          >
-            {vd.subheadline}
-          </Text>
-        )}
-      </Flex>
-    </Box>
-  );
-}
-
-/* ─── Template: SALE — Bold Promo ────────────────────────────────────── */
-
-function SaleTemplate({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
-  const hasOffer = vd.offer_text && vd.offer_text.trim();
-
-  return (
-    <Box position="relative" w="100%" h="100%" bg={primary}>
-      {/* Image — faded texture */}
-      {imageUrl && (
-        <Image
-          src={imageUrl} alt=""
-          position="absolute" inset={0} w="100%" h="100%"
-          objectFit="cover" opacity={0.15}
-        />
-      )}
-
-      {/* Diagonal accent shape */}
-      <Box
-        position="absolute" top="-30%" right="-25%" w="70%" h="60%"
-        bg={accent} transform="rotate(15deg)" opacity={0.15}
-        borderRadius="40px"
-      />
-      <Box
-        position="absolute" bottom="-20%" left="-20%" w="50%" h="40%"
-        bg={secondary} transform="rotate(-10deg)" opacity={0.2}
-        borderRadius="40px"
-      />
-
-      {/* Centered content */}
-      <Flex
-        position="relative" zIndex={2}
-        direction="column" align="center" justify="center"
-        h="100%" p="28px" textAlign="center"
-      >
-        {hasOffer ? (
-          <>
-            {/* Offer badge — hero element */}
-            <Box
-              bg={accent} borderRadius="16px"
-              px="24px" py="10px" mb="14px"
-              boxShadow={`0 8px 32px ${accent}44`}
-            >
-              <Text
-                fontSize="42px" fontWeight="900" color={secondary}
-                lineHeight="1.0" letterSpacing="-0.02em"
-              >
-                {vd.offer_text}
-              </Text>
-            </Box>
-            <Text
-              fontSize="20px" fontWeight="800" color="white"
-              lineHeight="1.15" mb="8px"
-              textShadow="0 2px 8px rgba(0,0,0,0.2)"
-              overflow="hidden"
-              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-            >
-              {vd.headline || "Untitled"}
-            </Text>
-          </>
-        ) : (
-          <>
-            {/* No offer — headline as hero */}
-            <Text
-              fontSize="34px" fontWeight="900" color="white"
-              lineHeight="1.05" mb="10px"
-              textShadow="0 2px 12px rgba(0,0,0,0.2)"
-              overflow="hidden" textAlign="center"
-              style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
-            >
-              {vd.headline || "Untitled"}
-            </Text>
-            {vd.subheadline && (
-              <Text
-                fontSize="14px" fontWeight="500" color="rgba(255,255,255,0.8)"
-                lineHeight="1.4"
-                overflow="hidden"
-                style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-              >
-                {vd.subheadline}
-              </Text>
-            )}
-          </>
-        )}
-
-        {/* Tagline */}
-        {vd.tagline && (
-          <Text
-            fontSize="11px" fontWeight="600" color="rgba(255,255,255,0.6)"
-            textTransform="uppercase" letterSpacing="0.1em"
-            mt="12px"
-          >
-            {vd.tagline}
-          </Text>
-        )}
-      </Flex>
-    </Box>
-  );
-}
-
-/* ─── Template: LAUNCH — Dark Cinematic ──────────────────────────────── */
-
-function LaunchTemplate({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
-  const label = vd.launch_label || "NEW";
-
-  return (
-    <Box position="relative" w="100%" h="100%" bg={secondary}>
-      {/* Image — medium opacity */}
-      {imageUrl && (
-        <Image
-          src={imageUrl} alt=""
-          position="absolute" inset={0} w="100%" h="100%"
-          objectFit="cover" opacity={0.45}
-        />
-      )}
-
-      {/* Dark overlay */}
-      <Box
-        position="absolute" inset={0}
-        bg="linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.65) 100%)"
-      />
-
-      {/* Radial glow */}
-      <Box
-        position="absolute" top="35%" left="50%"
-        transform="translate(-50%, -50%)"
-        w="220px" h="220px" borderRadius="full"
-        bg={`radial-gradient(circle, ${accent}30 0%, transparent 70%)`}
-        filter="blur(40px)" pointerEvents="none"
-      />
-
-      {/* Content — centered */}
-      <Flex
-        position="relative" zIndex={2}
-        direction="column" align="center" justify="center"
-        h="100%" p="28px" textAlign="center"
-      >
-        {/* Launch label — glowing pill */}
-        <Box
-          bg="rgba(255,255,255,0.08)"
-          border="1px solid" borderColor={`${accent}66`}
-          borderRadius="999px" px="18px" py="6px" mb="20px"
-          backdropFilter="blur(8px)"
-          boxShadow={`0 0 24px ${accent}33, 0 0 48px ${accent}18`}
-        >
-          <Text
-            fontSize="11px" fontWeight="700" color={accent}
-            textTransform="uppercase" letterSpacing="0.18em"
-          >
-            {label}
-          </Text>
-        </Box>
-
-        <Text
-          fontSize="24px" fontWeight="800" color="white"
-          lineHeight="1.1" mb="10px"
-          overflow="hidden"
-          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-        >
-          {vd.headline || "Untitled"}
-        </Text>
-
-        {vd.subheadline && (
-          <Text
-            fontSize="13px" fontWeight="400" color="rgba(255,255,255,0.6)"
-            lineHeight="1.45" maxW="90%"
-            overflow="hidden"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-          >
-            {vd.subheadline}
-          </Text>
-        )}
-      </Flex>
-
-      {/* Brand name — bottom right */}
-      {vd.brand_name && (
-        <Text
-          position="absolute" bottom="18px" right="24px" zIndex={3}
-          fontSize="9px" fontWeight="600" color="rgba(255,255,255,0.3)"
-          letterSpacing="0.12em" textTransform="uppercase"
-        >
-          {vd.brand_name}
-        </Text>
-      )}
-    </Box>
-  );
-}
-
-/* ─── Template: STORY_NARRATIVE — Cinematic Quote ────────────────────── */
-
-function StoryNarrativeTemplate({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
-  return (
-    <Box position="relative" w="100%" h="100%">
-      {/* Image — cinematic full bleed */}
-      {imageUrl ? (
-        <Image
-          src={imageUrl} alt=""
-          position="absolute" inset={0} w="100%" h="100%"
-          objectFit="cover" opacity={0.85}
-        />
-      ) : (
-        <Box position="absolute" inset={0} bg={`linear-gradient(135deg, ${secondary} 0%, ${primary} 100%)`} />
-      )}
-
-      {/* Dark vignette */}
-      <Box
-        position="absolute" inset={0}
-        bg="radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%)"
-      />
-
-      {/* Story theme pill — top left */}
-      {vd.story_theme && (
-        <Box
-          position="absolute" top="20px" left="24px" zIndex={3}
-          bg="rgba(255,255,255,0.12)" backdropFilter="blur(8px)"
-          borderRadius="999px" px="14px" py="5px"
-        >
-          <Text
-            fontSize="9px" fontWeight="700" color="rgba(255,255,255,0.85)"
-            textTransform="uppercase" letterSpacing="0.12em"
-          >
-            {vd.story_theme}
-          </Text>
-        </Box>
-      )}
-
-      {/* Bottom editorial text */}
-      <Flex
-        position="absolute" bottom={0} left={0} right={0} zIndex={2}
-        direction="column" p="24px" pt="72px"
-        bg="linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)"
-      >
-        {/* Decorative quote mark */}
-        <Text
-          fontSize="52px" lineHeight="0.6" color={`${accent}88`}
-          fontFamily="Georgia, 'Times New Roman', serif" mb="8px"
-        >
-          {"\u201C"}
-        </Text>
-
-        <Text
-          fontSize="20px" fontWeight="700" color="white"
-          lineHeight="1.2" fontStyle="italic" mb="8px"
-          overflow="hidden"
-          style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
-        >
-          {vd.headline || "Untitled"}
-        </Text>
-
-        {vd.body_text && (
-          <Text
-            fontSize="12px" fontWeight="400" color="rgba(255,255,255,0.65)"
-            lineHeight="1.5"
-            overflow="hidden"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-          >
-            {vd.body_text}
-          </Text>
-        )}
-      </Flex>
-
-      {/* Brand name — bottom right */}
-      {vd.brand_name && (
-        <Text
-          position="absolute" bottom="18px" right="24px" zIndex={3}
-          fontSize="9px" fontWeight="600" color="rgba(255,255,255,0.35)"
-          letterSpacing="0.12em" textTransform="uppercase"
-        >
-          {vd.brand_name}
-        </Text>
-      )}
-    </Box>
-  );
-}
-
-/* ─── Template: ENGAGEMENT — Geometric Bold ──────────────────────────── */
-
-function EngagementTemplate({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
-  return (
-    <Box position="relative" w="100%" h="100%" bg={primary} overflow="hidden">
-      {/* Geometric crosshatch pattern */}
-      <Box
-        position="absolute" inset={0} opacity={0.1} pointerEvents="none"
-        backgroundImage={`repeating-linear-gradient(45deg, ${accent} 0px, ${accent} 1.5px, transparent 1.5px, transparent 22px), repeating-linear-gradient(-45deg, ${accent} 0px, ${accent} 1.5px, transparent 1.5px, transparent 22px)`}
-      />
-
-      {/* Subtle image texture */}
-      {imageUrl && (
-        <Image
-          src={imageUrl} alt=""
-          position="absolute" inset={0} w="100%" h="100%"
-          objectFit="cover" opacity={0.08}
-        />
-      )}
-
-      {/* Content — fully centered */}
-      <Flex
-        position="relative" zIndex={2}
-        direction="column" align="center" justify="center"
-        h="100%" p="32px" textAlign="center"
-      >
-        {/* Accent dot */}
-        <Box w="8px" h="8px" borderRadius="full" bg={accent} mb="20px" />
-
-        <Text
-          fontSize="26px" fontWeight="900" color="white"
-          lineHeight="1.1" mb="14px"
-          textShadow="0 2px 16px rgba(0,0,0,0.15)"
-          overflow="hidden"
-          style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
-        >
-          {vd.headline || "Untitled"}
-        </Text>
-
-        {vd.subheadline && (
-          <Text
-            fontSize="13px" fontWeight="500" color="rgba(255,255,255,0.7)"
-            lineHeight="1.45" maxW="88%"
-            overflow="hidden"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-          >
-            {vd.subheadline}
-          </Text>
-        )}
-
-        {/* Accent line separator */}
-        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mt="20px" />
-      </Flex>
-
-      {/* Tagline — bottom center */}
-      {vd.tagline && (
-        <Text
-          position="absolute" bottom="18px" left="24px" right="24px" zIndex={3}
-          textAlign="center" fontSize="10px" fontWeight="600"
-          color="rgba(255,255,255,0.4)"
-          textTransform="uppercase" letterSpacing="0.12em"
-        >
-          {vd.tagline}
-        </Text>
-      )}
-    </Box>
-  );
-}
-
 /* ─── Asset Card — Dispatcher ────────────────────────────────────────── */
 
 function AssetCard({ asset }: { asset: CampaignAsset }) {
@@ -567,6 +160,17 @@ function AssetCard({ asset }: { asset: CampaignAsset }) {
   const secondary = vd.secondary_color || "#1E1B4B";
   const accent = vd.accent_color || "#7C3AED";
   const templateProps: TemplateProps = { vd, imageUrl: asset.image_url, primary, secondary, accent };
+
+  // Select template based on ad type - uses Variation 1 from each template family
+  const TemplateComponent = (() => {
+    switch (asset.ad_type) {
+      case "sale": return SaleVariation1;
+      case "launch": return LaunchVariation1;
+      case "story_narrative": return StoryNarrativeVariation1;
+      case "engagement": return EngagementVariation1;
+      default: return AwarenessVariation1;
+    }
+  })();
 
   return (
     <Box
@@ -579,15 +183,7 @@ function AssetCard({ asset }: { asset: CampaignAsset }) {
       {/* Creative area — 4:5 Instagram ratio */}
       <Box position="relative" overflow="hidden" style={{ aspectRatio: "4/5" }}>
         {/* Template content */}
-        {(() => {
-          switch (asset.ad_type) {
-            case "sale": return <SaleTemplate {...templateProps} />;
-            case "launch": return <LaunchTemplate {...templateProps} />;
-            case "story_narrative": return <StoryNarrativeTemplate {...templateProps} />;
-            case "engagement": return <EngagementTemplate {...templateProps} />;
-            default: return <AwarenessTemplate {...templateProps} />;
-          }
-        })()}
+        <TemplateComponent {...templateProps} />
 
         {/* Badge row + Download — shared across all */}
         <Flex
