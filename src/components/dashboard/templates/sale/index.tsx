@@ -48,7 +48,7 @@ export function SaleVariation1({ vd, imageUrl, primary, secondary, accent }: Tem
         align="center"
         justify="center"
         h="100%"
-        p="28px"
+        p="24px"
         textAlign="center"
       >
         {hasOffer ? (
@@ -56,27 +56,29 @@ export function SaleVariation1({ vd, imageUrl, primary, secondary, accent }: Tem
             {/* Offer badge - hero element */}
             <Box
               bg={accent}
-              borderRadius="20px"
-              px="32px"
-              py="16px"
-              mb="16px"
+              borderRadius="16px"
+              px="20px"
+              py="12px"
+              mb="12px"
               boxShadow={`0 12px 40px ${accent}55`}
             >
               <InstagramText
-                size="4xl"
+                size="3xl"
                 weight="900"
                 color={secondary}
                 shadow="0 2px 8px rgba(0,0,0,0.2)"
+                lineHeight="1"
               >
                 {vd.offer_text}
               </InstagramText>
             </Box>
             <InstagramText
-              size="2xl"
+              size="xl"
               weight="800"
               color="white"
               maxLines={2}
               shadow="0 2px 12px rgba(0,0,0,0.3)"
+              lineHeight="1.2"
             >
               {vd.headline || "Sale Headline"}
             </InstagramText>
@@ -84,21 +86,23 @@ export function SaleVariation1({ vd, imageUrl, primary, secondary, accent }: Tem
         ) : (
           <>
             <InstagramText
-              size="3xl"
+              size="2xl"
               weight="900"
               color="white"
               maxLines={3}
               shadow="0 4px 16px rgba(0,0,0,0.3)"
+              lineHeight="1.15"
             >
               {vd.headline || "Sale Headline"}
             </InstagramText>
             {vd.subheadline && (
               <InstagramText
-                size="md"
+                size="xs"
                 weight="500"
-                color="rgba(255,255,255,0.8)"
+                color="rgba(255,255,255,0.85)"
                 maxLines={2}
-                mt="12px"
+                mt="10px"
+                lineHeight="1.4"
               >
                 {vd.subheadline}
               </InstagramText>
@@ -110,10 +114,10 @@ export function SaleVariation1({ vd, imageUrl, primary, secondary, accent }: Tem
           <InstagramText
             size="xs"
             weight="600"
-            color="rgba(255,255,255,0.6)"
+            color="rgba(255,255,255,0.65)"
             textTransform="uppercase"
             letterSpacing="0.1em"
-            mt="16px"
+            mt="14px"
           >
             {vd.tagline}
           </InstagramText>
@@ -142,7 +146,7 @@ export function SaleVariation2({ vd, imageUrl, primary, secondary, accent }: Tem
         w="60%"
         h="60%"
         bg={accent}
-        borderRadius="0 0 0 120px"
+        borderRadius="0 0 0 100px"
         opacity={0.9}
       />
 
@@ -150,13 +154,13 @@ export function SaleVariation2({ vd, imageUrl, primary, secondary, accent }: Tem
       {hasOffer && (
         <Flex
           position="absolute"
-          top="24px"
-          right="24px"
+          top="20px"
+          right="20px"
           align="center"
           justify="center"
           zIndex={3}
-          w="140px"
-          h="140px"
+          w="120px"
+          h="120px"
         >
           <InstagramText
             size="2xl"
@@ -164,6 +168,7 @@ export function SaleVariation2({ vd, imageUrl, primary, secondary, accent }: Tem
             color={secondary}
             align="center"
             lineHeight="1"
+            maxLines={2}
           >
             {vd.offer_text}
           </InstagramText>
@@ -180,24 +185,26 @@ export function SaleVariation2({ vd, imageUrl, primary, secondary, accent }: Tem
         direction="column"
         justify="flex-end"
         h="100%"
-        p="28px"
+        p="24px"
       >
         <InstagramText
-          size="2xl"
+          size="xl"
           weight="800"
           color="white"
           maxLines={2}
           shadow="0 2px 12px rgba(0,0,0,0.3)"
+          lineHeight="1.2"
         >
           {vd.headline || "Sale Headline"}
         </InstagramText>
         {vd.subheadline && (
           <InstagramText
-            size="sm"
+            size="xs"
             weight="400"
-            color="rgba(255,255,255,0.75)"
+            color="rgba(255,255,255,0.8)"
             maxLines={2}
             mt="8px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>
@@ -241,7 +248,7 @@ export function SaleVariation3({ vd, imageUrl, primary, secondary, accent }: Tem
         left={0}
         right={0}
         direction="column"
-        p="28px"
+        p="24px"
         zIndex={2}
       >
         {/* Sale tag */}
@@ -249,9 +256,9 @@ export function SaleVariation3({ vd, imageUrl, primary, secondary, accent }: Tem
           display="inline-block"
           bg={accent}
           borderRadius="8px"
-          px="16px"
-          py="6px"
-          mb="16px"
+          px="14px"
+          py="5px"
+          mb="14px"
           alignSelf="flex-start"
         >
           <InstagramText size="xs" weight="700" color="white" textTransform="uppercase">
@@ -260,22 +267,24 @@ export function SaleVariation3({ vd, imageUrl, primary, secondary, accent }: Tem
         </Box>
 
         <InstagramText
-          size="2xl"
+          size="xl"
           weight="800"
           color="white"
           maxLines={2}
           shadow="0 2px 8px rgba(0,0,0,0.3)"
+          lineHeight="1.2"
         >
           {vd.headline || "Sale Headline"}
         </InstagramText>
 
         {vd.subheadline && (
           <InstagramText
-            size="sm"
+            size="xs"
             weight="400"
-            color="rgba(255,255,255,0.75)"
+            color="rgba(255,255,255,0.8)"
             maxLines={2}
             mt="8px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>
@@ -321,7 +330,7 @@ export function SaleVariation4({ vd, imageUrl, primary, secondary, accent }: Tem
         w="50%"
         direction="column"
         justify="center"
-        p="28px"
+        p="24px"
         zIndex={2}
       >
         <InstagramText
@@ -329,28 +338,31 @@ export function SaleVariation4({ vd, imageUrl, primary, secondary, accent }: Tem
           weight="700"
           color={accent}
           textTransform="uppercase"
-          letterSpacing="0.15em"
-          mb="12px"
+          letterSpacing="0.12em"
+          mb="10px"
+          lineHeight="1.3"
         >
           {vd.offer_text || "Special Offer"}
         </InstagramText>
 
         <InstagramText
-          size="xl"
+          size="lg"
           weight="800"
           color="white"
           maxLines={2}
+          lineHeight="1.2"
         >
           {vd.headline || "Sale Headline"}
         </InstagramText>
 
         {vd.subheadline && (
           <InstagramText
-            size="sm"
+            size="xs"
             weight="400"
-            color="rgba(255,255,255,0.6)"
+            color="rgba(255,255,255,0.65)"
             maxLines={2}
-            mt="10px"
+            mt="8px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>
@@ -386,16 +398,16 @@ export function SaleVariation5({ vd, imageUrl, primary, secondary, accent }: Tem
         align="center"
         justify="center"
         h="100%"
-        p="32px"
+        p="28px"
         textAlign="center"
       >
         {/* Urgency banner */}
         <Box
           bg={accent}
           borderRadius="12px"
-          px="24px"
-          py="10px"
-          mb="20px"
+          px="20px"
+          py="8px"
+          mb="16px"
           boxShadow={`0 8px 32px ${accent}44`}
         >
           <InstagramText
@@ -404,28 +416,32 @@ export function SaleVariation5({ vd, imageUrl, primary, secondary, accent }: Tem
             color={secondary}
             textTransform="uppercase"
             letterSpacing="0.05em"
+            lineHeight="1.1"
+            maxLines={2}
           >
             {hasOffer ? vd.offer_text : "Limited Time"}
           </InstagramText>
         </Box>
 
         <InstagramText
-          size="2xl"
+          size="xl"
           weight="900"
           color="white"
           maxLines={2}
           shadow="0 4px 16px rgba(0,0,0,0.3)"
+          lineHeight="1.2"
         >
           {vd.headline || "Sale Headline"}
         </InstagramText>
 
         {vd.subheadline && (
           <InstagramText
-            size="md"
+            size="xs"
             weight="500"
-            color="rgba(255,255,255,0.8)"
+            color="rgba(255,255,255,0.85)"
             maxLines={2}
-            mt="12px"
+            mt="10px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>

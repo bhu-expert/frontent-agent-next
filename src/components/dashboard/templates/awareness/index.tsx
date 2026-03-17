@@ -38,8 +38,8 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
         left={0}
         right={0}
         direction="column"
-        p="28px"
-        pt="80px"
+        p="24px"
+        pt="60px"
         zIndex={2}
       >
         {vd.tagline && (
@@ -48,29 +48,30 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
             weight="700"
             color={accent}
             textTransform="uppercase"
-            letterSpacing="0.15em"
+            letterSpacing="0.12em"
             maxLines={1}
+            mb="6px"
           >
             {vd.tagline}
           </InstagramText>
         )}
         <InstagramText
-          size="2xl"
+          size="xl"
           weight="800"
           color="white"
           maxLines={2}
           shadow="0 2px 8px rgba(0,0,0,0.3)"
-          mt={vd.tagline ? "8px" : "0"}
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
         {vd.subheadline && (
           <InstagramText
-            size="sm"
+            size="xs"
             weight="400"
-            color="rgba(255,255,255,0.8)"
+            color="rgba(255,255,255,0.85)"
             maxLines={2}
-            mt="6px"
+            mt="8px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>
@@ -92,7 +93,7 @@ export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }
       {/* Background image with blur */}
       {imageUrl && (
         <>
-          <BackgroundImage src={imageUrl} alt="" opacity={0.3} />
+          <BackgroundImage src={imageUrl} alt="" opacity={0.25} />
           <Box position="absolute" inset={0} backdropFilter="blur(8px)" />
         </>
       )}
@@ -104,37 +105,40 @@ export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }
         align="center"
         justify="center"
         h="100%"
-        p="32px"
+        p="36px"
         textAlign="center"
         zIndex={2}
       >
         {/* Decorative line */}
-        <Box w="48px" h="3px" bg={accent} borderRadius="2px" mb="24px" />
+        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mb="20px" />
 
         <InstagramText
-          size="3xl"
-          weight="900"
+          size="2xl"
+          weight="800"
           color="white"
           maxLines={3}
           shadow="0 4px 16px rgba(0,0,0,0.4)"
+          lineHeight="1.2"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
 
         {vd.subheadline && (
           <InstagramText
-            size="md"
-            weight="500"
-            color="rgba(255,255,255,0.75)"
+            size="sm"
+            weight="400"
+            color="rgba(255,255,255,0.8)"
             maxLines={2}
             mt="12px"
+            maxW="85%"
+            lineHeight="1.5"
           >
             {vd.subheadline}
           </InstagramText>
         )}
 
         {/* Decorative line */}
-        <Box w="48px" h="3px" bg={accent} borderRadius="2px" mt="24px" />
+        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mt="20px" />
       </Flex>
 
       {/* Brand name */}
@@ -176,7 +180,7 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
         h="40%"
         direction="column"
         justify="center"
-        p="28px"
+        p="24px"
         zIndex={2}
       >
         {vd.tagline && (
@@ -185,28 +189,30 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
             weight="600"
             color={accent}
             textTransform="uppercase"
-            letterSpacing="0.12em"
+            letterSpacing="0.1em"
             maxLines={1}
+            mb="6px"
           >
             {vd.tagline}
           </InstagramText>
         )}
         <InstagramText
-          size="xl"
+          size="lg"
           weight="800"
           color="white"
           maxLines={2}
-          mt="6px"
+          lineHeight="1.2"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
         {vd.subheadline && (
           <InstagramText
-            size="sm"
+            size="xs"
             weight="400"
-            color="rgba(255,255,255,0.7)"
+            color="rgba(255,255,255,0.75)"
             maxLines={2}
             mt="8px"
+            lineHeight="1.4"
           >
             {vd.subheadline}
           </InstagramText>
@@ -244,9 +250,10 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
         direction="column"
         justify="flex-end"
         zIndex={2}
+        pb="4px"
       >
         {/* Image area */}
-        <Box flex="1" mb="20px" borderRadius="8px" overflow="hidden">
+        <Box flex="1" mb="16px" borderRadius="8px" overflow="hidden">
           {imageUrl ? (
             <BackgroundImage src={imageUrl} alt="" objectFit="cover" />
           ) : (
@@ -261,19 +268,21 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
         <Box>
           <InstagramText
             size="lg"
-            weight="800"
+            weight="700"
             color={secondary}
             maxLines={2}
+            lineHeight="1.2"
           >
             {vd.headline || "Your Headline Here"}
           </InstagramText>
           {vd.subheadline && (
             <InstagramText
-              size="sm"
+              size="xs"
               weight="400"
               color="gray.600"
               maxLines={2}
               mt="6px"
+              lineHeight="1.4"
             >
               {vd.subheadline}
             </InstagramText>
@@ -308,7 +317,7 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
       )}
 
       {/* Dark overlay */}
-      <Box position="absolute" inset={0} bg="rgba(0,0,0,0.4)" />
+      <Box position="absolute" inset={0} bg="rgba(0,0,0,0.45)" />
 
       {/* Centered bold content */}
       <Flex
@@ -317,36 +326,38 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
         align="center"
         justify="center"
         h="100%"
-        p="36px"
+        p="32px"
         textAlign="center"
         zIndex={2}
       >
         <InstagramText
-          size="4xl"
+          size="3xl"
           weight="900"
           color="white"
           maxLines={3}
           shadow="0 4px 24px rgba(0,0,0,0.5)"
-          letterSpacing="-0.02em"
+          letterSpacing="-0.01em"
+          lineHeight="1.15"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
 
         {vd.subheadline && (
           <InstagramText
-            size="md"
+            size="sm"
             weight="500"
             color="rgba(255,255,255,0.9)"
             maxLines={2}
-            mt="16px"
+            mt="14px"
             maxW="90%"
+            lineHeight="1.5"
           >
             {vd.subheadline}
           </InstagramText>
         )}
 
         {/* Accent underline */}
-        <Box w="64px" h="4px" bg={accent} borderRadius="2px" mt="20px" />
+        <Box w="56px" h="4px" bg={accent} borderRadius="2px" mt="18px" />
       </Flex>
 
       {/* Brand name */}
