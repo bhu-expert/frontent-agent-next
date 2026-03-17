@@ -157,6 +157,16 @@ export default function OAuthCallbackPage() {
 
         console.log("OAuth processed successfully");
 
+        // Force refresh the session by calling refreshSession
+        // This ensures we get the latest user_metadata after the update
+        console.log("Force refreshing session...");
+        const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error("Error refreshing session:", refreshError);
+        } else {
+          console.log("Session refreshed, metadata:", newSession?.user?.user_metadata);
+        }
+
         // Redirect to integrations with success
         toaster.create({
           title: "Facebook Connected",
