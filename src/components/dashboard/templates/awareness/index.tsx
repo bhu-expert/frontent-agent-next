@@ -38,8 +38,8 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
         left={0}
         right={0}
         direction="column"
-        p="24px"
-        pt="60px"
+        p="20px"
+        pt="40px"
         zIndex={2}
       >
         {vd.tagline && (
@@ -48,19 +48,18 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
             weight="700"
             color={accent}
             textTransform="uppercase"
-            letterSpacing="0.12em"
-            maxLines={1}
-            mb="6px"
+            letterSpacing="0.1em"
+            mb="4px"
           >
             {vd.tagline}
           </InstagramText>
         )}
         <InstagramText
-          size="xl"
+          size="lg"
           weight="800"
           color="white"
-          maxLines={2}
           shadow="0 2px 8px rgba(0,0,0,0.3)"
+          lineHeight="1.2"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
@@ -69,8 +68,7 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
             size="xs"
             weight="400"
             color="rgba(255,255,255,0.85)"
-            maxLines={2}
-            mt="8px"
+            mt="6px"
             lineHeight="1.4"
           >
             {vd.subheadline}
@@ -105,20 +103,20 @@ export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }
         align="center"
         justify="center"
         h="100%"
-        p="36px"
+        p="32px"
         textAlign="center"
         zIndex={2}
       >
         {/* Decorative line */}
-        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mb="20px" />
+        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mb="16px" />
 
         <InstagramText
-          size="2xl"
+          size="xl"
           weight="800"
           color="white"
-          maxLines={3}
           shadow="0 4px 16px rgba(0,0,0,0.4)"
-          lineHeight="1.2"
+          lineHeight="1.25"
+          mb="10px"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
@@ -127,10 +125,8 @@ export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }
           <InstagramText
             size="sm"
             weight="400"
-            color="rgba(255,255,255,0.8)"
-            maxLines={2}
-            mt="12px"
-            maxW="85%"
+            color="rgba(255,255,255,0.85)"
+            maxW="90%"
             lineHeight="1.5"
           >
             {vd.subheadline}
@@ -138,7 +134,7 @@ export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }
         )}
 
         {/* Decorative line */}
-        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mt="20px" />
+        <Box w="40px" h="3px" bg={accent} borderRadius="2px" mt="16px" />
       </Flex>
 
       {/* Brand name */}
@@ -158,8 +154,8 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
     <TemplateWrapper>
       {/* Split layout */}
       <Box position="absolute" inset={0} display="flex">
-        {/* Image side - top 60% */}
-        <Box position="absolute" top={0} left={0} right={0} h="60%">
+        {/* Image side - top 55% */}
+        <Box position="absolute" top={0} left={0} right={0} h="55%">
           {imageUrl ? (
             <BackgroundImage src={imageUrl} alt="" objectFit="cover" />
           ) : (
@@ -167,8 +163,8 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
           )}
         </Box>
 
-        {/* Solid color side - bottom 40% */}
-        <Box position="absolute" bottom={0} left={0} right={0} h="40%" bg={secondary} />
+        {/* Solid color side - bottom 45% */}
+        <Box position="absolute" bottom={0} left={0} right={0} h="45%" bg={secondary} />
       </Box>
 
       {/* Content area */}
@@ -177,10 +173,10 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
         bottom={0}
         left={0}
         right={0}
-        h="40%"
+        h="45%"
         direction="column"
         justify="center"
-        p="24px"
+        p="20px"
         zIndex={2}
       >
         {vd.tagline && (
@@ -189,9 +185,8 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
             weight="600"
             color={accent}
             textTransform="uppercase"
-            letterSpacing="0.1em"
-            maxLines={1}
-            mb="6px"
+            letterSpacing="0.08em"
+            mb="4px"
           >
             {vd.tagline}
           </InstagramText>
@@ -200,7 +195,6 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
           size="lg"
           weight="800"
           color="white"
-          maxLines={2}
           lineHeight="1.2"
         >
           {vd.headline || "Your Headline Here"}
@@ -209,10 +203,9 @@ export function AwarenessVariation3({ vd, imageUrl, primary, secondary, accent }
           <InstagramText
             size="xs"
             weight="400"
-            color="rgba(255,255,255,0.75)"
-            maxLines={2}
-            mt="8px"
-            lineHeight="1.4"
+            color="rgba(255,255,255,0.8)"
+            mt="6px"
+            lineHeight="1.45"
           >
             {vd.subheadline}
           </InstagramText>
@@ -237,7 +230,7 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
       {/* Border frame */}
       <Box
         position="absolute"
-        inset="16px"
+        inset="14px"
         border="2px solid"
         borderColor={accent}
         borderRadius="12px"
@@ -246,14 +239,13 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
       {/* Inner content area */}
       <Flex
         position="absolute"
-        inset="24px"
+        inset="20px"
         direction="column"
         justify="flex-end"
         zIndex={2}
-        pb="4px"
       >
         {/* Image area */}
-        <Box flex="1" mb="16px" borderRadius="8px" overflow="hidden">
+        <Box flex="1" mb="14px" borderRadius="8px" overflow="hidden">
           {imageUrl ? (
             <BackgroundImage src={imageUrl} alt="" objectFit="cover" />
           ) : (
@@ -267,11 +259,11 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
         {/* Text content */}
         <Box>
           <InstagramText
-            size="lg"
+            size="md"
             weight="700"
             color={secondary}
-            maxLines={2}
-            lineHeight="1.2"
+            lineHeight="1.25"
+            mb="4px"
           >
             {vd.headline || "Your Headline Here"}
           </InstagramText>
@@ -280,9 +272,7 @@ export function AwarenessVariation4({ vd, imageUrl, primary, secondary, accent }
               size="xs"
               weight="400"
               color="gray.600"
-              maxLines={2}
-              mt="6px"
-              lineHeight="1.4"
+              lineHeight="1.45"
             >
               {vd.subheadline}
             </InstagramText>
@@ -317,7 +307,7 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
       )}
 
       {/* Dark overlay */}
-      <Box position="absolute" inset={0} bg="rgba(0,0,0,0.45)" />
+      <Box position="absolute" inset={0} bg="rgba(0,0,0,0.4)" />
 
       {/* Centered bold content */}
       <Flex
@@ -326,18 +316,18 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
         align="center"
         justify="center"
         h="100%"
-        p="32px"
+        p="28px"
         textAlign="center"
         zIndex={2}
       >
         <InstagramText
-          size="3xl"
+          size="2xl"
           weight="900"
           color="white"
-          maxLines={3}
           shadow="0 4px 24px rgba(0,0,0,0.5)"
           letterSpacing="-0.01em"
-          lineHeight="1.15"
+          lineHeight="1.2"
+          mb="8px"
         >
           {vd.headline || "Your Headline Here"}
         </InstagramText>
@@ -347,9 +337,7 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
             size="sm"
             weight="500"
             color="rgba(255,255,255,0.9)"
-            maxLines={2}
-            mt="14px"
-            maxW="90%"
+            maxW="92%"
             lineHeight="1.5"
           >
             {vd.subheadline}
@@ -357,7 +345,7 @@ export function AwarenessVariation5({ vd, imageUrl, primary, secondary, accent }
         )}
 
         {/* Accent underline */}
-        <Box w="56px" h="4px" bg={accent} borderRadius="2px" mt="18px" />
+        <Box w="48px" h="3px" bg={accent} borderRadius="2px" mt="14px" />
       </Flex>
 
       {/* Brand name */}
