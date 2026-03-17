@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     provider,
     hasError: !!error,
     hasAccessToken: !!accessToken,
+    fullUrl: request.url,
   });
 
   // Handle OAuth errors
@@ -50,10 +51,23 @@ export async function GET(request: NextRequest) {
 
     const user = session.user;
     console.log("User authenticated:", user.id, user.email);
+    console.log("Session provider_token:", !!session.provider_token);
+    console.log("Session provider_refresh_token:", !!session.provider_refresh_token);
 
     // Get the provider token from session or URL
-    // Supabase may pass it in provider_token or we get it from URL
+    // Supabase should store it in provider_token after OAuth
     let providerToken = session.provider_token || accessToken;
+
+    // If still no token, check if user_metadata was updated by Supabase
+    if (!providerToken) {
+      const userMetadata = user.user_metadata;
+      console.log("User metadata:", userMetadata);
+      
+      // Supabase might have stored provider info in user_metadata
+      if (userMetadata?.provider === 'facebook') {
+        console.log("Found Facebook provider in user_metadata");
+      }
+    }
 
     console.log("Provider token available:", !!providerToken);
 
@@ -100,6 +114,8 @@ export async function GET(request: NextRequest) {
       }
     } else {
       console.warn("No provider token available - limited functionality");
+      // Create a basic connection record without token
+      // User will need to reconnect to get proper token
     }
 
     // Store connection data
@@ -135,6 +151,7 @@ export async function GET(request: NextRequest) {
           user_metadata: {
             ...user.user_metadata,
             meta_connection: metaConnection,
+            provider: provider, // Also store provider directly in user_metadata
           },
         }
       );
