@@ -105,6 +105,7 @@ export default function OAuthCallbackPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`, // Pass token in header
           },
           body: JSON.stringify({
             access_token: providerToken || accessToken,

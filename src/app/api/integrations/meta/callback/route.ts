@@ -32,11 +32,28 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Get the session (should be set by client before calling this)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Try to get session from cookie first
+    let session = null;
+    const { data: { session: cookieSession } } = await supabase.auth.getSession();
+    session = cookieSession;
+    
+    // If no session from cookie, try Authorization header
+    if (!session) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        console.log("Using token from Authorization header");
+        
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        if (!userError && user) {
+          session = { access_token: token, user } as any;
+          console.log("User authenticated from header token:", user.id);
+        }
+      }
+    }
 
-    if (sessionError || !session) {
-      console.error("No session found");
+    if (!session) {
+      console.error("No session found (cookie or header)");
       return NextResponse.json(
         { error: "Not authenticated" },
         { status: 401 }
