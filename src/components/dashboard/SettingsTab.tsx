@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Flex, HStack, Text, VStack } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+import { Box, Button, Flex, HStack, Text, VStack, Link } from "@chakra-ui/react";
 import { Check } from "lucide-react";
+import NextLink from "next/link";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -129,6 +131,8 @@ function SectionDivider() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SettingsTab() {
+  const router = useRouter();
+  
   // Notification toggles
   const [emailDigests, setEmailDigests] = useState(true);
   const [postAlerts, setPostAlerts] = useState(true);
@@ -298,20 +302,40 @@ export default function SettingsTab() {
           Deleting your account is permanent and irreversible. All your brands, generated content,
           and connected integrations will be removed immediately with no option to recover.
         </Text>
-        <Button
-          variant="outline"
-          borderColor="#FECACA"
-          color="#DC2626"
-          bg="white"
-          borderRadius="12px"
-          h="42px"
-          px={5}
-          fontSize="14px"
-          fontWeight="600"
-          _hover={{ bg: "#FEF2F2", borderColor: "#FCA5A5" }}
-        >
-          Delete Account
-        </Button>
+        
+        <VStack align="stretch" gap={3}>
+          <Button
+            variant="outline"
+            borderColor="#FECACA"
+            color="#DC2626"
+            bg="white"
+            borderRadius="12px"
+            h="42px"
+            px={5}
+            fontSize="14px"
+            fontWeight="600"
+            _hover={{ bg: "#FEF2F2", borderColor: "#FCA5A5" }}
+            onClick={() => router.push("/settings/delete-account")}
+          >
+            Delete Account
+          </Button>
+          
+          <Text fontSize="12px" color="#9CA3AF" textAlign="center">
+            Or use our{" "}
+            <Link as={NextLink} href="/settings/delete-account" color="#DC2626" textDecoration="underline">
+              direct account deletion link
+            </Link>
+          </Text>
+          
+          <Box h="1px" bg="#F3F4F6" my={2} />
+          
+          <Text fontSize="12px" color="#6B7280" textAlign="center">
+            Need help? Contact{" "}
+            <Link href="mailto:support@postgini.com" color="#4F46E5" textDecoration="underline">
+              support@postgini.com
+            </Link>
+          </Text>
+        </VStack>
       </Box>
     </VStack>
   );

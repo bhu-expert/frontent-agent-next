@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Button, Flex, SimpleGrid, Text, VStack, Link } from "@chakra-ui/react";
-import { useAuth } from "@/store/AuthProvider";
-import { toaster } from "@/components/ui/toaster";
+import { Box, Button, Flex, SimpleGrid, Text, VStack } from "@chakra-ui/react";
 
 // ─── Inline SVG logos ────────────────────────────────────────────────────────
 
@@ -73,24 +70,18 @@ function PlatformPlaceholderLogo({ label, color }: { label: string; color: strin
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function IntegrationsTab() {
-  const { signInWithFacebook } = useAuth();
-  const [isConnecting, setIsConnecting] = useState(false);
-
   const CONNECTED_PLATFORMS = [
     {
       key: "meta",
       name: "Meta (Facebook)",
       description: "Connect your Facebook Page to publish and track posts.",
       Logo: MetaLogo,
-      connected: false,
     },
     {
       key: "instagram",
       name: "Instagram",
-      description: "Link Instagram Business to auto-publish Reels and Carousels. Requires Facebook connection.",
+      description: "Link Instagram Business to auto-publish Reels and Carousels.",
       Logo: InstagramLogo,
-      connected: false,
-      requiresFacebook: true,
     },
   ];
 
@@ -99,28 +90,6 @@ export default function IntegrationsTab() {
     { key: "linkedin", name: "LinkedIn", abbr: "in", color: "#0A66C2" },
     { key: "twitter", name: "X / Twitter", abbr: "X", color: "#000000" },
   ];
-
-  const handleConnectFacebook = async () => {
-    setIsConnecting(true);
-    try {
-      await signInWithFacebook();
-      toaster.create({
-        title: "Redirecting to Facebook",
-        description: "You'll be redirected to Facebook to authorize the connection.",
-        type: "info",
-        duration: 5000,
-      });
-    } catch (error) {
-      toaster.create({
-        title: "Connection failed",
-        description: "Failed to initiate Facebook connection. Please try again.",
-        type: "error",
-        duration: 5000,
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   return (
     <VStack align="stretch" gap={8}>
@@ -139,44 +108,6 @@ export default function IntegrationsTab() {
         <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em" textTransform="uppercase" mb={4}>
           Connected Platforms
         </Text>
-
-        {/* Info note */}
-        <Box
-          bg="#EFF6FF"
-          border="1px solid"
-          borderColor="#BFDBFE"
-          borderRadius="16px"
-          p={4}
-          mb={5}
-        >
-          <Flex gap={3} align="flex-start">
-            <Box flexShrink={0}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="10" cy="10" r="8" fill="#3B82F6" opacity="0.1"/>
-                <path d="M10 6.5V10.5M10 13.5H10.01" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </Box>
-            <Box>
-              <Text fontSize="13px" fontWeight="600" color="#1E40AF" mb={1}>
-                Connecting via Personal Account
-              </Text>
-              <Text fontSize="12px" color="#1E40AF" lineHeight="1.5">
-                When connecting Facebook, you'll authenticate with your personal Facebook account. 
-                After authorization, you can select which Facebook Pages to connect. 
-                For Instagram, you'll need an Instagram Business account linked to your Facebook Page.
-                <Link
-                  href="/docs/facebook-integration-guide"
-                  color="#1E40AF"
-                  textDecoration="underline"
-                  fontWeight="600"
-                  ml={1}
-                >
-                  Learn more
-                </Link>
-              </Text>
-            </Box>
-          </Flex>
-        </Box>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} gap={5}>
           {CONNECTED_PLATFORMS.map(({ key, name, description, Logo }) => (
@@ -222,36 +153,18 @@ export default function IntegrationsTab() {
               </Text>
 
               {/* Connect button */}
-              {key === "meta" ? (
-                <Button
-                  w="full"
-                  bg="#1877F2"
-                  color="white"
-                  borderRadius="14px"
-                  h="44px"
-                  fontSize="14px"
-                  fontWeight="600"
-                  _hover={{ bg: "#166FE5" }}
-                  loading={isConnecting}
-                  onClick={handleConnectFacebook}
-                >
-                  {isConnecting ? "Connecting..." : "Connect with Facebook"}
-                </Button>
-              ) : (
-                <Button
-                  w="full"
-                  bg="#E5E7EB"
-                  color="#6B7280"
-                  borderRadius="14px"
-                  h="44px"
-                  fontSize="14px"
-                  fontWeight="600"
-                  cursor="not-allowed"
-                  disabled
-                >
-                  Connect Facebook First
-                </Button>
-              )}
+              <Button
+                w="full"
+                bg="#4F46E5"
+                color="white"
+                borderRadius="14px"
+                h="44px"
+                fontSize="14px"
+                fontWeight="600"
+                _hover={{ bg: "#4338CA" }}
+              >
+                Connect
+              </Button>
             </Box>
           ))}
         </SimpleGrid>
