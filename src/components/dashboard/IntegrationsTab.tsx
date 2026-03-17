@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Flex, SimpleGrid, Text, VStack, Link, Badge } from "@chakra-ui/react";
+import { Box, Button, Flex, SimpleGrid, Text, VStack, Link, Badge, Heading } from "@chakra-ui/react";
 import { useAuth } from "@/store/AuthProvider";
 import { toaster } from "@/components/ui/toaster";
 import NextLink from "next/link";
+import PageSelectorModal from "./PageSelectorModal";
 
 // ─── Inline SVG logos ────────────────────────────────────────────────────────
 
@@ -78,8 +79,17 @@ interface MetaConnection {
   connected: boolean;
   pageName?: string;
   pageId?: string;
+  pageAccessToken?: string;
   instagramConnected?: boolean;
   instagramName?: string;
+  pages?: Array<{
+    id: string;
+    name: string;
+    access_token: string;
+    instagram_id?: string;
+    instagram_name?: string;
+  }>;
+  hasValidToken?: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -92,11 +102,20 @@ export default function IntegrationsTab() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [metaConnection, setMetaConnection] = useState<MetaConnection>({ connected: false });
   const [isLoading, setIsLoading] = useState(true);
+  const [showPageSelector, setShowPageSelector] = useState(false);
+  const [pendingPages, setPendingPages] = useState<Array<{
+    id: string;
+    name: string;
+    access_token: string;
+    instagram_id?: string;
+    instagram_name?: string;
+  }>>([]);
 
   // Check for OAuth callback
   useEffect(() => {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
+    const pagesAvailable = searchParams.get("pages_available");
     
     if (code || state?.includes("facebook")) {
       // OAuth callback - check connection status
@@ -109,6 +128,15 @@ export default function IntegrationsTab() {
         type: "success",
         duration: 5000,
       });
+      
+      // Show page selector if pages are available
+      if (pagesAvailable === "true") {
+        setTimeout(() => {
+          checkConnectionStatus().then(() => {
+            setShowPageSelector(true);
+          });
+        }, 500);
+      }
     } else {
       checkConnectionStatus();
     }
@@ -119,9 +147,17 @@ export default function IntegrationsTab() {
       const response = await fetch("/api/integrations/meta/status");
       const data = await response.json();
       setMetaConnection(data);
+      
+      // Store pages for selector if available
+      if (data.pages && data.pages.length > 0) {
+        setPendingPages(data.pages);
+      }
+      
+      return data;
     } catch (error) {
       console.error("Error checking connection status:", error);
       setMetaConnection({ connected: false });
+      return { connected: false };
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +222,65 @@ export default function IntegrationsTab() {
       });
     } finally {
       setIsDisconnecting(false);
+    }
+  };
+
+  const handleSelectPage = async (page: {
+    id: string;
+    name: string;
+    access_token: string;
+    instagram_id?: string;
+    instagram_name?: string;
+  }) => {
+    try {
+      const response = await fetch("/api/integrations/meta/select-page", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(page),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to select page");
+      }
+
+      const data = await response.json();
+      
+      // Update local state
+      setMetaConnection({
+        ...metaConnection,
+        pageName: page.name,
+        pageId: page.id,
+        pageAccessToken: page.access_token,
+        instagramConnected: !!page.instagram_id,
+        instagramName: page.instagram_name,
+      });
+
+      setShowPageSelector(false);
+
+      toaster.create({
+        title: "Page Connected",
+        description: `${page.name} has been connected successfully.`,
+        type: "success",
+        duration: 5000,
+      });
+
+      if (page.instagram_name) {
+        toaster.create({
+          title: "Instagram Connected",
+          description: `Instagram account ${page.instagram_name} is also connected.`,
+          type: "info",
+          duration: 5000,
+        });
+      }
+    } catch (error: any) {
+      toaster.create({
+        title: "Selection Failed",
+        description: error.message || "Failed to select page.",
+        type: "error",
+        duration: 5000,
+      });
     }
   };
 
@@ -294,22 +389,60 @@ export default function IntegrationsTab() {
             </Text>
 
             {metaConnection.connected ? (
-              <Button
-                w="full"
-                variant="outline"
-                borderColor="#FECACA"
-                color="#DC2626"
-                bg="white"
-                borderRadius="12px"
-                h="42px"
-                fontSize="14px"
-                fontWeight="600"
-                _hover={{ bg: "#FEF2F2", borderColor: "#FCA5A5" }}
-                onClick={handleDisconnect}
-                loading={isDisconnecting}
-              >
-                Disconnect
-              </Button>
+              <VStack gap={3} align="stretch">
+                {metaConnection.pageName && (
+                  <Box bg="#F0FDF4" p={3} borderRadius="lg" border="1px solid" borderColor="#86EFAC">
+                    <Text fontSize="13px" color="#166534" fontWeight="600">
+                      ✓ Connected Page: {metaConnection.pageName}
+                    </Text>
+                    {metaConnection.instagramName && (
+                      <Text fontSize="12px" color="#166534" mt={1}>
+                        📷 Instagram: {metaConnection.instagramName}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+                <Flex gap={2}>
+                  <Button
+                    flex={1}
+                    variant="outline"
+                    borderColor="#D1D5DB"
+                    color="#4F46E5"
+                    bg="white"
+                    borderRadius="12px"
+                    h="42px"
+                    fontSize="14px"
+                    fontWeight="600"
+                    _hover={{ bg: "#F5F5FF", borderColor: "#C7D2FE" }}
+                    onClick={() => {
+                      if (pendingPages.length > 0) {
+                        setShowPageSelector(true);
+                      } else {
+                        // Re-fetch pages
+                        checkConnectionStatus().then(() => setShowPageSelector(true));
+                      }
+                    }}
+                  >
+                    Change Page
+                  </Button>
+                  <Button
+                    flex={1}
+                    variant="outline"
+                    borderColor="#FECACA"
+                    color="#DC2626"
+                    bg="white"
+                    borderRadius="12px"
+                    h="42px"
+                    fontSize="14px"
+                    fontWeight="600"
+                    _hover={{ bg: "#FEF2F2", borderColor: "#FCA5A5" }}
+                    onClick={handleDisconnect}
+                    loading={isDisconnecting}
+                  >
+                    Disconnect
+                  </Button>
+                </Flex>
+              </VStack>
             ) : (
               <Button
                 w="full"
@@ -458,6 +591,14 @@ export default function IntegrationsTab() {
           ))}
         </Flex>
       </Box>
+
+      {/* Page Selector Modal */}
+      <PageSelectorModal
+        open={showPageSelector}
+        onClose={() => setShowPageSelector(false)}
+        pages={pendingPages}
+        onSelectPage={handleSelectPage}
+      />
     </VStack>
   );
 }

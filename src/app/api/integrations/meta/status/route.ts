@@ -3,11 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const META_GRAPH_API_VERSION = "v18.0";
 
 /**
  * GET /api/integrations/meta/status
  * 
  * Returns the Meta (Facebook/Instagram) connection status for the current user.
+ * Includes list of pages and access token status.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,21 +22,55 @@ export async function GET(request: NextRequest) {
 
     const user = session.user;
 
-    // Check for Meta connection in user_metadata or a separate table
-    // For now, we'll check user_metadata which is set after OAuth callback
+    // Check for Meta connection in user_metadata
     const metaConnection = user.user_metadata?.meta_connection;
     
-    if (metaConnection) {
+    if (metaConnection && metaConnection.connected_at) {
+      // Check if we need to refresh pages data
+      let pages = metaConnection.pages || [];
+      
+      // If we have an access token, fetch fresh pages data from Graph API
+      if (metaConnection.access_token) {
+        try {
+          const pagesResponse = await fetch(
+            `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token,instagram_business_account{id,name}&access_token=${metaConnection.access_token}`
+          );
+          const pagesData = await pagesResponse.json();
+          
+          if (pagesData.data) {
+            pages = pagesData.data.map((page: any) => ({
+              id: page.id,
+              name: page.name,
+              access_token: page.access_token,
+              instagram_id: page.instagram_business_account?.id,
+              instagram_name: page.instagram_business_account?.name,
+            }));
+          }
+        } catch (e) {
+          console.log("Could not refresh pages from Graph API, using cached data");
+        }
+      }
+
+      // Get selected page details
+      const selectedPage = pages.find((p: any) => p.id === metaConnection.selected_page_id) || pages[0];
+      const instagramPage = pages.find((p: any) => p.instagram_id);
+
       return NextResponse.json({
         connected: true,
-        pageName: metaConnection.page_name,
-        pageId: metaConnection.page_id,
-        instagramConnected: metaConnection.instagram_connected || false,
-        instagramName: metaConnection.instagram_name,
+        facebook_user_id: metaConnection.facebook_user_id,
+        facebook_name: metaConnection.facebook_name,
+        pageName: selectedPage?.name,
+        pageId: selectedPage?.id,
+        pageAccessToken: selectedPage?.access_token,
+        pages: pages,
+        instagramConnected: !!instagramPage,
+        instagramId: instagramPage?.instagram_id,
+        instagramName: instagramPage?.instagram_name,
+        hasValidToken: !!metaConnection.access_token,
       });
     }
 
-    // Check integrations table if it exists
+    // Check integrations table if no metadata found
     try {
       const response = await supabase
         .from("integrations")
@@ -49,13 +85,14 @@ export async function GET(request: NextRequest) {
           connected: true,
           pageName: account?.page_name,
           pageId: account?.page_id,
+          pages: account?.pages || [],
           instagramConnected: account?.instagram_connected || false,
           instagramName: account?.instagram_name,
+          hasValidToken: !!account?.access_token,
         });
       }
     } catch (e) {
       // Table might not exist yet, that's ok
-      console.log("Integrations table not found, using user_metadata");
     }
 
     return NextResponse.json({ connected: false });
