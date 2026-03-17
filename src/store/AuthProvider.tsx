@@ -30,6 +30,7 @@ interface AuthContextValue {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -243,6 +244,15 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
     if (error) throw { message: error.message, status: 400 };
   }, []);
 
+  const signInWithFacebook = useCallback(async () => {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
+      options: { redirectTo },
+    });
+    if (error) throw { message: error.message, status: 400 };
+  }, []);
+
   const signInWithMagicLink = useCallback(async (email: string) => {
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error } = await supabase.auth.signInWithOtp({
@@ -269,6 +279,7 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
         signInWithEmail,
         signUpWithEmail,
         signInWithGoogle,
+        signInWithFacebook,
         signInWithMagicLink,
         signOut: signOutFn,
       }}
