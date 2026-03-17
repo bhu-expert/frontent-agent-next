@@ -1,0 +1,167 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+import { toaster } from "@/components/ui/toaster";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export default function OAuthCallbackPage() {
+  const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(true);
+
+  useEffect(() => {
+    async function handleOAuthCallback() {
+      try {
+        // Get the hash from URL
+        const hash = window.location.hash;
+        console.log("OAuth Callback Page - Hash:", hash);
+
+        if (!hash) {
+          console.error("No hash found in URL");
+          toaster.create({
+            title: "OAuth Error",
+            description: "No authentication data received.",
+            type: "error",
+            duration: 5000,
+          });
+          router.push("/dashboard?tab=integrations&error=no_auth_data");
+          return;
+        }
+
+        // Parse hash parameters
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+        const providerToken = params.get("provider_token");
+        const expiresIn = params.get("expires_in");
+        const tokenType = params.get("token_type");
+
+        console.log("Parsed OAuth params:", {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          hasProviderToken: !!providerToken,
+          expiresIn,
+          tokenType,
+        });
+
+        if (!accessToken) {
+          console.error("No access_token in hash");
+          toaster.create({
+            title: "OAuth Error",
+            description: "No access token received.",
+            type: "error",
+            duration: 5000,
+          });
+          router.push("/dashboard?tab=integrations&error=no_token");
+          return;
+        }
+
+        // Create Supabase client and set the session
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Extract session info from hash
+        const sessionData = {
+          access_token: accessToken,
+          refresh_token: refreshToken || "",
+          expires_in: expiresIn ? parseInt(expiresIn) : 3600,
+          token_type: tokenType || "bearer",
+          provider_token: providerToken || accessToken,
+          provider_refresh_token: refreshToken || "",
+        };
+
+        console.log("Setting Supabase session:", sessionData);
+
+        // Set the session in Supabase
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || "",
+        });
+
+        if (sessionError) {
+          console.error("Error setting session:", sessionError);
+          throw sessionError;
+        }
+
+        console.log("Session set successfully");
+
+        // Now call our API to process the connection
+        const response = await fetch("/api/integrations/meta/callback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access_token: providerToken || accessToken,
+            refresh_token: refreshToken,
+            expires_in: expiresIn,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("API error:", errorData);
+          throw new Error(errorData.error || "Failed to process OAuth");
+        }
+
+        console.log("OAuth processed successfully");
+
+        // Redirect to integrations with success
+        toaster.create({
+          title: "Facebook Connected",
+          description: "Your Facebook account has been connected.",
+          type: "success",
+          duration: 5000,
+        });
+
+        router.push("/dashboard?tab=integrations&connected=success");
+      } catch (error: any) {
+        console.error("OAuth callback error:", error);
+        toaster.create({
+          title: "Connection Failed",
+          description: error.message || "Failed to connect Facebook.",
+          type: "error",
+          duration: 5000,
+        });
+        router.push("/dashboard?tab=integrations&error=callback_error");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+
+    handleOAuthCallback();
+  }, [router]);
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100vh",
+      flexDirection: "column",
+      gap: "16px",
+    }}>
+      <div style={{ fontSize: "20px", fontWeight: "600" }}>
+        {isProcessing ? "Connecting Facebook..." : "Processing..."}
+      </div>
+      {isProcessing && (
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "4px solid #e5e7eb",
+          borderTop: "4px solid #4F46E5",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite",
+        }} />
+      )}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}

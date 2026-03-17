@@ -7,68 +7,46 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const META_GRAPH_API_VERSION = "v18.0";
 
 /**
- * GET /api/integrations/meta/callback
+ * POST /api/integrations/meta/callback
  * 
- * Handles OAuth callback from Supabase after Facebook authentication.
- * Fetches user pages using Meta Graph API and stores connection data.
+ * Handles OAuth data from client after Facebook authentication.
+ * Client captures hash params and sends them here for processing.
  */
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const code = searchParams.get("code");
-  const provider = searchParams.get("provider") || "facebook";
-  const error = searchParams.get("error");
-  const errorDescription = searchParams.get("error_description");
-  const accessToken = searchParams.get("access_token");
-
-  console.log("OAuth Callback received:", {
-    hasCode: !!code,
-    provider,
-    hasError: !!error,
-    hasAccessToken: !!accessToken,
-    fullUrl: request.url,
-  });
-
-  // Handle OAuth errors
-  if (error) {
-    console.error("OAuth error:", error, errorDescription);
-    return NextResponse.redirect(
-      new URL("/dashboard?tab=integrations&error=oauth_failed", request.url)
-    );
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const { access_token, refresh_token, expires_in } = body;
+
+    console.log("OAuth POST callback received:", {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      expiresIn: expires_in,
+    });
+
+    if (!access_token) {
+      return NextResponse.json(
+        { error: "Access token required" },
+        { status: 400 }
+      );
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Get the session
+    // Get the session (should be set by client before calling this)
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      console.error("No session found after OAuth callback");
-      return NextResponse.redirect(
-        new URL("/dashboard?tab=integrations&error=auth_failed", request.url)
+      console.error("No session found");
+      return NextResponse.json(
+        { error: "Not authenticated" },
+        { status: 401 }
       );
     }
 
     const user = session.user;
     console.log("User authenticated:", user.id, user.email);
-    console.log("Session provider_token:", !!session.provider_token);
-    console.log("Session provider_refresh_token:", !!session.provider_refresh_token);
 
-    // Get the provider token from session or URL
-    // Supabase should store it in provider_token after OAuth
-    let providerToken = session.provider_token || accessToken;
-
-    // If still no token, check if user_metadata was updated by Supabase
-    if (!providerToken) {
-      const userMetadata = user.user_metadata;
-      console.log("User metadata:", userMetadata);
-      
-      // Supabase might have stored provider info in user_metadata
-      if (userMetadata?.provider === 'facebook') {
-        console.log("Found Facebook provider in user_metadata");
-      }
-    }
-
+    const providerToken = access_token;
     console.log("Provider token available:", !!providerToken);
 
     // Fetch user's Facebook pages using Graph API
@@ -79,7 +57,6 @@ export async function GET(request: NextRequest) {
     if (providerToken) {
       try {
         console.log("Fetching Facebook user profile...");
-        // Fetch user profile
         const userResponse = await fetch(
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me?fields=id,name&access_token=${providerToken}`
         );
@@ -90,7 +67,6 @@ export async function GET(request: NextRequest) {
         userName = userData.name;
 
         console.log("Fetching Facebook pages...");
-        // Fetch user's pages with required permissions
         const pagesResponse = await fetch(
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token,permissions,instagram_business_account{id,name}&access_token=${providerToken}`
         );
@@ -110,23 +86,18 @@ export async function GET(request: NextRequest) {
         }
       } catch (graphError) {
         console.error("Error fetching Facebook pages:", graphError);
-        // Continue without pages data - user can select later
       }
-    } else {
-      console.warn("No provider token available - limited functionality");
-      // Create a basic connection record without token
-      // User will need to reconnect to get proper token
     }
 
     // Store connection data
     const metaConnection = {
-      provider: provider,
+      provider: "facebook",
       connected_at: new Date().toISOString(),
       user_id: user.id,
       facebook_user_id: userFacebookId,
       facebook_name: userName,
       access_token: providerToken,
-      refresh_token: session.provider_refresh_token,
+      refresh_token: refresh_token,
       pages: pages,
       selected_page_id: pages.length > 0 ? pages[0].id : null,
       instagram_connected: pages.some((p: any) => p.instagram_id),
@@ -139,7 +110,7 @@ export async function GET(request: NextRequest) {
       facebookId: userFacebookId,
     });
 
-    // Store connection in user_metadata using service role
+    // Store in user_metadata
     const adminSupabase = SUPABASE_SERVICE_ROLE_KEY 
       ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
       : supabase;
@@ -151,7 +122,7 @@ export async function GET(request: NextRequest) {
           user_metadata: {
             ...user.user_metadata,
             meta_connection: metaConnection,
-            provider: provider, // Also store provider directly in user_metadata
+            provider: "facebook",
           },
         }
       );
@@ -160,7 +131,7 @@ export async function GET(request: NextRequest) {
       console.error("Error updating user_metadata:", e.message);
     }
 
-    // Try to save to integrations table if it exists
+    // Save to integrations table
     try {
       const insertResult = await supabase.from("integrations").insert({
         user_id: user.id,
@@ -172,21 +143,35 @@ export async function GET(request: NextRequest) {
       });
       console.log("Integrations table insert result:", insertResult);
     } catch (e: any) {
-      console.log("Integrations table not found or insert failed:", e.message);
+      console.log("Integrations table insert failed:", e.message);
     }
 
-    // Redirect back to integrations tab with success and pages data
-    const redirectUrl = new URL("/dashboard?tab=integrations&connected=success", request.url);
-    if (pages.length > 0) {
-      redirectUrl.searchParams.set("pages_available", "true");
-    }
-    
-    console.log("Redirecting to:", redirectUrl.toString());
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.json({
+      success: true,
+      pagesCount: pages.length,
+      facebookId: userFacebookId,
+    });
   } catch (error: any) {
-    console.error("Error processing OAuth callback:", error);
-    return NextResponse.redirect(
-      new URL("/dashboard?tab=integrations&error=callback_failed", request.url)
+    console.error("Error processing OAuth:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to process OAuth" },
+      { status: 500 }
     );
   }
+}
+
+// Keep GET for backwards compatibility
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const error = searchParams.get("error");
+  
+  if (error) {
+    return NextResponse.redirect(
+      new URL("/dashboard?tab=integrations&error=oauth_failed", request.url)
+    );
+  }
+  
+  return NextResponse.redirect(
+    new URL("/dashboard?tab=integrations", request.url)
+  );
 }
