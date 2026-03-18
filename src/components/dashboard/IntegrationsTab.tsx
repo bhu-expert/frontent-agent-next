@@ -151,8 +151,8 @@ export default function IntegrationsTab() {
       });
       return;
     }
-    // Redirect to our server-side connect route which redirects to Instagram OAuth
-    window.location.href = "/api/integrations/instagram/connect";
+    // Pass user_id as query param so the connect route doesn't need to parse cookies
+    window.location.href = `/api/integrations/instagram/connect?user_id=${encodeURIComponent(user.id)}`;
   };
 
   const handleDisconnect = async () => {
