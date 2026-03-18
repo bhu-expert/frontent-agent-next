@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { SUPABASE_PROJECT_URL } from "@/config";
 import { claimBrand, generateAdVariations } from "@/api";
 import {
   getPendingBrandId,
@@ -175,10 +176,19 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, s) => {
       console.log("Auth event:", event, s?.user?.email);
-      
+
       if (s?.user) {
         setUser(toAuthUser(s.user));
         setSession(s);
+
+        // Set cookie for server-side API routes to read
+        // This is needed because API routes can't access localStorage
+        if (s.access_token) {
+          const cookieValue = encodeURIComponent(
+            JSON.stringify({ access_token: s.access_token, refresh_token: s.refresh_token })
+          );
+          document.cookie = `sb-${SUPABASE_PROJECT_URL.split('.')[0].split('://')[1]}-auth-token=${cookieValue}; Path=/; Max-Age=31536000; SameSite=Lax`;
+        }
 
         // Trigger claim on SIGNED_IN (covers both login and signup when email confirmation is off)
         if (event === "SIGNED_IN" && s.access_token) {
@@ -186,7 +196,7 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
           await new Promise(resolve => setTimeout(resolve, 100));
           const pendingBrandId = getPendingBrandId();
           console.log("SIGNED_IN event - pending brand ID:", pendingBrandId);
-          
+
           if (pendingBrandId) {
             console.log("Starting claim flow for brand:", pendingBrandId);
             await handleDelayedAuth(s.access_token);
@@ -194,7 +204,7 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
             console.log("No pending brand ID found after sign-in");
           }
         }
-        
+
         // Handle initial session (page refresh) - only if we haven't already processed it
         if (event === "INITIAL_SESSION" && s.access_token) {
           const pendingBrandId = getPendingBrandId();
@@ -206,6 +216,8 @@ export function AuthProvider({ children, onDelayedAuthComplete, onDelayedAuthErr
       } else {
         setUser(null);
         setSession(null);
+        // Clear cookie on sign out
+        document.cookie = `sb-${SUPABASE_PROJECT_URL.split('.')[0].split('://')[1]}-auth-token=; Path=/; Max-Age=0`;
       }
     });
 
