@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
@@ -5,10 +6,8 @@ import crypto from "crypto";
 /**
  * GET /api/integrations/instagram/save?payload=<base64>&sig=<hmac>
  *
- * Called by the Python backend after successful Instagram OAuth token exchange.
- * The backend signs the connection data with HMAC-SHA256 using INSTAGRAM_APP_SECRET.
- * This route verifies the signature and stores the data using the JS admin client
- * (which works reliably, unlike the Python supabase client).
+ * TEMPORARY DEBUG MODE: Returns JSON instead of redirecting.
+ * Remove debug mode after confirming it works.
  */
 
 const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!;
@@ -17,55 +16,66 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: NextRequest) {
+  const debug: Record<string, any> = {
+    ts: new Date().toISOString(),
+    route_reached: true,
+    full_url: request.nextUrl.toString().slice(0, 200) + "...",
+  };
+
   const { searchParams } = request.nextUrl;
   const payload = searchParams.get("payload");
   const sig = searchParams.get("sig");
 
-  const errorRedirect = (msg: string) =>
-    NextResponse.redirect(
-      `${APP_URL}/dashboard?tab=integrations&ig_error=${encodeURIComponent(msg)}`
-    );
+  debug.has_payload = !!payload;
+  debug.has_sig = !!sig;
+  debug.payload_len = payload?.length ?? 0;
 
   if (!payload || !sig) {
-    return errorRedirect("missing_save_params");
+    debug.error = "missing_save_params";
+    return NextResponse.json(debug, { status: 400 });
   }
 
   // ── Verify HMAC signature ──────────────────────────────────────────────────
-  const expectedSig = crypto
-    .createHmac("sha256", INSTAGRAM_APP_SECRET)
-    .update(payload)
-    .digest("hex");
+  try {
+    const expectedSig = crypto
+      .createHmac("sha256", INSTAGRAM_APP_SECRET)
+      .update(payload)
+      .digest("hex");
 
-  if (
-    !crypto.timingSafeEqual(
-      Buffer.from(sig, "hex"),
-      Buffer.from(expectedSig, "hex")
-    )
-  ) {
-    console.error("Instagram save: invalid HMAC signature");
-    return errorRedirect("invalid_signature");
+    debug.sig_match = sig === expectedSig;
+    debug.sig_first8 = sig.slice(0, 8);
+    debug.expected_first8 = expectedSig.slice(0, 8);
+
+    if (sig !== expectedSig) {
+      debug.error = "invalid_signature";
+      return NextResponse.json(debug, { status: 403 });
+    }
+  } catch (e: any) {
+    debug.error = `hmac_error: ${e.message}`;
+    return NextResponse.json(debug, { status: 500 });
   }
 
   // ── Decode payload ─────────────────────────────────────────────────────────
-  let data: {
-    user_id: string;
-    ig_user_id: string;
-    username: string;
-    name: string;
-    profile_picture_url: string;
-    access_token: string;
-    expires_at: string;
-  };
-
+  let data: any;
   try {
     data = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"));
-  } catch (e) {
-    console.error("Instagram save: failed to decode payload", e);
-    return errorRedirect("invalid_payload");
+    debug.decoded = {
+      user_id: data.user_id,
+      ig_user_id: data.ig_user_id,
+      username: data.username,
+      name: data.name,
+      has_access_token: !!data.access_token,
+      access_token_len: data.access_token?.length ?? 0,
+      expires_at: data.expires_at,
+    };
+  } catch (e: any) {
+    debug.error = `decode_error: ${e.message}`;
+    return NextResponse.json(debug, { status: 400 });
   }
 
   if (!data.user_id || !data.access_token) {
-    return errorRedirect("incomplete_payload");
+    debug.error = "incomplete_payload";
+    return NextResponse.json(debug, { status: 400 });
   }
 
   // ── Store connection using JS admin client ─────────────────────────────────
@@ -82,38 +92,32 @@ export async function GET(request: NextRequest) {
     expires_at: data.expires_at,
   };
 
+  // 1. Update user_metadata
   try {
-    // 1. Update user_metadata
     const userRes = await adminSupabase.auth.admin.getUserById(data.user_id);
+    debug.getUserById = { ok: !userRes.error, err: userRes.error?.message ?? null };
+
     if (userRes.error) {
-      console.error("Instagram save: getUserById failed:", userRes.error);
-      return errorRedirect("user_not_found");
+      debug.error = "user_not_found";
+      return NextResponse.json(debug, { status: 404 });
     }
 
-    const currentMeta = userRes.data.user?.user_metadata || {};
-    const updateRes = await adminSupabase.auth.admin.updateUserById(
-      data.user_id,
-      {
-        user_metadata: {
-          ...currentMeta,
-          ig_connection: igConnection,
-        },
-      }
-    );
+    const currentMeta = (userRes.data as any).user?.user_metadata || {};
+    const updateRes = await adminSupabase.auth.admin.updateUserById(data.user_id, {
+      user_metadata: { ...currentMeta, ig_connection: igConnection },
+    });
 
-    if (updateRes.error) {
-      console.error(
-        "Instagram save: updateUserById failed:",
-        updateRes.error
-      );
-      return errorRedirect("metadata_update_failed");
-    }
+    debug.updateUserById = {
+      ok: !updateRes.error,
+      err: updateRes.error?.message ?? null,
+      has_ig_now: !!(updateRes.data as any)?.user?.user_metadata?.ig_connection,
+    };
+  } catch (e: any) {
+    debug.updateUserById = { exception: e.message };
+  }
 
-    console.log(
-      `Instagram save: user_metadata updated for user ${data.user_id}`
-    );
-
-    // 2. Upsert to integrations table
+  // 2. Upsert to integrations table
+  try {
     const upsertRes = await adminSupabase.from("integrations").upsert(
       {
         user_id: data.user_id,
@@ -125,23 +129,14 @@ export async function GET(request: NextRequest) {
       },
       { onConflict: "user_id,provider" }
     );
-
-    if (upsertRes.error) {
-      console.error(
-        "Instagram save: integrations upsert failed (non-fatal):",
-        upsertRes.error
-      );
-    } else {
-      console.log(
-        `Instagram save: integrations table updated for user ${data.user_id}`
-      );
-    }
-
-    return NextResponse.redirect(
-      `${APP_URL}/dashboard?tab=integrations&ig_connected=success`
-    );
-  } catch (err: any) {
-    console.error("Instagram save: unexpected error:", err);
-    return errorRedirect(err.message || "save_failed");
+    debug.upsertIntegrations = { ok: !upsertRes.error, err: upsertRes.error?.message ?? null, http: upsertRes.status };
+  } catch (e: any) {
+    debug.upsertIntegrations = { exception: e.message };
   }
+
+  debug.success = true;
+  debug.would_redirect_to = `${APP_URL}/dashboard?tab=integrations&ig_connected=success`;
+  debug.message = "DEBUG MODE: Returning JSON instead of redirecting. Check results above. If all OK, remove debug mode.";
+
+  return NextResponse.json(debug, { status: 200 });
 }
