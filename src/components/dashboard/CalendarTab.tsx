@@ -626,23 +626,26 @@ export default function CalendarTab() {
         placement="center"
       >
         <Portal>
-          <Dialog.Backdrop bg="blackAlpha.600" backdropFilter="auto" backdropBlur="sm" />
+          <Dialog.Backdrop bg="rgba(0, 0, 0, 0.6)" backdropFilter="auto" backdropBlur="6px" />
           <Dialog.Positioner>
             <Dialog.Content
-              borderRadius="16px"
+              bg="white"
+              borderRadius="20px"
               borderWidth="1px"
               borderColor="#E5E7EB"
-              boxShadow="xl"
+              boxShadow="2xl"
+              p={0}
+              minW="480px"
             >
-              <Dialog.Header pb="0">
+              <Dialog.Header py="5" px="6" borderBottom="1px solid" borderColor="#F3F4F6" bg="#F9FAFB" borderTopRadius="20px">
                 <Dialog.Title fontSize="18px" fontWeight="700" color="#111111">
                   Edit Scheduled Post
                 </Dialog.Title>
               </Dialog.Header>
-              <Dialog.Body py="4">
+              <Dialog.Body py="6" px="6" bg="white">
                 <VStack gap={4}>
                   <Box w="full">
-                    <Text fontSize="14px" fontWeight="600" color="#111111" mb={2}>
+                    <Text fontSize="14px" fontWeight="600" color="#374151" mb={2}>
                       Caption
                     </Text>
                     <Textarea
@@ -651,32 +654,63 @@ export default function CalendarTab() {
                       placeholder="Write a caption..."
                       rows={5}
                       resize="vertical"
-                      borderRadius="10px"
-                      borderColor="#E5E7EB"
-                      _focus={{ borderColor: "#4F46E5", outline: "2px solid #C7D2FE" }}
+                      borderRadius="12px"
+                      borderColor="#D1D5DB"
+                      bg="white"
+                      fontSize="14px"
+                      p={3}
+                      _focus={{ 
+                        borderColor: "#4F46E5", 
+                        outline: "2px solid #C7D2FE",
+                        boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)"
+                      }}
+                      _placeholder={{ color: "#9CA3AF" }}
                     />
                   </Box>
                   <Box w="full">
-                    <Text fontSize="14px" fontWeight="600" color="#111111" mb={2}>
+                    <Text fontSize="14px" fontWeight="600" color="#374151" mb={2}>
                       Schedule Date & Time
                     </Text>
                     <Input
                       type="datetime-local"
                       value={editScheduledAt}
                       onChange={(e) => setEditScheduledAt(e.target.value)}
-                      borderRadius="10px"
-                      borderColor="#E5E7EB"
-                      _focus={{ borderColor: "#4F46E5", outline: "2px solid #C7D2FE" }}
+                      borderRadius="12px"
+                      borderColor="#D1D5DB"
+                      bg="white"
+                      fontSize="14px"
+                      p={3}
+                      h="44px"
+                      _focus={{ 
+                        borderColor: "#4F46E5", 
+                        outline: "2px solid #C7D2FE",
+                        boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)"
+                      }}
                     />
                   </Box>
                 </VStack>
               </Dialog.Body>
-              <Dialog.Footer gap={2}>
+              <Dialog.Footer gap={3} py="5" px="6" borderTop="1px solid" borderColor="#F3F4F6" bg="#F9FAFB" borderBottomRadius="20px">
                 <Button
                   variant="outline"
                   onClick={() => setIsEditDialogOpen(false)}
                   disabled={isUpdating}
-                  borderRadius="10px"
+                  borderRadius="12px"
+                  borderColor="#D1D5DB"
+                  bg="white"
+                  color="#374151"
+                  fontSize="14px"
+                  fontWeight="600"
+                  px={5}
+                  h="44px"
+                  _hover={{ 
+                    bg: "#F3F4F6", 
+                    borderColor: "#9CA3AF",
+                    transform: "translateY(-1px)",
+                    boxShadow: "sm"
+                  }}
+                  _active={{ transform: "translateY(0)" }}
+                  transition="all 0.15s ease"
                 >
                   Cancel
                 </Button>
@@ -685,8 +719,23 @@ export default function CalendarTab() {
                   color="white"
                   onClick={handleSaveEdit}
                   loading={isUpdating}
-                  borderRadius="10px"
-                  _hover={{ bg: "#4338CA" }}
+                  borderRadius="12px"
+                  fontSize="14px"
+                  fontWeight="600"
+                  px={5}
+                  h="44px"
+                  shadow="md"
+                  _hover={{ 
+                    bg: "#4338CA", 
+                    shadow: "lg",
+                    transform: "translateY(-1px)"
+                  }}
+                  _active={{ transform: "translateY(0)" }}
+                  transition="all 0.15s ease"
+                  _disabled={{
+                    opacity: 0.6,
+                    cursor: "not-allowed"
+                  }}
                 >
                   Save Changes
                 </Button>
