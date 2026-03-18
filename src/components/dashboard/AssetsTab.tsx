@@ -5,7 +5,7 @@ import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  ChevronDown, ChevronUp, Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Sparkles, Wand2,
+  ChevronDown, ChevronUp, Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Sparkles, Wand2, Star, MessageSquare,
 } from "lucide-react";
 import type { CampaignAsset } from "@/types/onboarding.types";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
@@ -547,6 +547,113 @@ function AssetCard({ asset, igConnected, onPublish }: {
   );
 }
 
+// ─── Feedback Panel ──────────────────────────────────────────────────────────
+
+function FeedbackPanel({ imageId }: { imageId: string }) {
+  const [rating, setRating]       = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [feedback, setFeedback]   = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
+  const [loaded, setLoaded]       = useState(false);
+
+  // Load existing feedback on mount
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("image_feedback")
+        .select("rating, feedback")
+        .eq("image_id", imageId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setRating((data as { rating: number; feedback: string | null }).rating);
+        setFeedback((data as { rating: number; feedback: string | null }).feedback || "");
+        setSaved(true);
+      }
+      setLoaded(true);
+    })();
+  }, [imageId]);
+
+  const handleSave = async () => {
+    if (rating === 0) return;
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("image_feedback").upsert(
+        { image_id: imageId, user_id: user.id, rating, feedback: feedback || null, updated_at: new Date().toISOString() },
+        { onConflict: "image_id,user_id" }
+      );
+      setSaved(true);
+    } catch (err) {
+      console.error("Feedback save error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <Box mt={2} pt={2} borderTop="1px solid" borderColor="#F3F4F6">
+      {/* Star Rating */}
+      <Flex align="center" gap={1} mb={1.5}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <Box
+            key={star}
+            cursor="pointer"
+            onMouseEnter={() => setHoverRating(star)}
+            onMouseLeave={() => setHoverRating(0)}
+            onClick={() => { setRating(star); setSaved(false); }}
+            transition="transform 0.15s"
+            _hover={{ transform: "scale(1.2)" }}
+          >
+            <Star
+              size={16}
+              color={(hoverRating || rating) >= star ? "#F59E0B" : "#D1D5DB"}
+              fill={(hoverRating || rating) >= star ? "#F59E0B" : "none"}
+              strokeWidth={2}
+            />
+          </Box>
+        ))}
+        {rating > 0 && (
+          <Text fontSize="11px" color="#9CA3AF" ml={1}>{rating}/5</Text>
+        )}
+      </Flex>
+
+      {/* Feedback input */}
+      <Flex gap={1.5}>
+        <input
+          value={feedback}
+          onChange={e => { setFeedback(e.target.value); setSaved(false); }}
+          placeholder="Leave feedback..."
+          style={{
+            flex: 1, fontSize: "12px", padding: "6px 10px",
+            border: "1px solid #E5E7EB", borderRadius: "8px",
+            outline: "none", color: "#374151", background: "#F9FAFB",
+          }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#6366F1"; }}
+          onBlur={e => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
+        />
+        <Button
+          size="xs" h="30px" px={2.5} borderRadius="8px"
+          bg={saved ? "#DCFCE7" : "#4F46E5"}
+          color={saved ? "#166534" : "white"}
+          fontSize="11px" fontWeight="600"
+          _hover={{ opacity: 0.85 }}
+          disabled={rating === 0 || saving}
+          onClick={handleSave}
+        >
+          {saving ? <Loader size={10} style={{ animation: "spin 1.5s linear infinite" }} /> : saved ? "Saved" : "Save"}
+        </Button>
+      </Flex>
+    </Box>
+  );
+}
+
 // ─── Library Image Card ───────────────────────────────────────────────────────
 
 function LibraryCard({ file, igConnected, onPublish }: {
@@ -554,6 +661,7 @@ function LibraryCard({ file, igConnected, onPublish }: {
   igConnected: boolean;
   onPublish: (t: PublishTarget) => void;
 }) {
+  const [showFeedback, setShowFeedback] = useState(false);
   const ratio = FORMAT_RATIO[file.format];
   const igType = FORMAT_IG_TYPE[file.format];
 
@@ -601,11 +709,23 @@ function LibraryCard({ file, igConnected, onPublish }: {
       </Box>
 
       <Box p={3.5}>
-        <Text fontSize="13px" fontWeight="600" color="#111111"
-          overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
-          {file.label || file.name}
-        </Text>
-        <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
+        <Flex justify="space-between" align="center">
+          <Box flex={1} minW={0}>
+            <Text fontSize="13px" fontWeight="600" color="#111111"
+              overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
+              {file.label || file.name}
+            </Text>
+            <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
+          </Box>
+          <Button variant="ghost" size="xs" h="26px" px={2} borderRadius="8px"
+            color={showFeedback ? "#4F46E5" : "#9CA3AF"}
+            _hover={{ color: "#4F46E5", bg: "#EEF2FF" }}
+            onClick={() => setShowFeedback(!showFeedback)}>
+            <MessageSquare size={13} />
+            <Text ml={1} fontSize="11px">{showFeedback ? "Hide" : "Rate"}</Text>
+          </Button>
+        </Flex>
+        {showFeedback && <FeedbackPanel imageId={file.id} />}
       </Box>
     </Box>
   );
@@ -613,7 +733,7 @@ function LibraryCard({ file, igConnected, onPublish }: {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const STORAGE_BUCKET = "images";
+const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
 export default function AssetsTab({ trackers, statuses, assets, progress, isPolling }: AssetsTabProps) {
