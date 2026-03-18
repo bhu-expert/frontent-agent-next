@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Box,
   Button,
@@ -227,6 +228,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       boxShadow: "0 0 0 4px rgba(79, 70, 229, 0.14)",
     },
   } as const;
+  const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<
     | "brands"
     | "content"
@@ -236,6 +238,16 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     | "settings"
     | "support"
   >("brands");
+
+  // Sync ?tab= query param → activeView on mount and when it changes
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const valid = ["brands", "content", "assets", "calendar", "integrations", "settings", "support"];
+    if (tab && valid.includes(tab)) {
+      setActiveView(tab as typeof activeView);
+    }
+  }, [searchParams]);
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [allBrands, setAllBrands] = useState<BrandData[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
