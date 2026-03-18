@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@/lib/supabase";
+import { SUPABASE_PROJECT_URL } from "@/config";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_URL = SUPABASE_PROJECT_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const IG_GRAPH_BASE = "https://graph.instagram.com";
 const API_VERSION = "v21.0";
 
@@ -12,64 +13,22 @@ type MediaType = "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
 async function getAuthUser(request: NextRequest) {
-  const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const cookieHeader = request.headers.get("cookie");
+  const supabase = createServerClient(cookieHeader);
 
-  // Try Authorization header first
-  const authHeader = request.headers.get("authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const { data: { user } } = await adminSupabase.auth.getUser(token);
-    if (user) return user;
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error("Session error:", error);
+    return null;
   }
-
-  // Try cookies
-  const cookieHeader = request.headers.get("cookie") || "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").filter(Boolean).map(c => {
-      const [k, ...v] = c.split("=");
-      return [k.trim(), v.join("=")];
-    })
-  );
-
-  console.log("All cookies found:", Object.keys(cookies));
-
-  // Find Supabase auth token cookie - look for patterns like:
-  // sb-{ref}-auth-token, sb-{ref}-auth-token.0, etc.
-  const tokenCookieNames = Object.keys(cookies).filter(
-    k => k.includes("auth-token")
-  );
-
-  console.log("Auth token cookies:", tokenCookieNames);
-
-  for (const name of tokenCookieNames) {
-    try {
-      let value = decodeURIComponent(cookies[name]);
-      console.log(`Trying cookie: ${name}, value length: ${value.length}`);
-      
-      if (value.startsWith("base64-")) {
-        value = Buffer.from(value.slice(7), "base64").toString("utf-8");
-      }
-      const parsed = JSON.parse(value);
-      const token = parsed.access_token || parsed[0]?.access_token;
-      if (token) {
-        console.log("Found token, validating...");
-        const { data: { user }, error } = await adminSupabase.auth.getUser(token);
-        if (error) {
-          console.error("getUser error:", error);
-        }
-        if (user) {
-          console.log("User authenticated:", user.id);
-          return user;
-        }
-      }
-    } catch (err) {
-      console.warn(`Failed to parse cookie ${name}:`, err);
-      // skip unparseable cookies
-    }
+  
+  if (!session) {
+    console.warn("No session found. Cookies:", cookieHeader);
+    return null;
   }
-
-  console.warn("No valid authentication found");
-  return null;
+  
+  return session.user;
 }
 
 async function getIgCredentials(userId: string) {
