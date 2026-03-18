@@ -99,23 +99,30 @@ export default function IntegrationsTab() {
 
     if (igConnected === "success") {
       window.history.replaceState({}, "", "/dashboard?tab=integrations");
-      supabase.auth.refreshSession().then(({ data: { user } }) => {
-        const igConn = user?.user_metadata?.ig_connection;
-        if (igConn?.access_token) {
-          setIgConnection({
-            connected: true,
-            ig_user_id: igConn.ig_user_id,
-            username: igConn.username,
-            name: igConn.name,
-            profile_picture_url: igConn.profile_picture_url,
-            expires_at: igConn.expires_at,
-            connected_at: igConn.connected_at,
-          });
-          setIsLoading(false);
-        } else {
-          checkStatus();
+      // Retry getUser() with increasing delays — backend admin update may need a moment to propagate
+      const verifyConnection = async () => {
+        for (const delay of [0, 800, 1600, 3000]) {
+          if (delay > 0) await new Promise(r => setTimeout(r, delay));
+          const { data: { user } } = await supabase.auth.getUser();
+          const igConn = user?.user_metadata?.ig_connection;
+          if (igConn?.access_token) {
+            setIgConnection({
+              connected: true,
+              ig_user_id: igConn.ig_user_id,
+              username: igConn.username,
+              name: igConn.name,
+              profile_picture_url: igConn.profile_picture_url,
+              expires_at: igConn.expires_at,
+              connected_at: igConn.connected_at,
+            });
+            setIsLoading(false);
+            return;
+          }
         }
-      }).catch(() => checkStatus());
+        // Final fallback: checkStatus() also checks the integrations table
+        checkStatus();
+      };
+      verifyConnection();
       toaster.create({
         title: "Instagram Connected",
         description: "Your Instagram account has been connected successfully.",
@@ -157,6 +164,27 @@ export default function IntegrationsTab() {
           connected_at: igConn.connected_at,
         });
         return;
+      }
+      // Fallback: check integrations table (backend writes here too)
+      if (user) {
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("connected_account, status")
+          .eq("provider", "instagram")
+          .maybeSingle();
+        const conn = (integration as any)?.connected_account;
+        if ((integration as any)?.status === "active" && conn?.access_token) {
+          setIgConnection({
+            connected: true,
+            ig_user_id: conn.ig_user_id,
+            username: conn.username,
+            name: conn.name,
+            profile_picture_url: conn.profile_picture_url,
+            expires_at: conn.expires_at,
+            connected_at: conn.connected_at,
+          });
+          return;
+        }
       }
       setIgConnection({ connected: false });
     } catch (err) {

@@ -542,13 +542,35 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
 
   // ── Load IG connection state ────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIgConnected(!!user?.user_metadata?.ig_connection?.access_token);
-    });
+    const checkIgConnected = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.ig_connection?.access_token) {
+        setIgConnected(true);
+        return;
+      }
+      // Fallback: check integrations table in case user_metadata propagation is delayed
+      if (user) {
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("status")
+          .eq("provider", "instagram")
+          .maybeSingle();
+        if ((integration as any)?.status === "active") {
+          setIgConnected(true);
+          return;
+        }
+      }
+      setIgConnected(false);
+    };
+    checkIgConnected();
 
-    // Reactively update when session is refreshed (e.g. after connecting Instagram)
+    // Reactively update when session is refreshed (e.g. after connecting Instagram in another tab)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIgConnected(!!session?.user?.user_metadata?.ig_connection?.access_token);
+      if (session?.user?.user_metadata?.ig_connection?.access_token) {
+        setIgConnected(true);
+      } else {
+        checkIgConnected();
+      }
     });
 
     return () => subscription.unsubscribe();
