@@ -6,8 +6,9 @@ import crypto from "crypto";
 /**
  * GET /api/integrations/instagram/save?payload=<base64>&sig=<hmac>
  *
- * TEMPORARY DEBUG MODE: Returns JSON instead of redirecting.
- * Remove debug mode after confirming it works.
+ * Receives HMAC-signed Instagram connection data from the Python backend,
+ * verifies the signature, stores the connection in Supabase, and redirects
+ * to the dashboard.
  */
 
 const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET!;
@@ -16,66 +17,39 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: NextRequest) {
-  const debug: Record<string, any> = {
-    ts: new Date().toISOString(),
-    route_reached: true,
-    full_url: request.nextUrl.toString().slice(0, 200) + "...",
-  };
-
   const { searchParams } = request.nextUrl;
   const payload = searchParams.get("payload");
   const sig = searchParams.get("sig");
 
-  debug.has_payload = !!payload;
-  debug.has_sig = !!sig;
-  debug.payload_len = payload?.length ?? 0;
+  const redirectError = (msg: string) =>
+    NextResponse.redirect(
+      `${APP_URL}/dashboard?tab=integrations&ig_error=${encodeURIComponent(msg)}`
+    );
 
   if (!payload || !sig) {
-    debug.error = "missing_save_params";
-    return NextResponse.json(debug, { status: 400 });
+    return redirectError("missing_save_params");
   }
 
   // ── Verify HMAC signature ──────────────────────────────────────────────────
-  try {
-    const expectedSig = crypto
-      .createHmac("sha256", INSTAGRAM_APP_SECRET)
-      .update(payload)
-      .digest("hex");
+  const expectedSig = crypto
+    .createHmac("sha256", INSTAGRAM_APP_SECRET)
+    .update(payload)
+    .digest("hex");
 
-    debug.sig_match = sig === expectedSig;
-    debug.sig_first8 = sig.slice(0, 8);
-    debug.expected_first8 = expectedSig.slice(0, 8);
-
-    if (sig !== expectedSig) {
-      debug.error = "invalid_signature";
-      return NextResponse.json(debug, { status: 403 });
-    }
-  } catch (e: any) {
-    debug.error = `hmac_error: ${e.message}`;
-    return NextResponse.json(debug, { status: 500 });
+  if (sig !== expectedSig) {
+    return redirectError("invalid_signature");
   }
 
   // ── Decode payload ─────────────────────────────────────────────────────────
   let data: any;
   try {
     data = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"));
-    debug.decoded = {
-      user_id: data.user_id,
-      ig_user_id: data.ig_user_id,
-      username: data.username,
-      name: data.name,
-      has_access_token: !!data.access_token,
-      access_token_len: data.access_token?.length ?? 0,
-      expires_at: data.expires_at,
-    };
-  } catch (e: any) {
-    debug.error = `decode_error: ${e.message}`;
-    return NextResponse.json(debug, { status: 400 });
+  } catch {
+    return redirectError("invalid_payload");
   }
 
   if (!data.user_id || !data.access_token) {
-    debug.error = "incomplete_payload";
-    return NextResponse.json(debug, { status: 400 });
+    return redirectError("incomplete_payload");
   }
 
   // ── Store connection using JS admin client ─────────────────────────────────
@@ -95,30 +69,22 @@ export async function GET(request: NextRequest) {
   // 1. Update user_metadata
   try {
     const userRes = await adminSupabase.auth.admin.getUserById(data.user_id);
-    debug.getUserById = { ok: !userRes.error, err: userRes.error?.message ?? null };
-
     if (userRes.error) {
-      debug.error = "user_not_found";
-      return NextResponse.json(debug, { status: 404 });
+      console.error("Save route: getUserById failed:", userRes.error.message);
+      return redirectError("user_not_found");
     }
 
     const currentMeta = (userRes.data as any).user?.user_metadata || {};
-    const updateRes = await adminSupabase.auth.admin.updateUserById(data.user_id, {
+    await adminSupabase.auth.admin.updateUserById(data.user_id, {
       user_metadata: { ...currentMeta, ig_connection: igConnection },
     });
-
-    debug.updateUserById = {
-      ok: !updateRes.error,
-      err: updateRes.error?.message ?? null,
-      has_ig_now: !!(updateRes.data as any)?.user?.user_metadata?.ig_connection,
-    };
   } catch (e: any) {
-    debug.updateUserById = { exception: e.message };
+    console.error("Save route: updateUserById exception:", e.message);
   }
 
   // 2. Upsert to integrations table
   try {
-    const upsertRes = await adminSupabase.from("integrations").upsert(
+    await adminSupabase.from("integrations").upsert(
       {
         user_id: data.user_id,
         provider: "instagram",
@@ -129,14 +95,11 @@ export async function GET(request: NextRequest) {
       },
       { onConflict: "user_id,provider" }
     );
-    debug.upsertIntegrations = { ok: !upsertRes.error, err: upsertRes.error?.message ?? null, http: upsertRes.status };
   } catch (e: any) {
-    debug.upsertIntegrations = { exception: e.message };
+    console.error("Save route: upsert integrations exception:", e.message);
   }
 
-  debug.success = true;
-  debug.would_redirect_to = `${APP_URL}/dashboard?tab=integrations&ig_connected=success`;
-  debug.message = "DEBUG MODE: Returning JSON instead of redirecting. Check results above. If all OK, remove debug mode.";
-
-  return NextResponse.json(debug, { status: 200 });
+  return NextResponse.redirect(
+    `${APP_URL}/dashboard?tab=integrations&ig_connected=success`
+  );
 }
