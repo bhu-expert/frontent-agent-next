@@ -2,11 +2,96 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const IG_GRAPH_BASE = "https://graph.instagram.com";
 const API_VERSION = "v21.0";
 
 type MediaType = "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
+
+// ── Auth helpers ─────────────────────────────────────────────────────────────
+
+async function getAuthUser(request: NextRequest) {
+  const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  // Try Authorization header first
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const { data: { user } } = await adminSupabase.auth.getUser(token);
+    if (user) return user;
+  }
+
+  // Try cookies
+  const cookieHeader = request.headers.get("cookie") || "";
+  const cookies = Object.fromEntries(
+    cookieHeader.split("; ").filter(Boolean).map(c => {
+      const [k, ...v] = c.split("=");
+      return [k, v.join("=")];
+    })
+  );
+
+  // Find Supabase auth token cookie
+  const tokenCookieNames = Object.keys(cookies).filter(
+    k => k.includes("auth-token") || k.startsWith("sb-")
+  );
+
+  for (const name of tokenCookieNames) {
+    try {
+      let value = decodeURIComponent(cookies[name]);
+      if (value.startsWith("base64-")) {
+        value = Buffer.from(value.slice(7), "base64").toString("utf-8");
+      }
+      const parsed = JSON.parse(value);
+      const token = parsed.access_token || parsed[0]?.access_token;
+      if (token) {
+        const { data: { user } } = await adminSupabase.auth.getUser(token);
+        if (user) return user;
+      }
+    } catch {
+      // skip unparseable cookies
+    }
+  }
+
+  return null;
+}
+
+async function getIgCredentials(userId: string) {
+  const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  // Primary: integrations table
+  const { data: integration } = await adminSupabase
+    .from("integrations")
+    .select("connected_account")
+    .eq("user_id", userId)
+    .eq("provider", "instagram")
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (integration?.connected_account) {
+    const account = integration.connected_account as Record<string, unknown>;
+    if (account.access_token) {
+      return {
+        ig_user_id: account.ig_user_id as string,
+        access_token: account.access_token as string,
+      };
+    }
+  }
+
+  // Fallback: user_metadata
+  const { data: { user } } = await adminSupabase.auth.admin.getUserById(userId);
+  const igConn = (user as unknown as Record<string, unknown>)?.user_metadata as Record<string, unknown> | undefined;
+  const igConnection = igConn?.ig_connection as Record<string, unknown> | undefined;
+  if (igConnection?.access_token) {
+    return {
+      ig_user_id: igConnection.ig_user_id as string,
+      access_token: igConnection.access_token as string,
+    };
+  }
+
+  return null;
+}
+
+// ── Route handler ────────────────────────────────────────────────────────────
 
 /**
  * POST /api/integrations/instagram/publish
@@ -19,19 +104,17 @@ type MediaType = "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
  *   carousel_urls: string[] (required for CAROUSEL, max 10)
  *   caption:    string (not supported for STORIES)
  *
- * Flow: Create container → poll until FINISHED → media_publish
+ * Flow: Create container -> poll until FINISHED -> media_publish
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error || !session) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const igConnection = session.user.user_metadata?.ig_connection;
-    if (!igConnection?.access_token) {
+    const igCreds = await getIgCredentials(user.id);
+    if (!igCreds) {
       return NextResponse.json({ error: "Instagram not connected" }, { status: 400 });
     }
 
@@ -47,7 +130,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "media_type is required" }, { status: 400 });
     }
 
-    const { ig_user_id, access_token } = igConnection;
+    const { ig_user_id, access_token } = igCreds;
     const base = `${IG_GRAPH_BASE}/${API_VERSION}/${ig_user_id}`;
 
     let containerId: string;
@@ -68,7 +151,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Poll container status until FINISHED (max 30 attempts × 2 s = 60 s)
+    // Poll container status until FINISHED (max 30 attempts x 2 s = 60 s)
     await pollContainerStatus(containerId, access_token);
 
     // Publish
@@ -85,10 +168,11 @@ export async function POST(request: NextRequest) {
 
     const igPostId = publishData.id as string;
 
-    // Store record
+    // Store record using service role client
     try {
-      await supabase.from("published_posts").insert({
-        user_id: session.user.id,
+      const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      await adminSupabase.from("published_posts").insert({
+        user_id: user.id,
         platform: "instagram",
         platform_post_id: igPostId,
         post_url: `https://www.instagram.com/p/${igPostId}/`,
@@ -97,17 +181,20 @@ export async function POST(request: NextRequest) {
         status: "published",
         published_at: new Date().toISOString(),
       });
-    } catch {}
+    } catch {
+      // non-critical: don't fail the publish if record storage fails
+    }
 
     return NextResponse.json({
       success: true,
       id: igPostId,
       post_url: `https://www.instagram.com/p/${igPostId}/`,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Publish failed";
     console.error("Instagram publish error:", err);
     return NextResponse.json(
-      { error: err.message || "Publish failed" },
+      { error: message },
       { status: 500 }
     );
   }

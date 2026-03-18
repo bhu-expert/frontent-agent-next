@@ -5,7 +5,7 @@ import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  ChevronDown, ChevronUp, Coffee, Download, ImageIcon, Loader, Send, Calendar, X,
+  ChevronDown, ChevronUp, Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Sparkles, Wand2,
 } from "lucide-react";
 import type { CampaignAsset } from "@/types/onboarding.types";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
@@ -68,6 +68,16 @@ interface PublishTarget {
 
 // ─── Instagram Publish Modal ──────────────────────────────────────────────────
 
+type CaptionTone = "engaging" | "professional" | "playful" | "minimal" | "bold";
+
+const TONE_OPTIONS: { value: CaptionTone; label: string }[] = [
+  { value: "engaging",      label: "Engaging" },
+  { value: "professional",  label: "Professional" },
+  { value: "playful",       label: "Playful" },
+  { value: "minimal",       label: "Minimal" },
+  { value: "bold",          label: "Bold" },
+];
+
 function PublishModal({
   target,
   onClose,
@@ -75,16 +85,48 @@ function PublishModal({
   target: PublishTarget;
   onClose: () => void;
 }) {
-  const [mode,        setMode]        = useState<PostMode>("now");
-  const [mediaType,   setMediaType]   = useState<MediaType>(target.defaultMediaType ?? "IMAGE");
-  const [caption,     setCaption]     = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [isPosting,   setIsPosting]   = useState(false);
+  const [mode,          setMode]          = useState<PostMode>("now");
+  const [mediaType,     setMediaType]     = useState<MediaType>(target.defaultMediaType ?? "IMAGE");
+  const [caption,       setCaption]       = useState("");
+  const [scheduledAt,   setScheduledAt]   = useState("");
+  const [isPosting,     setIsPosting]     = useState(false);
+  const [isGenerating,  setIsGenerating]  = useState(false);
+  const [captionTone,   setCaptionTone]   = useState<CaptionTone>("engaging");
+
+  const handleGenerateCaption = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/integrations/instagram/generate-caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          image_url: target.url,
+          tone: captionTone,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Caption generation failed");
+
+      const captionText = data.caption || "";
+      const hashtags = Array.isArray(data.hashtags)
+        ? data.hashtags.map((t: string) => (t.startsWith("#") ? t : `#${t}`)).join(" ")
+        : "";
+      setCaption(
+        hashtags ? `${captionText}\n\n${hashtags}` : captionText
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Caption generation failed";
+      alert(`Caption generation failed: ${message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handlePublish = async () => {
     setIsPosting(true);
     try {
-      const body: Record<string, any> = {
+      const body: Record<string, unknown> = {
         media_type: mediaType,
         media_url:  target.url,
         caption:    caption || undefined,
@@ -105,6 +147,7 @@ function PublishModal({
       const res  = await fetch(endpoint, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body:    JSON.stringify(body),
       });
       const data = await res.json();
@@ -112,11 +155,12 @@ function PublishModal({
 
       onClose();
       alert(mode === "now"
-        ? `✅ Published! ${data.post_url}`
-        : `✅ Scheduled for ${new Date(scheduledAt).toLocaleString()}`
+        ? `Published! ${data.post_url}`
+        : `Scheduled for ${new Date(scheduledAt).toLocaleString()}`
       );
-    } catch (err: any) {
-      alert(`❌ ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Publish failed";
+      alert(message);
     } finally {
       setIsPosting(false);
     }
@@ -171,7 +215,7 @@ function PublishModal({
               boxShadow={mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none"}
               _hover={{ bg: mode === m ? "white" : "#F3F4F6" }}
               onClick={() => setMode(m)}>
-              {m === "now" ? "⚡ Now" : "🗓 Schedule"}
+              {m === "now" ? "Now" : "Schedule"}
             </Button>
           ))}
         </Flex>
@@ -196,14 +240,57 @@ function PublishModal({
         {/* Caption */}
         {mediaType !== "STORIES" && (
           <Box mb={4}>
-            <Flex justify="space-between" mb={1}>
-              <Text fontSize="12px" fontWeight="600" color="#374151">Caption</Text>
+            <Flex justify="space-between" align="center" mb={1.5}>
+              <Flex align="center" gap={2}>
+                <Text fontSize="12px" fontWeight="600" color="#374151">Caption</Text>
+                <Button
+                  size="xs" h="24px" px={2} borderRadius="8px"
+                  fontSize="11px" fontWeight="600"
+                  bg={isGenerating ? "transparent" : "linear-gradient(135deg, #6366F1, #8B5CF6)"}
+                  color={isGenerating ? "#6366F1" : "white"}
+                  border={isGenerating ? "1px solid" : "none"}
+                  borderColor="#6366F1"
+                  _hover={{ opacity: 0.85 }}
+                  disabled={isGenerating}
+                  onClick={handleGenerateCaption}
+                  style={isGenerating ? {
+                    background: "linear-gradient(90deg, #EEF2FF 25%, #E0E7FF 50%, #EEF2FF 75%)",
+                    backgroundSize: "400% 400%",
+                    animation: "shimmer 1.8s ease-in-out infinite",
+                  } : {}}
+                  gap={1}
+                >
+                  {isGenerating ? (
+                    <Loader size={10} style={{ animation: "spin 1.5s linear infinite" }} />
+                  ) : (
+                    <Sparkles size={10} />
+                  )}
+                  {isGenerating ? "Generating..." : "AI Caption"}
+                </Button>
+              </Flex>
               <Text fontSize="11px" color="#9CA3AF">{caption.length}/2200</Text>
             </Flex>
+
+            {/* Tone selector pills */}
+            <Flex gap={1} mb={2} wrap="wrap">
+              {TONE_OPTIONS.map(tone => (
+                <Button key={tone.value} size="xs" borderRadius="999px" h="22px" px={2}
+                  fontSize="10px" fontWeight="600"
+                  bg={captionTone === tone.value ? "#EEF2FF" : "#F9FAFB"}
+                  color={captionTone === tone.value ? "#4338CA" : "#9CA3AF"}
+                  border="1px solid"
+                  borderColor={captionTone === tone.value ? "#C7D2FE" : "#F3F4F6"}
+                  _hover={{ bg: captionTone === tone.value ? "#EEF2FF" : "#F3F4F6" }}
+                  onClick={() => setCaptionTone(tone.value)}>
+                  {tone.label}
+                </Button>
+              ))}
+            </Flex>
+
             <Textarea
               value={caption}
               onChange={e => setCaption(e.target.value.slice(0, 2200))}
-              placeholder="Write your caption, add hashtags..."
+              placeholder="Write your caption, add hashtags... or use AI Caption above"
               rows={3} fontSize="13px" borderRadius="10px"
               border="1px solid" borderColor="#E5E7EB"
               _focus={{ borderColor: "#6366F1", boxShadow: "0 0 0 3px rgba(99,102,241,0.1)" }}
@@ -238,7 +325,7 @@ function PublishModal({
           }}
           _hover={{ opacity: 0.9 }}
           onClick={handlePublish}>
-          {mode === "now" ? "⚡ Publish Now" : "🗓 Schedule Post"}
+          {mode === "now" ? "Publish Now" : "Schedule Post"}
         </Button>
       </Box>
     </Box>
