@@ -14,9 +14,16 @@ type MediaType = "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
 
 async function getAuthUser(request: NextRequest) {
   const cookieHeader = request.headers.get("cookie");
+  console.log("=== getAuthUser called ===");
+  console.log("Cookie header present:", !!cookieHeader);
+  
   const supabase = createServerClient(cookieHeader);
 
   const { data: { session }, error } = await supabase.auth.getSession();
+  
+  console.log("Session result:", session ? "FOUND" : "NOT FOUND");
+  console.log("Session user:", session?.user?.id);
+  console.log("Session error:", error);
   
   if (error) {
     console.error("Session error:", error);
@@ -24,7 +31,7 @@ async function getAuthUser(request: NextRequest) {
   }
   
   if (!session) {
-    console.warn("No session found. Cookies:", cookieHeader);
+    console.warn("No session found");
     return null;
   }
   

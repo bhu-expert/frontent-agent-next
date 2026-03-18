@@ -21,6 +21,8 @@ export function createServerClient(cookieHeader: string | null) {
 
   // Set the session from the cookie
   if (cookieHeader) {
+    console.log("Cookie header received:", cookieHeader.substring(0, 200) + "...");
+    
     const cookies = Object.fromEntries(
       cookieHeader.split(";").map(c => {
         const [key, ...valueParts] = c.trim().split("=");
@@ -28,25 +30,38 @@ export function createServerClient(cookieHeader: string | null) {
       })
     );
 
+    console.log("Parsed cookies:", Object.keys(cookies));
+
     // Find the auth token cookie (pattern: sb-{ref}-auth-token)
     const authTokenCookie = Object.entries(cookies).find(
       ([key]) => key.includes("auth-token") && !key.includes("refresh-token")
     );
 
+    console.log("Auth token cookie found:", authTokenCookie ? authTokenCookie[0] : "none");
+
     if (authTokenCookie) {
       try {
         const [, tokenValue] = authTokenCookie;
+        console.log("Token value length:", tokenValue.length);
+        
         const decoded = decodeURIComponent(tokenValue);
+        console.log("Decoded token length:", decoded.length);
+        
         const parsed = decoded.startsWith("base64-")
           ? JSON.parse(Buffer.from(decoded.slice(7), "base64").toString("utf-8"))
           : JSON.parse(decoded);
+
+        console.log("Parsed token keys:", Object.keys(parsed));
         
         const accessToken = parsed.access_token || parsed[0]?.access_token;
         if (accessToken) {
-          supabase.auth.setSession({ access_token: accessToken, refresh_token: "" });
+          console.log("Access token found, setting session...");
+          supabase.auth.setSession({ access_token: accessToken, refresh_token: parsed.refresh_token || "" });
+        } else {
+          console.warn("No access_token in parsed cookie");
         }
-      } catch {
-        // Cookie parsing failed, continue without session
+      } catch (err) {
+        console.error("Cookie parsing failed:", err);
       }
     }
   }
