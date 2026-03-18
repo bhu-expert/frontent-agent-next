@@ -247,10 +247,10 @@ export default function CalendarTab() {
       <Box
         bg="white"
         border="1px solid"
-        borderColor="#ECECEC"
+        borderColor="#E5E7EB"
         borderRadius="24px"
         p={{ base: 4, md: 6 }}
-        boxShadow="0 12px 48px rgba(0,0,0,0.04)"
+        boxShadow="0 4px 24px rgba(0,0,0,0.06)"
       >
         {/* Month navigation */}
         <Flex align="center" justify="space-between" mb={6}>
@@ -261,6 +261,7 @@ export default function CalendarTab() {
             p={0}
             borderRadius="10px"
             color="#6B7280"
+            bg="transparent"
             _hover={{ bg: "#F3F4F6", color: "#111111" }}
             onClick={() => setMonthOffset((o) => o - 1)}
           >
@@ -278,6 +279,7 @@ export default function CalendarTab() {
             p={0}
             borderRadius="10px"
             color="#6B7280"
+            bg="transparent"
             _hover={{ bg: "#F3F4F6", color: "#111111" }}
             onClick={() => setMonthOffset((o) => o + 1)}
           >
@@ -286,10 +288,10 @@ export default function CalendarTab() {
         </Flex>
 
         {/* Day-of-week labels */}
-        <SimpleGrid columns={7} mb={2}>
+        <SimpleGrid columns={7} mb={3}>
           {DAY_LABELS.map((label) => (
-            <Box key={label} textAlign="center" py={1}>
-              <Text fontSize="12px" fontWeight="700" color="#9CA3AF" letterSpacing="0.04em">
+            <Box key={label} textAlign="center" py={2}>
+              <Text fontSize="12px" fontWeight="700" color="#6B7280" letterSpacing="0.04em">
                 {label}
               </Text>
             </Box>
@@ -297,28 +299,38 @@ export default function CalendarTab() {
         </SimpleGrid>
 
         {/* Calendar grid */}
-        <SimpleGrid columns={7} gap="1px" bg="#ECECEC" border="1px solid" borderColor="#ECECEC" borderRadius="16px" overflow="hidden">
+        <SimpleGrid columns={7} gap="1px" bg="#E5E7EB" border="1px solid" borderColor="#E5E7EB" borderRadius="16px" overflow="hidden">
           {calendarDays.map((day, idx) => {
             const dayPosts = getPostsForDay(day.date);
             return (
               <Box
                 key={idx}
                 bg={day.isToday ? "#EEF2FF" : "white"}
-                border={day.isToday ? "2px solid" : "none"}
-                borderColor={day.isToday ? "#4F46E5" : "transparent"}
-                minH={{ base: "60px", md: "90px" }}
-                p={{ base: 1, md: 2 }}
+                minH={{ base: "70px", md: "100px" }}
+                p={{ base: 1.5, md: 2 }}
                 position="relative"
                 transition="background 0.15s ease"
-                _hover={{ bg: day.isToday ? "#EEF2FF" : "#F8F8F6", cursor: "pointer" }}
+                _hover={{ bg: day.isToday ? "#EEF2FF" : "#F9FAFB", cursor: "pointer" }}
               >
+                {/* Today indicator */}
+                {day.isToday && (
+                  <Flex
+                    position="absolute"
+                    top="2px"
+                    left="2px"
+                    w="6px"
+                    h="6px"
+                    bg="#4F46E5"
+                    borderRadius="50%"
+                  />
+                )}
                 <Text
-                  fontSize="12px"
-                  fontWeight={day.isToday ? "800" : "500"}
-                  color={day.isToday ? "#4F46E5" : day.isCurrentMonth ? "#374151" : "#D1D5DB"}
+                  fontSize="13px"
+                  fontWeight={day.isToday ? "700" : "500"}
+                  color={day.isToday ? "#4F46E5" : day.isCurrentMonth ? "#1F2937" : "#9CA3AF"}
                   textAlign="right"
                   lineHeight="1"
-                  mb={1}
+                  mb={2}
                 >
                   {day.dayNumber}
                 </Text>
@@ -329,35 +341,41 @@ export default function CalendarTab() {
                       <Flex
                         align="center"
                         gap={1}
-                        px={1}
-                        py={0.5}
-                        borderRadius="6px"
+                        px={1.5}
+                        py={1}
+                        borderRadius="8px"
                         bg={
-                          post.status === "failed" ? "#FEE2E2" :
-                          post.status === "published" ? "#D1FAE5" :
-                          "#DBEAFE"
+                          post.status === "failed" ? "#FEF2F2" :
+                          post.status === "published" ? "#ECFDF5" :
+                          "#EFF6FF"
                         }
                         border="1px solid"
                         borderColor={
-                          post.status === "failed" ? "#FCA5A5" :
-                          post.status === "published" ? "#6EE7B7" :
-                          "#93C5FD"
+                          post.status === "failed" ? "#FECACA" :
+                          post.status === "published" ? "#A7F3D0" :
+                          "#BFDBFE"
                         }
                         fontSize="10px"
-                        fontWeight="500"
+                        fontWeight="600"
                         color="#1F2937"
-                        _hover={{ opacity: 0.8 }}
+                        _hover={{ 
+                          opacity: 0.9,
+                          transform: "scale(1.02)",
+                          shadow: "sm"
+                        }}
                         onClick={() => handleEditClick(post)}
+                        cursor="pointer"
+                        transition="all 0.15s ease"
                       >
-                        <Text fontSize="9px">{getMediaIcon(post.media_type)}</Text>
-                        <Text truncate flex={1} fontSize="9px">
-                          {post.caption?.slice(0, 20) || "Untitled"}
+                        <Text fontSize="10px">{getMediaIcon(post.media_type)}</Text>
+                        <Text truncate flex={1} fontSize="9px" lineHeight="1.2">
+                          {post.caption?.slice(0, 18) || "Untitled"}
                         </Text>
                       </Flex>
                     </Tooltip>
                   ))}
                   {dayPosts.length > 3 && (
-                    <Text fontSize="9px" color="#6B7280" pl={1}>
+                    <Text fontSize="9px" fontWeight="600" color="#6B7280" pl={1.5}>
                       +{dayPosts.length - 3} more
                     </Text>
                   )}
@@ -372,10 +390,10 @@ export default function CalendarTab() {
       <Box
         bg="white"
         border="1px solid"
-        borderColor="#ECECEC"
+        borderColor="#E5E7EB"
         borderRadius="24px"
         p={{ base: 5, md: 8 }}
-        boxShadow="0 12px 48px rgba(0,0,0,0.04)"
+        boxShadow="0 4px 24px rgba(0,0,0,0.06)"
       >
         <Flex align="center" justify="space-between" mb={6}>
           <Box>
@@ -394,7 +412,8 @@ export default function CalendarTab() {
             px={4}
             fontSize="14px"
             fontWeight="600"
-            _hover={{ bg: "#4338CA" }}
+            shadow="sm"
+            _hover={{ bg: "#4338CA", shadow: "md" }}
             onClick={() => toaster.create({ title: "Navigate to Integrations", description: "Use the Integrations tab to schedule new posts", type: "info", duration: 3000 })}
           >
             <Flex align="center" gap={2}>
@@ -416,28 +435,28 @@ export default function CalendarTab() {
             direction="column"
             align="center"
             justify="center"
-            py={12}
-            gap={3}
-            border="1px dashed"
+            py={16}
+            gap={4}
+            border="2px dashed"
             borderColor="#E5E7EB"
             borderRadius="16px"
-            bg="#FAFAFA"
+            bg="#F9FAFB"
           >
             <Flex
-              w="48px"
-              h="48px"
-              borderRadius="14px"
+              w="64px"
+              h="64px"
+              borderRadius="16px"
               bg="#F3F4F6"
               align="center"
               justify="center"
               color="#9CA3AF"
             >
-              <Calendar size={22} strokeWidth={2} />
+              <Calendar size={28} strokeWidth={2} />
             </Flex>
-            <Text fontSize="15px" fontWeight="600" color="#374151">
+            <Text fontSize="16px" fontWeight="700" color="#1F2937">
               No posts scheduled
             </Text>
-            <Text fontSize="13px" color="#9CA3AF" textAlign="center" maxW="280px">
+            <Text fontSize="14px" color="#6B7280" textAlign="center" maxW="320px">
               Schedule your first post for this month to see it here.
             </Text>
           </Flex>
@@ -450,30 +469,38 @@ export default function CalendarTab() {
                 align="center"
                 gap={4}
                 p={4}
-                borderRadius="14px"
+                borderRadius="16px"
                 border="1px solid"
                 borderColor={
-                  post.status === "failed" ? "#FCA5A5" :
-                  post.status === "published" ? "#6EE7B7" :
-                  "#93C5FD"
+                  post.status === "failed" ? "#FECACA" :
+                  post.status === "published" ? "#A7F3D0" :
+                  "#BFDBFE"
                 }
                 bg={
                   post.status === "failed" ? "#FEF2F2" :
                   post.status === "published" ? "#ECFDF5" :
                   "#EFF6FF"
                 }
-                _hover={{ shadow: "md", transform: "translateY(-1px)" }}
+                _hover={{ 
+                  shadow: "lg", 
+                  transform: "translateY(-2px)",
+                  borderColor: post.status === "failed" ? "#F87171" :
+                    post.status === "published" ? "#34D399" :
+                    "#60A5FA"
+                }}
                 transition="all 0.2s ease"
               >
                 {/* Media thumbnail */}
                 <Box
-                  w="60px"
-                  h="60px"
-                  borderRadius="10px"
+                  w="64px"
+                  h="64px"
+                  borderRadius="12px"
                   overflow="hidden"
                   flexShrink={0}
-                  bg="#E5E7EB"
+                  bg="#F3F4F6"
                   position="relative"
+                  border="1px solid"
+                  borderColor="#E5E7EB"
                 >
                   {post.media_url ? (
                     <Image
@@ -484,7 +511,7 @@ export default function CalendarTab() {
                       objectFit="cover"
                     />
                   ) : (
-                    <Flex align="center" justify="center" w="100%" h="100%" fontSize="20px">
+                    <Flex align="center" justify="center" w="100%" h="100%" fontSize="24px">
                       {getMediaIcon(post.media_type)}
                     </Flex>
                   )}
@@ -493,28 +520,29 @@ export default function CalendarTab() {
                     position="absolute"
                     bottom="0"
                     right="0"
-                    bg="rgba(0,0,0,0.7)"
+                    bg="rgba(0,0,0,0.75)"
                     color="white"
-                    fontSize="8px"
-                    px={1}
-                    py={0.5}
-                    borderRadius="4px"
+                    fontSize="9px"
+                    px={1.5}
+                    py={1}
+                    borderRadius="6px"
+                    fontWeight="600"
                   >
                     {post.media_type}
                   </Badge>
                 </Box>
 
                 {/* Post info */}
-                <Flex flex={1} direction="column" gap={1}>
+                <Flex flex={1} direction="column" gap={1.5}>
                   <Flex align="center" gap={2}>
-                    <Text fontSize="13px" fontWeight="600" color="#1F2937">
+                    <Text fontSize="13px" fontWeight="700" color="#1F2937">
                       {getMediaIcon(post.media_type)} {post.media_type}
                     </Text>
                     <Badge
                       fontSize="10px"
-                      px={2}
-                      py={0.5}
-                      borderRadius="6px"
+                      px={2.5}
+                      py={1}
+                      borderRadius="8px"
                       bg={
                         post.status === "scheduled" ? "#DBEAFE" :
                         post.status === "published" ? "#D1FAE5" :
@@ -525,23 +553,25 @@ export default function CalendarTab() {
                         post.status === "published" ? "#065F46" :
                         "#991B1B"
                       }
+                      fontWeight="600"
                       textTransform="capitalize"
                     >
                       {post.status}
                     </Badge>
                   </Flex>
-                  <Text fontSize="12px" color="#6B7280" lineClamp={2}>
+                  <Text fontSize="13px" color="#4B5563" lineClamp={2}>
                     {post.caption || "No caption"}
                   </Text>
-                  <Flex align="center" gap={3} mt={1}>
-                    <Flex align="center" gap={1} fontSize="11px" color="#6B7280">
-                      <Clock size={12} />
-                      {formatDateTime(post.scheduled_at)}
+                  <Flex align="center" gap={4} mt={1}>
+                    <Flex align="center" gap={1.5} fontSize="12px" color="#6B7280">
+                      <Clock size={14} />
+                      <Text fontWeight="500">{formatDateTime(post.scheduled_at)}</Text>
                     </Flex>
                     {post.error_message && (
-                      <Text fontSize="11px" color="#DC2626">
-                        ⚠️ {post.error_message}
-                      </Text>
+                      <Flex align="center" gap={1} fontSize="12px" color="#DC2626" bg="#FEF2F2" px={2} py={1} borderRadius="6px">
+                        <Text>⚠️</Text>
+                        <Text fontWeight="500">{post.error_message}</Text>
+                      </Flex>
                     )}
                   </Flex>
                 </Flex>
@@ -553,9 +583,13 @@ export default function CalendarTab() {
                       variant="ghost"
                       size="sm"
                       color="#4F46E5"
-                      _hover={{ bg: "#EEF2FF" }}
+                      bg="#EEF2FF"
+                      _hover={{ bg: "#E0E7FF" }}
                       onClick={() => handleEditClick(post)}
                       aria-label="Edit post"
+                      borderRadius="10px"
+                      w="36px"
+                      h="36px"
                     >
                       <Edit2 size={16} />
                     </IconButton>
@@ -565,9 +599,13 @@ export default function CalendarTab() {
                       variant="ghost"
                       size="sm"
                       color="#DC2626"
-                      _hover={{ bg: "#FEF2F2" }}
+                      bg="#FEF2F2"
+                      _hover={{ bg: "#FEE2E2" }}
                       onClick={() => handleDeleteClick(post)}
                       aria-label="Cancel post"
+                      borderRadius="10px"
+                      w="36px"
+                      h="36px"
                     >
                       <Trash2 size={16} />
                     </IconButton>
