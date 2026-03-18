@@ -43,7 +43,7 @@ export default function PageSelectorModal({
         <Dialog.Header>
           <Dialog.Title>Select Facebook Page</Dialog.Title>
           <Dialog.Description>
-            Choose which Facebook Page you want to connect to PostGini
+            Choose which Facebook Page you want to connect to plugandplayagents
           </Dialog.Description>
         </Dialog.Header>
         <Dialog.Body>
@@ -88,7 +88,12 @@ export default function PageSelectorModal({
 
                   {/* Page Info */}
                   <Box flex={1} minW={0}>
-                    <Text fontSize="15px" fontWeight="600" color="#111111" truncate>
+                    <Text
+                      fontSize="15px"
+                      fontWeight="600"
+                      color="#111111"
+                      truncate
+                    >
                       {page.name}
                     </Text>
                     {page.instagram_name && (

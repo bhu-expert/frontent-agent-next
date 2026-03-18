@@ -190,7 +190,7 @@ export default function AuthModal({
             🔐 Secure Access
           </Box>
           <Text fontSize="2xl" fontWeight="black" color="gray.900" mb={2}>
-            {mode === "login" ? "Welcome back" : "Join plug and playa gents"}
+            {mode === "login" ? "Welcome back" : "Join plug and play agents"}
           </Text>
           <Text fontSize="sm" color="gray.500" mb={6}>
             {mode === "login"

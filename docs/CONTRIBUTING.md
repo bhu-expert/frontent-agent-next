@@ -1,6 +1,6 @@
-# Contributing to plug and playa gents v2
+# Contributing to plug and play agents v2
 
-Welcome to plug and playa gents v2! We appreciate your interest in contributing to our codebase. Please review the following guidelines before submitting any code.
+Welcome to plug and play agents v2! We appreciate your interest in contributing to our codebase. Please review the following guidelines before submitting any code.
 
 ## Code Style Rules
 
@@ -20,7 +20,7 @@ Please prefix your branches correctly to help orchestrate CI workflows:
 
 ## Commit Message Format
 
-plug and playa gents v2 uses the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+plug and play agents v2 uses the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 - `feat:` A new feature.
 - `fix:` A bug fix.
@@ -53,7 +53,7 @@ If you feel changes are necessary here, open a Discussion thread first.
 
 ```bash
 # Clone the repo
-git clone https://github.com/Sagolsa78/plug and playa gents-v2.git
+git clone https://github.com/Sagolsa78/plug and play agents-v2.git
 
 # Install dependencies
 npm install

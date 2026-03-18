@@ -6,7 +6,7 @@ import { ChevronDown, LogOut } from "lucide-react";
 import { ToolNavbarProps } from "@/props/ToolNavbar";
 
 /**
- * Sticky navbar for the tool pages with plug and playa gents branding.
+ * Sticky navbar for the tool pages with plug and play agents branding.
  * Displays auth state (sign-in/signup buttons or user avatar dropdown).
  */
 export default function ToolNavbar({

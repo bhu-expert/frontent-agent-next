@@ -20,7 +20,7 @@ const steps = [
     icon: Globe,
     title: "Paste Your Website URL",
     description:
-      "Enter your website URL and plug and playa gents instantly crawls your brand — scanning your messaging, colors, tone, and identity to build a complete brand profile.",
+      "Enter your website URL and plug and play agents instantly crawls your brand — scanning your messaging, colors, tone, and identity to build a complete brand profile.",
     color: "#8a2ce2",
     bgColor: "#f3e8ff",
   },
@@ -38,7 +38,7 @@ const steps = [
     icon: LayoutTemplate,
     title: "Generate Tailored Ad Creatives",
     description:
-      "Select your campaign goals and target context. plug and playa gents generates multiple ad creatives — images, copy, and formats — precisely matched to your brand.",
+      "Select your campaign goals and target context. plug and play agents generates multiple ad creatives — images, copy, and formats — precisely matched to your brand.",
     color: "#0891b2",
     bgColor: "#ecfeff",
   },
@@ -47,7 +47,7 @@ const steps = [
     icon: CalendarClock,
     title: "Schedule & Run Your Campaign",
     description:
-      "Pick your platforms, set your schedule, and launch. plug and playa gents publishes and manages your ad campaign automatically across all selected channels.",
+      "Pick your platforms, set your schedule, and launch. plug and play agents publishes and manages your ad campaign automatically across all selected channels.",
     color: "#059669",
     bgColor: "#ecfdf5",
   },
@@ -119,7 +119,7 @@ export default function HowItWorks() {
             maxW="2xl"
             mx="auto"
           >
-            No marketing expertise needed. plug and playa gents handles the
+            No marketing expertise needed. plug and play agents handles the
             strategy, creatives, and scheduling automatically.
           </Text>
         </MotionBox>

@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-plug and playa gents v2 follows a typical client-server architecture separated by responsibilities. Our interactive Next.js application frontend is deployed on Vercel while our specialized plug and playa gents backend API operates at `https://content.bhuexpert.com`. We rely on Supabase for robust authentication and potentially persistent database storage.
+plug and play agents v2 follows a typical client-server architecture separated by responsibilities. Our interactive Next.js application frontend is deployed on Vercel while our specialized plug and play agents backend API operates at `https://content.bhuexpert.com`. We rely on Supabase for robust authentication and potentially persistent database storage.
 
 ## 2. Frontend Architecture
 
@@ -49,7 +49,7 @@ A crucial part of our architecture is Server-Sent Events (SSE). The `createBrand
 
 ## 5. Delayed Auth Architecture
 
-Our system ensures users can experience the value of plug and playa gents without immediate friction.
+Our system ensures users can experience the value of plug and play agents without immediate friction.
 
 1. **Guest Phase**: A user submits a URL; we analyze it and display results without requiring login.
 2. **Intent Phase**: When the user clicks to "Generate" variations based on their context selection, we capture this intended action via `localStorage` (keys defined in `lib/delayedAuth.ts`).

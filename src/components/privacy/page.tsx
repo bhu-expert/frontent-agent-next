@@ -1,421 +1,524 @@
-
 "use client";
 
-import { Box, Container, Text, VStack, Heading, Link, Flex } from "@chakra-ui/react";
-import { Separator } from "@chakra-ui/react";
+import {
+  Box,
+  Container,
+  Text,
+  VStack,
+  Heading,
+  Link,
+  Flex,
+  Button,
+  Circle,
+  Separator,
+} from "@chakra-ui/react";
 import NextLink from "next/link";
+import { ArrowLeft, Shield, Lock, Trash2, Mail, Globe, Cpu, Eye, Database } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+
+const sections = [
+  {
+    number: "01",
+    title: "Introduction",
+    icon: Shield,
+    iconBg: "purple.50",
+    iconColor: "purple.600",
+    content: (
+      <VStack align="stretch" gap={4} color="gray.600" fontSize="15px" lineHeight="1.9">
+        <Text>
+          Plug and Play Agent ("we", "our", or "us") is committed to protecting your privacy.
+          This Privacy Policy explains how we collect, use, disclose, and safeguard your
+          information when you use our AI-powered Instagram growth platform and related
+          services (collectively, the "Service").
+        </Text>
+        <Text>
+          By using Plug and Play Agent, you agree to the collection and use of information
+          in accordance with this policy. If you do not agree with our policies and
+          practices, please do not use our Service.
+        </Text>
+      </VStack>
+    ),
+  },
+  {
+    number: "02",
+    title: "Information We Collect",
+    icon: Database,
+    iconBg: "blue.50",
+    iconColor: "blue.600",
+    content: (
+      <VStack align="stretch" gap={8} color="gray.600" fontSize="15px" lineHeight="1.9">
+        {[
+          {
+            sub: "Personal Information",
+            desc: "When you create an account, we collect:",
+            items: ["Email address", "Name", "Password (encrypted)", "Profile information"],
+          },
+          {
+            sub: "Social Media Account Information",
+            desc: "When you connect Instagram accounts, we collect:",
+            items: [
+              "Public profile information from connected platforms",
+              "Page information and permissions you grant",
+              "Content you publish through our Service",
+              "Engagement metrics and analytics data",
+            ],
+          },
+          {
+            sub: "Usage Data",
+            desc: "We automatically collect information about how you use our Service:",
+            items: [
+              "Device information (browser type, operating system)",
+              "IP address and access times",
+              "Pages visited and features used",
+              "Click patterns and interactions",
+            ],
+          },
+        ].map((block) => (
+          <Box key={block.sub}>
+            <Text fontWeight="700" color="gray.800" mb={2} fontSize="14px"
+              textTransform="uppercase" letterSpacing="0.06em">
+              {block.sub}
+            </Text>
+            <Text mb={3}>{block.desc}</Text>
+            <VStack align="stretch" gap={1.5} pl={4} borderLeft="2px solid" borderColor="blue.100">
+              {block.items.map((item) => (
+                <Text key={item} fontSize="14px" color="gray.500">→ {item}</Text>
+              ))}
+            </VStack>
+          </Box>
+        ))}
+      </VStack>
+    ),
+  },
+  {
+    number: "03",
+    title: "How We Use Your Information",
+    icon: Cpu,
+    iconBg: "orange.50",
+    iconColor: "orange.500",
+    content: (
+      <VStack align="stretch" gap={2} color="gray.600" fontSize="15px" lineHeight="1.9">
+        <Text mb={2}>We use the collected information for the following purposes:</Text>
+        <VStack align="stretch" gap={1.5} pl={4} borderLeft="2px solid" borderColor="orange.100">
+          {[
+            "To provide, maintain, and improve our Service",
+            "To publish content to your connected Instagram account",
+            "To send you technical notices and support messages",
+            "To respond to your comments and questions",
+            "To develop new features and services",
+            "To monitor and analyze trends, usage, and activities",
+            "To detect, investigate, and prevent fraudulent transactions",
+            "To personalize your experience",
+          ].map((item) => (
+            <Text key={item} fontSize="14px" color="gray.500">→ {item}</Text>
+          ))}
+        </VStack>
+      </VStack>
+    ),
+  },
+  {
+    number: "04",
+    title: "Data Sharing & Third Parties",
+    icon: Globe,
+    iconBg: "teal.50",
+    iconColor: "teal.600",
+    content: (
+      <VStack align="stretch" gap={4} color="gray.600" fontSize="15px" lineHeight="1.9">
+        <Text>
+          We do not sell, trade, or rent your personal information to third parties.
+          We may share your data only in the following limited circumstances:
+        </Text>
+        <VStack align="stretch" gap={1.5} pl={4} borderLeft="2px solid" borderColor="teal.100">
+          {[
+            "With service providers who assist in operating our platform (e.g. Supabase, Stripe)",
+            "When required by law or to respond to legal processes",
+            "To protect the rights and safety of Plug and Play Agent and its users",
+            "In connection with a business merger or acquisition (users notified in advance)",
+          ].map((item) => (
+            <Text key={item} fontSize="14px" color="gray.500">→ {item}</Text>
+          ))}
+        </VStack>
+      </VStack>
+    ),
+  },
+  {
+    number: "05",
+    title: "Your Rights",
+    icon: Eye,
+    iconBg: "green.50",
+    iconColor: "green.600",
+    content: (
+      <VStack align="stretch" gap={4} color="gray.600" fontSize="15px" lineHeight="1.9">
+        <Text>
+          Depending on your location, you may have the following rights regarding your
+          personal data under GDPR, CCPA, or applicable local laws:
+        </Text>
+        <VStack align="stretch" gap={1.5} pl={4} borderLeft="2px solid" borderColor="green.100">
+          {[
+            "Right to access — request a copy of your personal data",
+            "Right to rectification — correct inaccurate or incomplete data",
+            "Right to erasure — request deletion of your data",
+            "Right to portability — receive your data in a structured format",
+            "Right to object — opt out of certain processing activities",
+            "Right to restrict processing — limit how we use your data",
+          ].map((item) => (
+            <Text key={item} fontSize="14px" color="gray.500">→ {item}</Text>
+          ))}
+        </VStack>
+        <Text>
+          To exercise any of these rights, please contact us at{" "}
+          <Link href="mailto:contact@plugandplayagent.com" color="purple.600" fontWeight="600">
+            contact@plugandplayagent.com
+          </Link>
+          . We will respond within 30 days.
+        </Text>
+      </VStack>
+    ),
+  },
+  {
+    number: "06",
+    title: "Data Retention & Security",
+    icon: Lock,
+    iconBg: "red.50",
+    iconColor: "red.500",
+    content: (
+      <VStack align="stretch" gap={4} color="gray.600" fontSize="15px" lineHeight="1.9">
+        <Text>
+          We retain your personal data for as long as your account is active or as needed
+          to provide our Service. Upon account deletion, your data is permanently removed
+          within 30 days, except where required by law.
+        </Text>
+        <Text>
+          We implement industry-standard security measures including AES-256 encryption
+          at rest, TLS 1.3 in transit, regular security audits, and strict access controls
+          to protect your data from unauthorized access, alteration, or disclosure.
+        </Text>
+      </VStack>
+    ),
+  },
+];
 
 export default function PrivacyPolicyPage() {
   return (
-    <Box bg="gray.50" minH="100vh" py={12}>
-      <Container maxW="4xl">
-        <VStack align="stretch" gap={8} bg="white" p={8} borderRadius="2xl" boxShadow="sm">
-          {/* Header */}
-          <Box>
-            <Heading as="h1" fontSize="3xl" fontWeight="700" color="gray.900" mb={2}>
-              Privacy Policy
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              Last Updated: March 17, 2026
-            </Text>
-          </Box>
+    <Box bg="#fafafa" minH="100vh">
+      <Navbar />
 
-          <Separator my={8} />
+      {/* Hero */}
+      <Box
+        pt={{ base: "32", md: "44" }}
+        pb={{ base: "16", md: "24" }}
+        bg="white"
+        borderBottom="1px solid"
+        borderColor="gray.100"
+        textAlign="center"
+      >
+        <Container maxW="3xl" mx="auto" px={6}>
+          <NextLink href="/" passHref>
+            <Button
+              variant="ghost"
+              size="sm"
+              mb={8}
+              color="purple.600"
+              _hover={{ bg: "purple.50" }}
+              fontWeight="600"
+            >
+              <ArrowLeft size={15} style={{ marginRight: "6px" }} />
+              Back to Home
+            </Button>
+          </NextLink>
 
-          {/* Introduction */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              1. Introduction
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              PostGini ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our social media management platform and related services (collectively, the "Service").
-            </Text>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7">
-              By using PostGini, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our Service.
-            </Text>
-          </Box>
+          {/* Badge */}
+          <Flex justify="center" mb={5}>
+            <Box
+              px={4} py={1.5}
+              bg="purple.50"
+              color="purple.700"
+              borderRadius="full"
+              fontSize="xs"
+              fontWeight="700"
+              textTransform="uppercase"
+              letterSpacing="0.08em"
+            >
+              Legal
+            </Box>
+          </Flex>
 
-          {/* Information We Collect */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              2. Information We Collect
-            </Heading>
+          <Heading
+            as="h1"
+            fontSize={{ base: "4xl", md: "6xl" }}
+            fontWeight="800"
+            color="gray.900"
+            mb={5}
+            letterSpacing="-0.03em"
+            lineHeight="1.1"
+          >
+            Privacy Policy
+          </Heading>
 
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                2.1 Personal Information
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                When you create an account, we collect:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Email address</li>
-                <li>Name</li>
-                <li>Password (encrypted)</li>
-                <li>Profile information</li>
+          <Text
+            fontSize={{ base: "lg", md: "xl" }}
+            color="gray.500"
+            maxW="xl"
+            mx="auto"
+            lineHeight="1.7"
+            mb={8}
+          >
+            Your privacy is our priority. We are committed to protecting your data
+            and being fully transparent about how we use it.
+          </Text>
+
+          <Flex
+            justify="center"
+            align="center"
+            gap={3}
+            fontSize="sm"
+            color="gray.400"
+          >
+            <Box w={1.5} h={1.5} borderRadius="full" bg="green.400" />
+            <Text>Last Updated: <Text as="span" fontWeight="600" color="gray.600">March 17, 2026</Text></Text>
+          </Flex>
+        </Container>
+      </Box>
+
+      {/* Table of Contents */}
+      <Container maxW="3xl" mx="auto" px={6} pt={12} pb={2}>
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+          borderRadius="2xl"
+          p={{ base: 6, md: 8 }}
+        >
+          <Text
+            fontSize="xs"
+            fontWeight="700"
+            textTransform="uppercase"
+            letterSpacing="0.1em"
+            color="gray.400"
+            mb={5}
+          >
+            Contents
+          </Text>
+          <Flex wrap="wrap" gap={3}>
+            {sections.map((s) => (
+              <Box
+                key={s.number}
+                px={4} py={2}
+                bg="gray.50"
+                borderRadius="full"
+                fontSize="13px"
+                fontWeight="600"
+                color="gray.600"
+                cursor="pointer"
+                _hover={{ bg: "purple.50", color: "purple.700" }}
+                transition="all 0.2s"
+              >
+                {s.number}. {s.title}
               </Box>
+            ))}
+            <Box
+              px={4} py={2}
+              bg="gray.50"
+              borderRadius="full"
+              fontSize="13px"
+              fontWeight="600"
+              color="gray.600"
+              cursor="pointer"
+              _hover={{ bg: "purple.50", color: "purple.700" }}
+              transition="all 0.2s"
+            >
+              07. Account Deletion
             </Box>
+            <Box
+              px={4} py={2}
+              bg="gray.50"
+              borderRadius="full"
+              fontSize="13px"
+              fontWeight="600"
+              color="gray.600"
+              cursor="pointer"
+              _hover={{ bg: "purple.50", color: "purple.700" }}
+              transition="all 0.2s"
+            >
+              08. Contact Us
+            </Box>
+          </Flex>
+        </Box>
+      </Container>
 
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                2.2 Social Media Account Information
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                When you connect social media accounts (Facebook, Instagram, etc.), we collect:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Public profile information from connected platforms</li>
-                <li>Page information and permissions you grant</li>
-                <li>Content you publish through our Service</li>
-                <li>Engagement metrics and analytics data</li>
+      {/* Main Content */}
+      <Container maxW="3xl" mx="auto" px={6} py={12}>
+        <VStack align="stretch" gap={6}>
+          {sections.map((section, i) => (
+            <Box
+              key={section.number}
+              bg="white"
+              border="1px solid"
+              borderColor="gray.100"
+              borderRadius="2xl"
+              p={{ base: 6, md: 10 }}
+              boxShadow="0 1px 3px rgba(0,0,0,0.04)"
+              _hover={{ boxShadow: "0 4px 16px rgba(0,0,0,0.06)", borderColor: "gray.200" }}
+              transition="all 0.2s"
+            >
+              <Flex align="center" gap={4} mb={7}>
+                <Circle size="11" bg={section.iconBg}>
+                  <Box color={section.iconColor}>
+                    <section.icon size={20} />
+                  </Box>
+                </Circle>
+                <Box>
+                  <Text
+                    fontSize="11px"
+                    fontWeight="700"
+                    textTransform="uppercase"
+                    letterSpacing="0.1em"
+                    color="gray.400"
+                    mb={0.5}
+                  >
+                    Section {section.number}
+                  </Text>
+                  <Heading as="h2" fontSize={{ base: "xl", md: "2xl" }} fontWeight="700" color="gray.900">
+                    {section.title}
+                  </Heading>
+                </Box>
+              </Flex>
+              {section.content}
+            </Box>
+          ))}
+
+          {/* Account Deletion — special red card */}
+          <Box
+            bg="white"
+            border="1px solid"
+            borderColor="red.100"
+            borderRadius="2xl"
+            p={{ base: 6, md: 10 }}
+            boxShadow="0 1px 3px rgba(0,0,0,0.04)"
+          >
+            <Flex align="center" gap={4} mb={7}>
+              <Circle size="11" bg="red.50">
+                <Box color="red.500">
+                  <Trash2 size={20} />
+                </Box>
+              </Circle>
+              <Box>
+                <Text fontSize="11px" fontWeight="700" textTransform="uppercase"
+                  letterSpacing="0.1em" color="gray.400" mb={0.5}>
+                  Section 07
+                </Text>
+                <Heading as="h2" fontSize={{ base: "xl", md: "2xl" }} fontWeight="700" color="gray.900">
+                  Account Deletion
+                </Heading>
               </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                2.3 Usage Data
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                We automatically collect information about how you use our Service:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Device information (browser type, operating system)</li>
-                <li>IP address and access times</li>
-                <li>Pages visited and features used</li>
-                <li>Click patterns and interactions</li>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* How We Use Your Information */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              3. How We Use Your Information
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              We use the collected information for the following purposes:
+            </Flex>
+            <Text color="gray.600" fontSize="15px" lineHeight="1.9" mb={6}>
+              You have the right to delete your Plug and Play Agent account at any time.
+              This will permanently remove your Brand DNA data, content history, and
+              disconnect all Instagram integrations. Data is fully purged within 30 days.
             </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li>To provide, maintain, and improve our Service</li>
-              <li>To publish content to your connected social media accounts</li>
-              <li>To send you technical notices and support messages</li>
-              <li>To respond to your comments and questions</li>
-              <li>To develop new features and services</li>
-              <li>To monitor and analyze trends, usage, and activities</li>
-              <li>To detect, investigate, and prevent fraudulent transactions</li>
-              <li>To personalize your experience</li>
-            </Box>
-          </Box>
-
-          {/* Data Sharing */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              4. How We Share Your Information
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              We do not sell your personal information. We may share your information in the following circumstances:
-            </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li><strong>With Social Media Platforms:</strong> When you connect and publish content through platforms like Facebook and Instagram</li>
-              <li><strong>Service Providers:</strong> With third-party vendors who perform services on our behalf (hosting, analytics, customer support)</li>
-              <li><strong>Legal Requirements:</strong> When required by law or to protect our rights and safety</li>
-              <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
-              <li><strong>With Your Consent:</strong> When you explicitly agree to share your information</li>
-            </Box>
-          </Box>
-
-          {/* Meta Platforms Compliance */}
-          <Box bg="blue.50" p={5} borderRadius="xl" border="1px solid" borderColor="blue.100">
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              5. Meta Platforms (Facebook & Instagram) Compliance
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              PostGini integrates with Meta Platforms, Inc. services including Facebook and Instagram. This section outlines our compliance with Meta's Platform Terms and Data Use Policy.
-            </Text>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                5.1 Data We Receive from Meta
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                When you connect your Facebook or Instagram account, we receive:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Public profile information (name, profile picture)</li>
-                <li>Page information for Pages you manage</li>
-                <li>Instagram Business account information</li>
-                <li>Content publishing permissions</li>
-                <li>Basic analytics and insights data</li>
-              </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                5.2 How We Use Meta Data
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                We use data received from Meta Platforms solely for:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Publishing content to your connected Facebook Pages and Instagram accounts</li>
-                <li>Providing analytics and performance insights</li>
-                <li>Improving our content scheduling and management features</li>
-                <li>Authenticating your identity and account permissions</li>
-              </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                5.3 Meta Data Restrictions
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                We do not:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Sell or transfer your Meta data to third parties (except as required for service provision)</li>
-                <li>Use Meta data for unrelated advertising or marketing purposes</li>
-                <li>Retain Meta data longer than necessary for service provision</li>
-                <li>Use Meta data to create user profiles for ad targeting</li>
-              </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                5.4 Disconnecting Meta Accounts
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                You can disconnect your Facebook or Instagram account at any time:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Go to Dashboard → Integrations</li>
-                <li>Click "Disconnect" on the connected platform card</li>
-                <li>Alternatively, revoke access via Facebook Settings → Apps and Websites</li>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Data Retention */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              6. Data Retention
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              We retain your personal information for as long as necessary to:
-            </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li>Provide our Service and maintain your account</li>
-              <li>Comply with legal obligations</li>
-              <li>Resolve disputes and enforce our agreements</li>
-            </Box>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mt={3}>
-              When you delete your account, we will delete or anonymize your personal information within 30 days, except where we are required to retain it for legal purposes.
-            </Text>
-          </Box>
-
-          {/* Your Rights */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              7. Your Rights and Choices
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              Depending on your location, you may have the following rights:
-            </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li><strong>Access:</strong> Request a copy of your personal information</li>
-              <li><strong>Correction:</strong> Request correction of inaccurate information</li>
-              <li><strong>Deletion:</strong> Request deletion of your personal information</li>
-              <li><strong>Opt-out:</strong> Opt out of marketing communications</li>
-              <li><strong>Portability:</strong> Request transfer of your data to another service</li>
-              <li><strong>Restriction:</strong> Request restriction of processing</li>
-            </Box>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mt={3}>
-              To exercise these rights, contact us at{" "}
-              <Link href="mailto:privacy@postgini.com" color="blue.600">
-                privacy@postgini.com
-              </Link>
-              .
-            </Text>
-          </Box>
-
-          {/* Account Deletion */}
-          <Box bg="red.50" p={5} borderRadius="xl" border="1px solid" borderColor="red.100">
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              8. Account Deletion
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              You have the right to delete your PostGini account at any time. We provide two methods for account deletion:
-            </Text>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                8.1 Self-Service Deletion
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                Delete your account instantly through your dashboard:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Log in to your PostGini account</li>
-                <li>Go to Settings → Account Settings</li>
-                <li>Click "Delete Account"</li>
-                <li>Confirm deletion by entering your password</li>
-              </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                8.2 Direct Deletion Link
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                You can also delete your account directly using this link:
-              </Text>
-              <Box bg="white" p={4} borderRadius="lg" border="1px solid" borderColor="gray.200" mb={3}>
-                <Link
-                  href="/settings/delete-account"
-                  color="red.600"
-                  fontWeight="600"
-                  textDecoration="underline"
-                >
-                  Delete My Account
-                </Link>
-              </Box>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7">
-                This link requires you to be logged in. If you cannot access your account, contact support for assistance.
-              </Text>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                8.3 What Happens When You Delete
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-                Upon account deletion:
-              </Text>
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>Your personal information will be deleted within 30 days</li>
-                <li>All connected social media accounts will be disconnected</li>
-                <li>Scheduled posts will be cancelled</li>
-                <li>Your brand data and content will be permanently removed</li>
-                <li>Analytics and historical data will be deleted</li>
-              </Box>
-            </Box>
-
-            <Box ml={4} mt={4}>
-              <Heading as="h3" fontSize="md" fontWeight="600" color="gray.800" mb={2}>
-                8.4 Data Retention After Deletion
-              </Heading>
-              <Text fontSize="14px" color="gray.700" lineHeight="1.7">
-                We may retain certain information for legal compliance, fraud prevention, or legitimate business purposes as required by law. This includes transaction records, log data, and information required for tax purposes.
-              </Text>
-            </Box>
-          </Box>
-
-          {/* Security */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              9. Data Security
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              We implement appropriate technical and organizational measures to protect your personal information:
-            </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li>Encryption of data in transit (TLS/SSL)</li>
-              <li>Secure storage of sensitive data</li>
-              <li>Regular security audits and assessments</li>
-              <li>Access controls and authentication</li>
-              <li>Employee training on data protection</li>
-            </Box>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mt={3}>
-              However, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security.
-            </Text>
-          </Box>
-
-          {/* Children's Privacy */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              10. Children's Privacy
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7">
-              Our Service is not intended for children under 18 years of age. We do not knowingly collect personal information from children. If we become aware that we have collected personal information from a child, we will take steps to delete that information.
-            </Text>
-          </Box>
-
-          {/* Changes to Privacy Policy */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              11. Changes to This Privacy Policy
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              We may update this Privacy Policy from time to time. We will notify you of any changes by:
-            </Text>
-            <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-              <li>Posting the new Privacy Policy on this page</li>
-              <li>Updating the "Last Updated" date</li>
-              <li>Sending you an email notification for significant changes</li>
-            </Box>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mt={3}>
-              We encourage you to review this Privacy Policy periodically for any changes.
-            </Text>
+            <NextLink href="/settings/delete-account" passHref>
+              <Button
+                colorPalette="red"
+                variant="subtle"
+                size="md"
+                borderRadius="xl"
+                fontWeight="700"
+              >
+                <Trash2 size={15} style={{ marginRight: "6px" }} />
+                Go to Account Deletion
+              </Button>
+            </NextLink>
           </Box>
 
           {/* Contact Us */}
-          <Box>
-            <Heading as="h2" fontSize="xl" fontWeight="600" color="gray.900" mb={3}>
-              12. Contact Us
-            </Heading>
-            <Text fontSize="14px" color="gray.700" lineHeight="1.7" mb={3}>
-              If you have any questions about this Privacy Policy or our data practices, please contact us:
-            </Text>
-            <Box bg="gray.50" p={4} borderRadius="lg">
-              <Box as="ul" ml={5} fontSize="14px" color="gray.700" lineHeight="1.8">
-                <li>
-                  Email:{" "}
-                  <Link href="mailto:privacy@postgini.com" color="blue.600">
-                    privacy@postgini.com
-                  </Link>
-                </li>
-                <li>
-                  Support:{" "}
-                  <Link href="mailto:support@postgini.com" color="blue.600">
-                    support@postgini.com
-                  </Link>
-                </li>
+          <Box
+            bg="white"
+            border="1px solid"
+            borderColor="purple.100"
+            borderRadius="2xl"
+            p={{ base: 6, md: 10 }}
+            boxShadow="0 1px 3px rgba(0,0,0,0.04)"
+          >
+            <Flex align="center" gap={4} mb={7}>
+              <Circle size="11" bg="purple.50">
+                <Box color="purple.600">
+                  <Mail size={20} />
+                </Box>
+              </Circle>
+              <Box>
+                <Text fontSize="11px" fontWeight="700" textTransform="uppercase"
+                  letterSpacing="0.1em" color="gray.400" mb={0.5}>
+                  Section 08
+                </Text>
+                <Heading as="h2" fontSize={{ base: "xl", md: "2xl" }} fontWeight="700" color="gray.900">
+                  Contact Us
+                </Heading>
               </Box>
+            </Flex>
+            <Text color="gray.600" fontSize="15px" lineHeight="1.9" mb={6}>
+              If you have any questions about this Privacy Policy or how we handle your
+              data, please don't hesitate to reach out. We aim to respond within 48 hours.
+            </Text>
+            <Box
+              bg="gray.50"
+              border="1px solid"
+              borderColor="gray.100"
+              borderRadius="xl"
+              p={6}
+            >
+              <Flex direction={{ base: "column", sm: "row" }} gap={8}>
+                <Box>
+                  <Text fontSize="11px" fontWeight="700" color="gray.400"
+                    textTransform="uppercase" letterSpacing="0.1em" mb={2}>
+                    Privacy Inquiries
+                  </Text>
+                  <Link
+                    href="mailto:contact@plugandplayagent.com"
+                    color="purple.600"
+                    fontWeight="700"
+                    fontSize="15px"
+                    _hover={{ color: "purple.800" }}
+                  >
+                    contact@plugandplayagent.com
+                  </Link>
+                </Box>
+                <Separator orientation="vertical" display={{ base: "none", sm: "block" }} />
+                <Box>
+                  <Text fontSize="11px" fontWeight="700" color="gray.400"
+                    textTransform="uppercase" letterSpacing="0.1em" mb={2}>
+                    Response Time
+                  </Text>
+                  <Text color="gray.600" fontWeight="600" fontSize="15px">
+                    Within 48 hours
+                  </Text>
+                </Box>
+              </Flex>
             </Box>
           </Box>
 
-          {/* Meta Platform Disclaimer */}
-          <Box bg="gray.50" p={4} borderRadius="lg" border="1px solid" borderColor="gray.200">
-            <Text fontSize="12px" color="gray.600" lineHeight="1.6">
-              <strong>Meta Platform Disclaimer:</strong> This application uses the Meta Platform APIs. Your use of our application is subject to Meta's Platform Terms and Data Use Policy. Meta does not endorse or verify the accuracy of our application's services. For questions about Meta's data practices, please review Meta's Privacy Policy at{" "}
-              <Link href="https://www.facebook.com/privacy/policy" target="_blank" rel="noopener noreferrer" color="blue.600">
-                facebook.com/privacy/policy
-              </Link>
-              .
+          {/* Footer Note */}
+          <Box textAlign="center" py={4}>
+            <Text fontSize="sm" color="gray.400">
+              © 2026 Plug and Play Agent. Built for Instagram growth.{" "}
+              <NextLink href="/terms" passHref>
+                <Link color="purple.500" fontWeight="600" _hover={{ color: "purple.700" }}>
+                  Terms of Service
+                </Link>
+              </NextLink>
+              {" · "}
+              <NextLink href="/cookies" passHref>
+                <Link color="purple.500" fontWeight="600" _hover={{ color: "purple.700" }}>
+                  Cookie Preferences
+                </Link>
+              </NextLink>
             </Text>
-          </Box>
-
-          {/* Footer Links */}
-          <Separator my={6} />
-
-          <Box textAlign="center">
-            <Text fontSize="13px" color="gray.500" mb={3}>
-              This Privacy Policy is compliant with GDPR, CCPA, and Meta Platform requirements.
-            </Text>
-            <Flex gap={4} justify="center" flexWrap="wrap">
-              <Link as={NextLink} href="/privacy" color="blue.600" fontWeight="500">
-                Privacy Policy
-              </Link>
-              <Link as={NextLink} href="/terms" color="blue.600" fontWeight="500">
-                Terms of Service
-              </Link>
-              <Link as={NextLink} href="/settings/delete-account" color="red.600" fontWeight="500">
-                Delete Account
-              </Link>
-            </Flex>
           </Box>
         </VStack>
       </Container>
-    </Box>
 
+      <Footer />
+    </Box>
   );
 }

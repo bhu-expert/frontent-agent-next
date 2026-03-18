@@ -11,7 +11,7 @@ import { FOOTER_LINKS, HEADING_COLORS } from "@/constants";
  */
 export default function Footer() {
   return (
-    <Box bg="#F8FAFF" p={{ base: "4", md: "10" }}>
+    <Box as="footer" bg="#F8FAFF" p={{ base: "4", md: "10" }}>
       <Box
         bg="#1e1b4b"
         borderRadius={{ base: "3xl", md: "40px" }}

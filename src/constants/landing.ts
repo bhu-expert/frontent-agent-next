@@ -2,7 +2,12 @@
  * Landing Page Constants
  */
 
-import { Globe, BrainCircuit, LayoutTemplate, CalendarClock } from "lucide-react";
+import {
+  Globe,
+  BrainCircuit,
+  LayoutTemplate,
+  CalendarClock,
+} from "lucide-react";
 
 export const USE_CASES = [
   {
@@ -26,7 +31,7 @@ export const USE_CASES = [
       { label: "auto-schedule", color: "#0a1e7a", bg: "#e1e7ff" },
     ],
     description:
-      "Go from brand analysis to a scheduled launch in under 10 minutes. plug and playa gents writes the strategy, copy, and publishing schedule for you.",
+      "Go from brand analysis to a scheduled launch in under 10 minutes. plug and play agents writes the strategy, copy, and publishing schedule for you.",
     image: "/usecase-campaign-launch.png",
     bgColor: "#dfe7ff",
     direction: "row-reverse" as const,
@@ -53,7 +58,7 @@ export const USE_CASES = [
       { label: "A/B variants", color: "#0a1e7a", bg: "#e1e7ff" },
     ],
     description:
-      "Choose your campaign context and plug and playa gents outputs multiple visual and copy variations that keep your tone and goals aligned.",
+      "Choose your campaign context and plug and play agents outputs multiple visual and copy variations that keep your tone and goals aligned.",
     image: "/usecase-html-banners.png",
     bgColor: "#e8f0ff",
     direction: "row-reverse" as const,
@@ -117,5 +122,10 @@ export const ITEM_VARIANTS = {
 
 export const CARD_VARIANTS = {
   hidden: { opacity: 0, scale: 0.95, y: 30 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+  },
 };

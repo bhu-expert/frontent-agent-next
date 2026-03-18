@@ -35,7 +35,7 @@
 
 ## Overview
 
-Users enter a website URL → plug and playa gents scrapes and analyses brand signals via SSE streaming.
+Users enter a website URL → plug and play agents scrapes and analyses brand signals via SSE streaming.
 
 Generates 5 distinct brand positioning contexts (Brand Overview, Target Audience, Value Proposition, Tone & Voice, Key Differentiators). User selects a context, picks an ad template, configures tone/platform/CTA.
 
@@ -154,8 +154,8 @@ plug-and-play-agents-v2/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Sagolsa78/plug and playa gents-v2.git
-cd plug and playa gents-v2
+git clone https://github.com/Sagolsa78/plug and play agents-v2.git
+cd plug and play agents-v2
 
 # 2. Install dependencies
 npm install
@@ -179,13 +179,13 @@ npm run dev
 | ------------------------------- | -------- | ------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`      | ✅ Yes   | Your Supabase project URL             |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes   | Supabase anon/public key              |
-| `NEXT_PUBLIC_API_URL`           | ✅ Yes   | plug and playa gents backend base URL |
+| `NEXT_PUBLIC_API_URL`           | ✅ Yes   | plug and play agents backend base URL |
 
 ---
 
 ## 🔐 Authentication
 
-plug and playa gents uses two distinct authentication flows:
+plug and play agents uses two distinct authentication flows:
 
 - **Standard flow (returning user)**: Sign in → JWT → all API calls authenticated.
 - **Delayed auth flow (new/guest user)**: Discover the tool completely free up to generating final assets. Friction is introduced only at the end.
@@ -241,7 +241,7 @@ npx playwright show-report
 
 ## 🌐 API Reference
 
-Brief summary of the plug and playa gents backend API structure. Full reference can be found in [`docs/API.md`](docs/API.md).
+Brief summary of the plug and play agents backend API structure. Full reference can be found in [`docs/API.md`](docs/API.md).
 
 | Method | Endpoint                     | Auth   | Description               |
 | ------ | ---------------------------- | ------ | ------------------------- |
@@ -260,7 +260,7 @@ We welcome contributions! Please read [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details. Copyright © 2026 plug and playa gents.
+This project is licensed under the MIT License - see the LICENSE file for details. Copyright © 2026 plug and play agents.
 
 ## 🙏 Acknowledgements
 

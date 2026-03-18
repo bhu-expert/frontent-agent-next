@@ -30,7 +30,7 @@ const steps = [
     number: "01",
     title: "Paste your website URL",
     description:
-      "PostGini reads your website, extracts your brand voice, products, and key messages automatically.",
+      "plugandplayagents reads your website, extracts your brand voice, products, and key messages automatically.",
   },
   {
     number: "02",
@@ -48,9 +48,14 @@ const steps = [
 
 export default function UseCases() {
   return (
-    <Box as="section" py={{ base: 24, md: 36 }} bg="#F8F8F6" id="product" style={{ textAlign: "center" }}>
+    <Box
+      as="section"
+      py={{ base: 24, md: 36 }}
+      bg="#F8F8F6"
+      id="product"
+      style={{ textAlign: "center" }}
+    >
       <Container maxW="container.xl">
-
         {/* Section label + heading */}
         <VStack gap={5} mb={20} align="center">
           <Badge
@@ -87,8 +92,8 @@ export default function UseCases() {
             lineHeight="1.65"
             textAlign="center"
           >
-            No brief. No back-and-forth. Just paste your URL and let PostGini
-            build your content calendar.
+            No brief. No back-and-forth. Just paste your URL and let
+            plugandplayagents build your content calendar.
           </Text>
         </VStack>
 
@@ -108,7 +113,10 @@ export default function UseCases() {
               borderColor="gray.200"
               textAlign="center"
               position="relative"
-              _hover={{ borderColor: "blue.200", boxShadow: "0 8px 32px rgba(37,99,235,0.08)" }}
+              _hover={{
+                borderColor: "blue.200",
+                boxShadow: "0 8px 32px rgba(37,99,235,0.08)",
+              }}
               transition2="border-color 0.2s, box-shadow 0.2s"
             >
               <Flex
@@ -136,7 +144,12 @@ export default function UseCases() {
               >
                 {step.title}
               </Heading>
-              <Text fontSize="sm" color="gray.500" lineHeight="1.7" textAlign="center">
+              <Text
+                fontSize="sm"
+                color="gray.500"
+                lineHeight="1.7"
+                textAlign="center"
+              >
                 {step.description}
               </Text>
             </MotionBox>
@@ -187,7 +200,11 @@ export default function UseCases() {
                   Workspace
                 </Text>
                 <VStack gap={1} align="stretch">
-                  <SidebarItem icon={LayoutDashboard} label="Dashboard" isActive />
+                  <SidebarItem
+                    icon={LayoutDashboard}
+                    label="Dashboard"
+                    isActive
+                  />
                   <SidebarItem icon={Zap} label="Generate" />
                   <SidebarItem icon={CheckCircle2} label="Review" />
                   <SidebarItem icon={Calendar} label="Calendar" />
@@ -207,7 +224,13 @@ export default function UseCases() {
                 border="1px solid"
                 borderColor="gray.200"
               >
-                <Flex justify="space-between" align="center" mb={8} wrap="wrap" gap={3}>
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  mb={8}
+                  wrap="wrap"
+                  gap={3}
+                >
                   <Box textAlign="left">
                     <Heading
                       size="md"
@@ -273,7 +296,15 @@ export default function UseCases() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function SidebarItem({ icon, label, isActive = false }: { icon: any; label: string; isActive?: boolean }) {
+function SidebarItem({
+  icon,
+  label,
+  isActive = false,
+}: {
+  icon: any;
+  label: string;
+  isActive?: boolean;
+}) {
   return (
     <Flex
       align="center"
@@ -292,7 +323,9 @@ function SidebarItem({ icon, label, isActive = false }: { icon: any; label: stri
       transition="all 0.15s"
     >
       <Icon as={icon} boxSize={4} />
-      <Text fontSize="13px" textAlign="left">{label}</Text>
+      <Text fontSize="13px" textAlign="left">
+        {label}
+      </Text>
     </Flex>
   );
 }
@@ -307,10 +340,23 @@ function StatCard({ label, value }: { label: string; value: string }) {
       borderColor="gray.100"
       textAlign="left"
     >
-      <Text fontSize="xs" fontWeight="700" color="gray.500" mb={1.5} textTransform="uppercase" letterSpacing="0.04em">
+      <Text
+        fontSize="xs"
+        fontWeight="700"
+        color="gray.500"
+        mb={1.5}
+        textTransform="uppercase"
+        letterSpacing="0.04em"
+      >
         {label}
       </Text>
-      <Text fontSize="3xl" fontWeight="800" color="gray.900" letterSpacing="-0.04em" lineHeight={1}>
+      <Text
+        fontSize="3xl"
+        fontWeight="800"
+        color="gray.900"
+        letterSpacing="-0.04em"
+        lineHeight={1}
+      >
         {value}
       </Text>
     </Box>
@@ -365,7 +411,13 @@ function ContentRow({
           </Text>
         </Box>
       </Flex>
-      <Text color="blue.600" fontWeight="700" fontSize="xs" cursor="pointer" flexShrink={0}>
+      <Text
+        color="blue.600"
+        fontWeight="700"
+        fontSize="xs"
+        cursor="pointer"
+        flexShrink={0}
+      >
         {status} →
       </Text>
     </Flex>

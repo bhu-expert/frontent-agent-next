@@ -31,7 +31,7 @@ These endpoints are standard Supabase calls but generally mapped through our ser
 
 ## 3. Brand Endpoints
 
-This collection handles the core logic of plug and playa gents: scraping context, returning data, and generating ad creative.
+This collection handles the core logic of plug and play agents: scraping context, returning data, and generating ad creative.
 
 ### `POST /brands`
 

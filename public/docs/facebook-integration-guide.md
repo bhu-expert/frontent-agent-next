@@ -1,10 +1,10 @@
 # Facebook Integration Guide
 
-This guide explains how to connect Facebook and Instagram to PostGini for content publishing and management.
+This guide explains how to connect Facebook and Instagram to plugandplayagents for content publishing and management.
 
 ## Overview
 
-PostGini uses Facebook's OAuth 2.0 authentication to connect both Facebook Pages and Instagram Business accounts. When you connect via Facebook, you authenticate with your **personal Facebook account**, then select which Facebook Pages to manage.
+plugandplayagents uses Facebook's OAuth 2.0 authentication to connect both Facebook Pages and Instagram Business accounts. When you connect via Facebook, you authenticate with your **personal Facebook account**, then select which Facebook Pages to manage.
 
 ---
 
@@ -19,7 +19,7 @@ PostGini uses Facebook's OAuth 2.0 authentication to connect both Facebook Pages
 ### Step 2: Authenticate with Personal Account
 
 1. Log in with your **personal Facebook account** credentials
-2. Review the permissions requested by PostGini:
+2. Review the permissions requested by plugandplayagents:
    - `pages_show_list` - View your Facebook Pages
    - `pages_read_engagement` - Read Page content and engagement
    - `pages_manage_posts` - Create and manage Page posts
@@ -31,7 +31,7 @@ PostGini uses Facebook's OAuth 2.0 authentication to connect both Facebook Pages
 ### Step 3: Select Facebook Pages
 
 1. After authorization, you'll see a list of Facebook Pages you manage
-2. Select the Page(s) you want to connect to PostGini
+2. Select the Page(s) you want to connect to plugandplayagents
 3. Click **"Done"** to complete the connection
 
 ### Step 4: Connection Confirmed
@@ -48,7 +48,7 @@ PostGini uses Facebook's OAuth 2.0 authentication to connect both Facebook Pages
 
 Before connecting Instagram, ensure:
 
-- ✅ You have a **Facebook Page** already connected to PostGini
+- ✅ You have a **Facebook Page** already connected to plugandplayagents
 - ✅ Your Instagram account is set to **Business** or **Creator** (not Personal)
 - ✅ Your Instagram Business account is **linked to your Facebook Page**
 
@@ -65,7 +65,7 @@ If your Instagram isn't linked yet:
 
 ### Step 1: Connect via Facebook
 
-1. In PostGini, ensure your Facebook Page is already connected
+1. In plugandplayagents, ensure your Facebook Page is already connected
 2. The Instagram card will show **"Connect Facebook First"** until Facebook is linked
 3. Once Facebook is connected, Instagram connection happens automatically for linked Business accounts
 
@@ -83,10 +83,10 @@ If your Instagram isn't linked yet:
 
 ### Personal vs. Business Accounts
 
-| Account Type | Facebook | Instagram |
-|-------------|----------|-----------|
-| **Personal** | ✅ Used for authentication | ❌ Not supported |
-| **Business/Creator** | N/A (Page is business) | ✅ Required for integration |
+| Account Type         | Facebook                   | Instagram                   |
+| -------------------- | -------------------------- | --------------------------- |
+| **Personal**         | ✅ Used for authentication | ❌ Not supported            |
+| **Business/Creator** | N/A (Page is business)     | ✅ Required for integration |
 
 **Key Point:** You authenticate with your personal Facebook account, but you connect to **Facebook Pages** (business entities) and **Instagram Business accounts**.
 
@@ -125,18 +125,18 @@ You must be an **Admin**, **Editor**, or have content management permissions on 
 
 ### "Permission Denied" Error
 
-- Re-authorize PostGini in Facebook Settings → Apps and Websites
+- Re-authorize plugandplayagents in Facebook Settings → Apps and Websites
 - Ensure all required permissions are granted during OAuth flow
 
 ---
 
 ## Security & Privacy
 
-- PostGini only accesses Pages and accounts you explicitly select
+- plugandplayagents only accesses Pages and accounts you explicitly select
 - Access tokens are stored securely and encrypted
 - You can revoke access anytime:
-  - In PostGini: Dashboard → Integrations → Disconnect
-  - In Facebook: Settings → Apps and Websites → Remove PostGini
+  - In plugandplayagents: Dashboard → Integrations → Disconnect
+  - In Facebook: Settings → Apps and Websites → Remove plugandplayagents
 
 ---
 
@@ -148,7 +148,7 @@ You must be an **Admin**, **Editor**, or have content management permissions on 
 2. Redirect to Facebook OAuth 2.0 endpoint
 3. User authenticates and grants permissions
 4. Facebook redirects back with authorization code
-5. PostGini exchanges code for access token
+5. plugandplayagents exchanges code for access token
 6. Token stored securely for API calls
 
 ### Token Management
@@ -161,9 +161,9 @@ You must be an **Admin**, **Editor**, or have content management permissions on 
 
 ## Need Help?
 
-- **Documentation**: Check the [PostGini Documentation](/docs)
-- **Support**: Contact support@postgini.com
-- **Status**: Check system status at status.postgini.com
+- **Documentation**: Check the [plugandplayagents Documentation](/docs)
+- **Support**: Contact support@plugandplayagents.com
+- **Status**: Check system status at status.plugandplayagents.com
 
 ---
 

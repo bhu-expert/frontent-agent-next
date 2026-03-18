@@ -26,9 +26,9 @@ test.describe('Landing Page', () => {
 
     // Nav links: Features, How It Works, Pricing, Contact
     await expect(page.getByRole('link', { name: 'Features' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'How It Works' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'How It Works' }).filter({ visible: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Pricing' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Contact',exact:true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Contact', exact: true })).toBeVisible();
 
     // "Get Started" CTA in desktop navbar
     if (!isMobile) {

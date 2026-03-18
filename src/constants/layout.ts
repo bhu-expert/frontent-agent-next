@@ -3,8 +3,9 @@
 export const NAV_LINKS = [
   { label: "Features", href: "/#features" },
   { label: "How It Works", href: "/#how-it-works" },
+  { label: "Blog", href: "/blog" },
   { label: "Pricing", href: "/#pricing" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Contact", href: "/contact" },
   // "Use Cases" hidden — show once use case page is ready
 ] as const;
 
@@ -16,10 +17,9 @@ export const FOOTER_LINKS = {
   ],
   Resources: [
     { label: "Support", href: "/support" },
-    { label: "Affiliate program", href: "#" },
-    { label: "Privacy Policy", href: "/privacy-policy" },
-    { label: "Cookie Preferences", href: "#" },
-    { label: "Terms of service", href: "/terms-of-service" },
+    { label: "Privacy Policy", href: "/privacy" },
+    // { label: "Cookie Preferences", href: "#" },
+    { label: "Terms of service", href: "#" },
     { label: "Contact Us", href: "/contact" },
   ],
   // "Download" column removed

@@ -2,7 +2,7 @@
 
 ## 1. Why Delayed Auth?
 
-plug and playa gents v2 optimizes for maximum user acquisition by minimizing initial friction. Users can input their website and watch our AI execute a deep analysis completely for free, without needing to sign up.
+plug and play agents v2 optimizes for maximum user acquisition by minimizing initial friction. Users can input their website and watch our AI execute a deep analysis completely for free, without needing to sign up.
 
 Friction is intentionally delayed until the critical "value moment" — when the user attempts to generate the final, actionable ad variations base on their selected contexts.
 
