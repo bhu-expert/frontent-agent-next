@@ -122,10 +122,10 @@ export async function GET(request: NextRequest) {
       hasData: !!readRes.data,
       data: readRes.data
         ? {
-            user_id: readRes.data.user_id,
-            provider: readRes.data.provider,
-            status: readRes.data.status,
-            has_connected_account: !!readRes.data.connected_account,
+            user_id: (readRes.data as any).user_id,
+            provider: (readRes.data as any).provider,
+            status: (readRes.data as any).status,
+            has_connected_account: !!(readRes.data as any).connected_account,
           }
         : null,
     };
