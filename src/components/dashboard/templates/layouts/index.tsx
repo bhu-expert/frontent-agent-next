@@ -53,10 +53,10 @@ function Logo({ brandName, color = "white" }: { brandName?: string; color?: stri
       top="3%"
       right="4%"
       zIndex={100}
-      fontSize="clamp(9px, 2.2%, 13px)"
-      fontWeight="700"
+      fontSize="clamp(11px, 3.5%, 20px)"
+      fontWeight="800"
       color={color}
-      letterSpacing="0.1em"
+      letterSpacing="0.12em"
       textTransform="uppercase"
       maxW="180px"
       overflow="hidden"
@@ -147,11 +147,11 @@ export function ProcessStack({ vd, imageUrl, primary, secondary, accent, format 
         gap="1.5%"
       >
         {vd.tagline && (
-          <T size="2.4%" weight="700" color={accent} letterSpacing="0.08em">
+          <T size="3.2%" weight="700" color={accent} letterSpacing="0.08em">
             {vd.tagline}
           </T>
         )}
-        <T size="3.6%" weight="800" color="white" lines={2}>
+        <T size="4.8%" weight="800" color="white" lines={2}>
           {vd.headline || "Your Headline"}
         </T>
         {vd.cta_text && (
@@ -246,7 +246,7 @@ export function TitleSandwich({ vd, imageUrl, primary, secondary, accent, format
         px="5%"
         zIndex={2}
       >
-        <T size="3%" weight="800" color="white" lines={1}>
+        <T size="4%" weight="800" color="white" lines={1}>
           {vd.cta_text || "Shop Now"}
         </T>
         {vd.subheadline && (
