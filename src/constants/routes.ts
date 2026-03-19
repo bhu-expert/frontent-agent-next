@@ -13,9 +13,9 @@ export const ROUTES = {
 } as const;
 
 export const STORAGE_KEYS = {
-  PENDING_BRAND_ID: "plug_and_play_agents_pending_brand_id",
-  PENDING_ACTION: "plug_and_play_agents_pending_action",
-  CLAIMED_BRAND_ID: "plug_and_play_agents_claimed_brand_id",
+  PENDING_BRAND_ID: "ppa_pending_brand_id",
+  PENDING_ACTION: "ppa_pending_action",
+  CLAIMED_BRAND_ID: "ppa_claimed_brand_id",
 } as const;
 
 export const SUPABASE_PROJECT_URL =

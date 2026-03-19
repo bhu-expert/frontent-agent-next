@@ -149,7 +149,7 @@ export default function SupportPage() {
                   <Box>
                     <Heading as="h3" fontSize="2xl" mb={2} color="gray.900" fontWeight="700">Email Us</Heading>
                     <Text color="gray.600" mb={4} fontSize="lg">Perfect for complex queries or technical support.</Text>
-                    <Text color="blue.600" fontWeight="700" fontSize="xl">contact@plugandplayagent.com</Text>
+                    <Text color="blue.600" fontWeight="700" fontSize="xl">contact@plugandplayagents.com</Text>
                   </Box>
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">We reply within 24 hours</Text>
                 </VStack>

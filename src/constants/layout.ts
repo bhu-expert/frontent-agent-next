@@ -5,7 +5,7 @@ export const NAV_LINKS = [
   { label: "How It Works", href: "/#how-it-works" },
   { label: "Blog", href: "/blog" },
   { label: "Pricing", href: "/#pricing" },
-  { label: "Contact", href: "/contact" },
+  { label: "Contact", href: "/#contact" },
   // "Use Cases" hidden — show once use case page is ready
 ] as const;
 
@@ -18,11 +18,9 @@ export const FOOTER_LINKS = {
   Resources: [
     { label: "Support", href: "/support" },
     { label: "Privacy Policy", href: "/privacy" },
-    // { label: "Cookie Preferences", href: "#" },
     { label: "Terms of service", href: "#" },
     { label: "Contact Us", href: "/contact" },
   ],
-  // "Download" column removed
   "Get in touch": [
     { label: "contact@plugandplayagents.com", href: "mailto:contact@plugandplayagents.com" },
     { label: "Discord", href: "#" },

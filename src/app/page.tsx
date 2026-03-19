@@ -61,11 +61,11 @@ export default function Home() {
     <Box minH="100vh" bg="white">
       <Navbar />
       <HeroSection />
-      <HowItWorks />
-      <FeatureGrid />
-      <Pricing />
+      <Box id="how-it-works"><HowItWorks /></Box>
+      <Box id="features"><FeatureGrid /></Box>
+      <Box id="pricing"><Pricing /></Box>
       <FinalCTA />
-      <ContactForm/>
+      <Box id="contact"><ContactForm /></Box>
       <Footer />
     </Box>
   );

@@ -118,14 +118,14 @@ export default function ContactPageClient() {
                     Email Us
                   </Text>
                   <Link
-                    href="mailto:contact@plugandplayagent.com"
+                    href="mailto:contact@plugandplayagents.com"
                     fontSize="lg"
                     fontWeight="600"
                     color="gray.900"
                     _hover={{ color: "blue.600" }}
                     variant="plain"
                   >
-                    contact@plugandplayagent.com
+                    contact@plugandplayagents.com
                   </Link>
                 </Box>
               </HStack>

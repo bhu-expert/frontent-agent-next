@@ -1,5 +1,5 @@
 import type { PendingAction } from "@/types/onboarding.types";
-import { STORAGE_KEYS } from "@/config";
+import { STORAGE_KEYS } from "@/constants/routes";
 
 // ─── Keys ────────────────────────────────────────────────────────────
 
