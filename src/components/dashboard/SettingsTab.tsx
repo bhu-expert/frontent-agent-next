@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, Flex, HStack, Text, VStack, Link } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  Text,
+  VStack,
+  Link,
+} from "@chakra-ui/react";
 import { Check } from "lucide-react";
 import NextLink from "next/link";
+import { SUPPORT_EMAIL } from "@/constants/contact";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -132,7 +141,7 @@ function SectionDivider() {
 
 export default function SettingsTab() {
   const router = useRouter();
-  
+
   // Notification toggles
   const [emailDigests, setEmailDigests] = useState(true);
   const [postAlerts, setPostAlerts] = useState(true);
@@ -147,7 +156,13 @@ export default function SettingsTab() {
     <VStack align="stretch" gap={8}>
       {/* Page heading */}
       <Box>
-        <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="700" color="#111111" lineHeight="1.05" mb={2}>
+        <Text
+          fontSize={{ base: "3xl", md: "4xl" }}
+          fontWeight="700"
+          color="#111111"
+          lineHeight="1.05"
+          mb={2}
+        >
           Settings
         </Text>
         <Text fontSize="15px" color="#6B7280">
@@ -244,7 +259,13 @@ export default function SettingsTab() {
 
       {/* ── 3. Plan & Billing ── */}
       <Box {...CARD_STYLE}>
-        <Flex align={{ base: "flex-start", sm: "center" }} justify="space-between" direction={{ base: "column", sm: "row" }} gap={3} mb={6}>
+        <Flex
+          align={{ base: "flex-start", sm: "center" }}
+          justify="space-between"
+          direction={{ base: "column", sm: "row" }}
+          gap={3}
+          mb={6}
+        >
           <Text fontSize="18px" fontWeight="700" color="#111111">
             Plan &amp; Billing
           </Text>
@@ -278,7 +299,10 @@ export default function SettingsTab() {
           fontSize="14px"
           fontWeight="600"
           boxShadow="0 6px 16px rgba(79,70,229,0.22)"
-          _hover={{ bg: "#4338CA", boxShadow: "0 10px 24px rgba(79,70,229,0.28)" }}
+          _hover={{
+            bg: "#4338CA",
+            boxShadow: "0 10px 24px rgba(79,70,229,0.28)",
+          }}
         >
           Upgrade to Pro
         </Button>
@@ -299,10 +323,11 @@ export default function SettingsTab() {
           Danger Zone
         </Text>
         <Text fontSize="14px" color="#9CA3AF" mb={6} lineHeight="1.55">
-          Deleting your account is permanent and irreversible. All your brands, generated content,
-          and connected integrations will be removed immediately with no option to recover.
+          Deleting your account is permanent and irreversible. All your brands,
+          generated content, and connected integrations will be removed
+          immediately with no option to recover.
         </Text>
-        
+
         <VStack align="stretch" gap={3}>
           <Button
             variant="outline"
@@ -319,20 +344,29 @@ export default function SettingsTab() {
           >
             Delete Account
           </Button>
-          
+
           <Text fontSize="12px" color="#9CA3AF" textAlign="center">
             Or use our{" "}
-            <Link as={NextLink} href="/settings/delete-account" color="#DC2626" textDecoration="underline">
+            <Link
+              as={NextLink}
+              href="/settings/delete-account"
+              color="#DC2626"
+              textDecoration="underline"
+            >
               direct account deletion link
             </Link>
           </Text>
-          
+
           <Box h="1px" bg="#F3F4F6" my={2} />
-          
+
           <Text fontSize="12px" color="#6B7280" textAlign="center">
             Need help? Contact{" "}
-            <Link href="mailto:support@postgini.com" color="#4F46E5" textDecoration="underline">
-              support@postgini.com
+            <Link
+              href={`mailto:${SUPPORT_EMAIL}`}
+              color="#4F46E5"
+              textDecoration="underline"
+            >
+              {SUPPORT_EMAIL}
             </Link>
           </Text>
         </VStack>

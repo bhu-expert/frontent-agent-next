@@ -12,6 +12,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import UseCases from "@/components/landing/UseCases";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Footer from "@/components/layout/Footer";
+import ContactForm from "@/components/landing/ContactForm";
 
 export default function Home() {
   const router = useRouter();
@@ -60,10 +61,11 @@ export default function Home() {
     <Box minH="100vh" bg="white">
       <Navbar />
       <HeroSection />
-      <HowItWorks />
-      <FeatureGrid />
-      <Pricing />
+      <Box id="how-it-works"><HowItWorks /></Box>
+      <Box id="features"><FeatureGrid /></Box>
+      <Box id="pricing"><Pricing /></Box>
       <FinalCTA />
+      <Box id="contact"><ContactForm /></Box>
       <Footer />
     </Box>
   );

@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   font-family: "Space Grotesk", system-ui, sans-serif;
   background: #faf5ff;

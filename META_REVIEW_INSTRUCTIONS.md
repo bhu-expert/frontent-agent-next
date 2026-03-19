@@ -1,8 +1,8 @@
 # Meta App Review - Test Instructions
 
-**App Name:** PostGini  
+**App Name:** plugandplayagents  
 **Submission Date:** March 17, 2026  
-**Contact:** support@postgini.com
+**Contact:** support@plugandplayagents.com
 
 ---
 
@@ -11,7 +11,7 @@
 ### Test Credentials
 
 **Option 1: Use Provided Test Account**
-- **Email:** reviewer-test@postgini.com
+- **Email:** reviewer-test@plugandplayagents.com
 - **Password:** [Will be provided separately via secure channel]
 
 **Option 2: Use Your Facebook Account**
@@ -33,7 +33,7 @@
 ### 1. pages_show_list
 **Why We Need It:**
 - Display list of Facebook Pages the user manages
-- Allow user to select which Page to connect to PostGini
+- Allow user to select which Page to connect to plugandplayagents
 
 **How We Use It:**
 1. User clicks "Connect with Facebook"
@@ -77,7 +77,7 @@
 - This is the core functionality of our app
 
 **How We Use It:**
-1. User creates post in PostGini
+1. User creates post in plugandplayagents
 2. Adds content (text, images)
 3. Selects connected Facebook Page
 4. Clicks "Publish" or "Schedule"
@@ -108,7 +108,7 @@
 
 **Test Steps:**
 1. Ensure Instagram Business is linked to Facebook Page
-2. Connect Facebook in PostGini
+2. Connect Facebook in plugandplayagents
 3. See Instagram card show "Connected"
 4. View Instagram account name
 
@@ -122,7 +122,7 @@
 - This is essential for Instagram publishing feature
 
 **How We Use It:**
-1. User creates Instagram post in PostGini
+1. User creates Instagram post in plugandplayagents
 2. Adds media (images/video)
 3. Writes caption
 4. Selects Instagram account
@@ -164,7 +164,7 @@
 ### Facebook Publishing Flow
 
 ```
-1. User logs in to PostGini
+1. User logs in to plugandplayagents
    ↓
 2. Goes to Integrations tab
    ↓
@@ -195,7 +195,7 @@
 1. User ensures Instagram Business is linked to Facebook Page
    (Facebook Page Settings → Instagram → Connect Account)
    ↓
-2. User connects Facebook in PostGini
+2. User connects Facebook in plugandplayagents
    ↓
 3. Instagram auto-detects and shows "Connected"
    ↓
@@ -282,7 +282,7 @@ We have prepared a screen recording demonstrating:
 ## Contact Information
 
 **For Review Questions:**
-- Email: support@postgini.com
+- Email: support@plugandplayagents.com
 - Developer: [Your Name]
 - Response Time: Within 24 hours
 
@@ -298,8 +298,8 @@ Thank you for reviewing our app. We're committed to providing a safe and valuabl
 
 If you need any additional information or clarification, please don't hesitate to reach out.
 
-**PostGini Team**
-support@postgini.com
+**plugandplayagents Team**
+support@plugandplayagents.com
 
 ---
 

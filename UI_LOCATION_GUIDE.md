@@ -3,9 +3,11 @@
 ## Where to Find Each Feature
 
 ### 1. **Integrations Tab** (Main Location)
+
 **URL:** `/dashboard?tab=integrations`
 
 **How to Access:**
+
 1. Login to your app
 2. Go to Dashboard
 3. Click **"Integrations"** in the left sidebar
@@ -13,6 +15,7 @@
 ---
 
 ### 2. **Connect Facebook Button**
+
 **Location:** Integrations Tab → Meta (Facebook) Card
 
 ```
@@ -36,6 +39,7 @@
 ---
 
 ### 3. **Connected State Display**
+
 **Shows After:** Successfully connecting Facebook and selecting a Page
 
 **Location:** Same Meta Card
@@ -54,6 +58,7 @@
 ```
 
 **What You See:**
+
 - ✅ Green badge showing "Connected Page: [Page Name]"
 - 📷 Instagram account name (if linked)
 - "Change Page" button - to switch to different Page
@@ -62,6 +67,7 @@
 ---
 
 ### 4. **Page Selector Modal**
+
 **Shows:** Automatically after Facebook OAuth, or when clicking "Change Page"
 
 **Location:** Overlay modal on top of Integrations Tab
@@ -73,7 +79,7 @@
 │    │  Select Facebook Page                 │   │
 │    │                                       │   │
 │    │  Choose which Facebook Page you want │   │
-│    │  to connect to PostGini              │   │
+│    │  to connect to plugandplayagents              │   │
 │    │                                       │   │
 │    │  ┌─────────────────────────────────┐ │   │
 │    │  │ [M] My Business Page      Connect│ │   │
@@ -92,6 +98,7 @@
 ---
 
 ### 5. **Instagram Card**
+
 **Location:** Integrations Tab → Right of Facebook Card
 
 ```
@@ -111,6 +118,7 @@
 ```
 
 **Before Facebook Connection:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │  [📷] Instagram                             │
@@ -126,6 +134,7 @@
 ---
 
 ### 6. **Info Note (Top of Integrations Tab)**
+
 **Location:** Above the platform cards
 
 ```
@@ -145,9 +154,11 @@
 ---
 
 ### 7. **Toast Notifications**
+
 **Location:** Bottom-right corner of screen
 
 **After Connecting Facebook:**
+
 ```
 ┌────────────────────────────────┐
 │ ✓ Facebook Connected           │
@@ -157,6 +168,7 @@
 ```
 
 **After Selecting Page:**
+
 ```
 ┌────────────────────────────────┐
 │ ✓ Page Connected               │
@@ -174,11 +186,13 @@
 ## Complete User Journey
 
 ### Step 1: Navigate to Integrations
+
 ```
 Dashboard → Sidebar → Click "Integrations"
 ```
 
 ### Step 2: See Available Platforms
+
 ```
 ┌─────────────────────────────────────────────┐
 │  Integrations                               │
@@ -195,15 +209,19 @@ Dashboard → Sidebar → Click "Integrations"
 ```
 
 ### Step 3: Click "Connect with Facebook"
+
 → Redirects to Facebook OAuth
 
 ### Step 4: Grant Permissions
+
 → Facebook shows permission dialog
 
 ### Step 5: Page Selector Modal Appears
+
 → Choose which Page to connect
 
 ### Step 6: Connected State Shows
+
 ```
 ┌──────────────┐ ┌──────────────┐
 │ ✓ Connected  │ │ ✓ Connected  │
@@ -217,19 +235,20 @@ Dashboard → Sidebar → Click "Integrations"
 
 These run in the background when you interact with the UI:
 
-| Action | API Endpoint |
-|--------|-------------|
-| Check connection status | `GET /api/integrations/meta/status` |
-| Select a Page | `POST /api/integrations/meta/select-page` |
-| Publish content | `POST /api/integrations/meta/publish` |
-| Disconnect | `POST /api/integrations/meta/disconnect` |
-| OAuth callback | `GET /api/integrations/meta/callback` |
+| Action                  | API Endpoint                              |
+| ----------------------- | ----------------------------------------- |
+| Check connection status | `GET /api/integrations/meta/status`       |
+| Select a Page           | `POST /api/integrations/meta/select-page` |
+| Publish content         | `POST /api/integrations/meta/publish`     |
+| Disconnect              | `POST /api/integrations/meta/disconnect`  |
+| OAuth callback          | `GET /api/integrations/meta/callback`     |
 
 ---
 
 ## Testing the UI
 
 1. **Start the dev server:**
+
    ```bash
    cd frontent-agent-next
    npm run dev
@@ -253,13 +272,13 @@ These run in the background when you interact with the UI:
 
 ## Screenshots Locations
 
-| Feature | File Location |
-|---------|--------------|
-| Integrations Tab | `src/components/dashboard/IntegrationsTab.tsx` |
-| Page Selector Modal | `src/components/dashboard/PageSelectorModal.tsx` |
+| Feature                | File Location                                     |
+| ---------------------- | ------------------------------------------------- |
+| Integrations Tab       | `src/components/dashboard/IntegrationsTab.tsx`    |
+| Page Selector Modal    | `src/components/dashboard/PageSelectorModal.tsx`  |
 | OAuth Callback Handler | `src/app/api/integrations/meta/callback/route.ts` |
-| Connection Status API | `src/app/api/integrations/meta/status/route.ts` |
-| Publishing API | `src/app/api/integrations/meta/publish/route.ts` |
+| Connection Status API  | `src/app/api/integrations/meta/status/route.ts`   |
+| Publishing API         | `src/app/api/integrations/meta/publish/route.ts`  |
 
 ---
 

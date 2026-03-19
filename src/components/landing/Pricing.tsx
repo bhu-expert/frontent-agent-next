@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { SALES_EMAIL } from "@/constants/contact";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionBox = motion.create(Box as any);
@@ -84,7 +85,14 @@ const PricingCard = ({
       )}
 
       {/* Plan name & price */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+          marginBottom: "20px",
+        }}
+      >
         <Text
           fontSize="sm"
           fontWeight="700"
@@ -116,7 +124,11 @@ const PricingCard = ({
               >
                 ${price}
               </Text>
-              <Text fontSize="sm" color={isFeatured ? "blue.200" : "gray.400"} fontWeight="500">
+              <Text
+                fontSize="sm"
+                color={isFeatured ? "blue.200" : "gray.400"}
+                fontWeight="500"
+              >
                 / mo
               </Text>
             </>
@@ -135,7 +147,15 @@ const PricingCard = ({
       </Text>
 
       {/* Feature list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: 1, marginBottom: "32px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          flex: 1,
+          marginBottom: "32px",
+        }}
+      >
         {features.map((feature, i) => (
           <Flex key={i} align="center" gap={3}>
             <Flex
@@ -189,17 +209,20 @@ const PricingCard = ({
 
 export default function Pricing() {
   return (
-    <Box
-      as="section"
-      py={{ base: 24, md: 40 }}
-      bg="white"
-      id="pricing"
-    >
+    <Box as="section" py={{ base: 24, md: 40 }} bg="white" id="pricing">
       {/* Outer container — plain div, guaranteed centered */}
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px" }}>
-
         {/* Heading block */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "20px", marginBottom: "64px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: "20px",
+            marginBottom: "64px",
+          }}
+        >
           <Badge
             bg="blue.50"
             color="blue.600"
@@ -234,29 +257,22 @@ export default function Pricing() {
           >
             Pick the plan that fits your brand. Upgrade or cancel anytime.
           </Text>
-
-
         </div>
 
         {/* Pricing cards */}
-        <SimpleGrid
-          columns={{ base: 1, md: 2 }}
-          gap={6}
-          maxW="3xl"
-          mx="auto"
-        >
-          
+        <SimpleGrid columns={{ base: 1, md: 2 }} gap={6} maxW="3xl" mx="auto">
           <PricingCard
             name="Starter"
-            price="19"
+            customPriceText="Free"
             description="Perfect for founders building their first personal brand."
             buttonText="Get Started"
             ctaHref="/onboarding"
             features={[
-              "50 AI post generations / mo",
-              "1 Workspace",
-              "Connect 2 social accounts",
-              "Basic content templates",
+              
+              "1 Instagram account",
+              "Brand DNA analysis",
+              "Carousels & Hooks",
+              "No credit card required",
             ]}
           />
           <PricingCard
@@ -266,7 +282,7 @@ export default function Pricing() {
             badgeText="For Teams & Enterprises"
             description="For agencies managing content across multiple client brands."
             buttonText="Contact Sales"
-            ctaHref="mailto:sales@yourdomain.com"
+            ctaHref={`mailto:${SALES_EMAIL}`}
             features={[
               "Unlimited AI post generations",
               "Unlimited Workspaces",
@@ -276,33 +292,6 @@ export default function Pricing() {
             ]}
           />
         </SimpleGrid>
-
-        {/* Stripe trust */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", marginTop: "64px", color: "#9CA3AF" }}>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <Text
-            fontSize="xs"
-            fontWeight="600"
-            textTransform="uppercase"
-            letterSpacing="0.08em"
-            color="gray.400"
-          >
-            Secure payments by Stripe
-          </Text>
-        </div>
-
       </div>
     </Box>
   );

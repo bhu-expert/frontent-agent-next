@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { Box, Button, Flex, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import { BookOpen, ChevronDown, Mail, MessageCircle, PlayCircle } from "lucide-react";
+import {
+  BookOpen,
+  ChevronDown,
+  Mail,
+  MessageCircle,
+  PlayCircle,
+} from "lucide-react";
+import { SUPPORT_EMAIL } from "@/constants/contact";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +34,8 @@ const QUICK_LINKS: QuickLinkCard[] = [
     key: "docs",
     icon: <BookOpen size={22} strokeWidth={2} />,
     title: "Documentation",
-    description: "Step-by-step guides covering every feature in PostGini.",
+    description:
+      "Step-by-step guides covering every feature in plugandplayagents.",
     linkLabel: "View",
     href: "#",
   },
@@ -35,7 +43,8 @@ const QUICK_LINKS: QuickLinkCard[] = [
     key: "videos",
     icon: <PlayCircle size={22} strokeWidth={2} />,
     title: "Video Tutorials",
-    description: "Watch walkthroughs for brand creation, content generation, and integrations.",
+    description:
+      "Watch walkthroughs for brand creation, content generation, and integrations.",
     linkLabel: "View",
     href: "#",
   },
@@ -136,7 +145,13 @@ export default function SupportTab() {
     <VStack align="stretch" gap={10}>
       {/* Page heading */}
       <Box>
-        <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="700" color="#111111" lineHeight="1.05" mb={2}>
+        <Text
+          fontSize={{ base: "3xl", md: "4xl" }}
+          fontWeight="700"
+          color="#111111"
+          lineHeight="1.05"
+          mb={2}
+        >
           Support &amp; Help
         </Text>
         <Text fontSize="15px" color="#6B7280">
@@ -156,7 +171,10 @@ export default function SupportTab() {
             p={6}
             boxShadow="0 12px 48px rgba(0,0,0,0.04)"
             transition="all 0.2s ease"
-            _hover={{ borderColor: "#C7D2FE", boxShadow: "0 16px 56px rgba(79,70,229,0.08)" }}
+            _hover={{
+              borderColor: "#C7D2FE",
+              boxShadow: "0 16px 56px rgba(79,70,229,0.08)",
+            }}
           >
             <Flex
               w="44px"
@@ -178,7 +196,12 @@ export default function SupportTab() {
             </Text>
             <a
               href={card.href}
-              style={{ fontSize: "14px", fontWeight: 600, color: "#4F46E5", textDecoration: "none" }}
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#4F46E5",
+                textDecoration: "none",
+              }}
             >
               {card.linkLabel} →
             </a>
@@ -213,7 +236,11 @@ export default function SupportTab() {
         <Text fontSize="14px" color="#6B7280" mb={6}>
           Our support team typically replies within one business day.
         </Text>
-        <Flex align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3}>
+        <Flex
+          align={{ base: "stretch", sm: "center" }}
+          direction={{ base: "column", sm: "row" }}
+          gap={3}
+        >
           <Flex
             align="center"
             gap={2}
@@ -226,10 +253,15 @@ export default function SupportTab() {
           >
             <Mail size={16} strokeWidth={2} color="#6B7280" />
             <a
-              href="mailto:hi@instaagent.ai"
-              style={{ fontSize: "14px", fontWeight: 600, color: "#4F46E5", textDecoration: "none" }}
+              href={`mailto:${SUPPORT_EMAIL}`}
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#4F46E5",
+                textDecoration: "none",
+              }}
             >
-              hi@instaagent.ai
+              {SUPPORT_EMAIL}
             </a>
           </Flex>
           <Button

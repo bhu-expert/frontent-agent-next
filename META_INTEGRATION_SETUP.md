@@ -1,9 +1,11 @@
 # Meta (Facebook/Instagram) Integration Setup Guide
 
 ## Overview
-This guide explains how to configure Facebook and Instagram publishing permissions for PostGini.
+
+This guide explains how to configure Facebook and Instagram publishing permissions for plugandplayagents.
 
 ## Prerequisites
+
 - Facebook Developer Account
 - Facebook App created at https://developers.facebook.com/apps/
 - Facebook Page that you admin
@@ -56,21 +58,21 @@ Go to **App Review → Permissions and Features** and request these permissions:
 
 #### Core Permissions (Required)
 
-| Permission | Status | Purpose |
-|-----------|--------|---------|
-| `public_profile` | ✅ Auto-approved | Basic profile info |
-| `email` | ✅ Auto-approved | User email |
-| `pages_show_list` | ⏳ Review required | List Pages user manages |
-| `pages_read_engagement` | ⏳ Review required | Read Page engagement metrics |
-| `pages_manage_posts` | ⏳ Review required | **Publish posts to Facebook Pages** |
+| Permission              | Status             | Purpose                             |
+| ----------------------- | ------------------ | ----------------------------------- |
+| `public_profile`        | ✅ Auto-approved   | Basic profile info                  |
+| `email`                 | ✅ Auto-approved   | User email                          |
+| `pages_show_list`       | ⏳ Review required | List Pages user manages             |
+| `pages_read_engagement` | ⏳ Review required | Read Page engagement metrics        |
+| `pages_manage_posts`    | ⏳ Review required | **Publish posts to Facebook Pages** |
 
 #### Instagram Permissions (Required for Instagram Publishing)
 
-| Permission | Status | Purpose |
-|-----------|--------|---------|
-| `instagram_basic` | ⏳ Review required | Access Instagram Business account |
-| `instagram_content_publish` | ⏳ Review required | **Publish to Instagram** |
-| `pages_read_user_metadata` | ⏳ Review required | Access Page configuration |
+| Permission                  | Status             | Purpose                           |
+| --------------------------- | ------------------ | --------------------------------- |
+| `instagram_basic`           | ⏳ Review required | Access Instagram Business account |
+| `instagram_content_publish` | ⏳ Review required | **Publish to Instagram**          |
+| `pages_read_user_metadata`  | ⏳ Review required | Access Page configuration         |
 
 ### 2.2 How to Request Each Permission
 
@@ -84,10 +86,11 @@ Go to **App Review → Permissions and Features** and request these permissions:
 ### 2.3 Sample Use Case Descriptions
 
 **For `pages_manage_posts`:**
+
 ```
-PostGini is a social media management platform that allows businesses to schedule 
-and publish content to their Facebook Pages. Users can create posts, add images, 
-write captions, and schedule them for future publishing. This permission is required 
+plugandplayagents is a social media management platform that allows businesses to schedule
+and publish content to their Facebook Pages. Users can create posts, add images,
+write captions, and schedule them for future publishing. This permission is required
 to publish content on behalf of the user to their connected Facebook Pages.
 
 Test Instructions:
@@ -99,10 +102,11 @@ Test Instructions:
 ```
 
 **For `instagram_content_publish`:**
+
 ```
-PostGini allows businesses to publish content to their Instagram Business accounts.
-Users can create Reels, carousel posts, and single image posts directly from our 
-platform. This permission is required to publish content to connected Instagram 
+plugandplayagents allows businesses to publish content to their Instagram Business accounts.
+Users can create Reels, carousel posts, and single image posts directly from our
+platform. This permission is required to publish content to connected Instagram
 Business accounts.
 
 Test Instructions:
@@ -135,6 +139,7 @@ Test Instructions:
 ### 3.2 Get Facebook App Credentials
 
 From Facebook App Dashboard:
+
 1. Go to **Settings → Basic**
 2. Copy **App ID**
 3. Click **Show** next to App Secret and copy it
@@ -173,7 +178,7 @@ From Facebook App Dashboard:
    - Go to Facebook Page → Settings → Instagram
    - Click **Connect Account**
    - Log in with Instagram Business credentials
-2. In PostGini, connect Facebook (Instagram auto-connects)
+2. In plugandplayagents, connect Facebook (Instagram auto-connects)
 3. Create Instagram content
 4. Publish and verify on Instagram
 
@@ -196,6 +201,7 @@ From Facebook App Dashboard:
 ### 5.3 Update Production URLs
 
 Update your Facebook App settings:
+
 - **Valid OAuth Redirect URIs**: Add production URL
 - **App Domains**: Add production domain
 - **Privacy Policy URL**: Production URL
@@ -206,19 +212,23 @@ Update your Facebook App settings:
 ## Troubleshooting
 
 ### Error: "Invalid OAuth Redirect URI"
+
 - Ensure redirect URI in Supabase matches exactly what's in Facebook App
 - Check for trailing slashes or http vs https
 
 ### Error: "Permission Not Approved"
+
 - App is in Development Mode - only test users can connect
 - Submit permission for review in App Review
 
 ### Error: "Instagram Account Not Connected"
+
 - Ensure Instagram is Business/Creator account
 - Link Instagram to Facebook Page first
 - Re-connect Facebook after linking
 
 ### Error: "Cannot Publish to Page"
+
 - Verify user has Admin or Editor role on Page
 - Re-authorize Facebook connection
 - Check Page permissions in Facebook
@@ -234,7 +244,7 @@ When submitting for review, ensure you have:
 ✅ Clear use case descriptions for each permission  
 ✅ Screen recordings showing permission usage  
 ✅ Test instructions for Meta reviewers  
-✅ Terms of Service page  
+✅ Terms of Service page
 
 ---
 
