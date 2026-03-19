@@ -22,7 +22,7 @@ import {
   Trash2,
   Camera,
 } from "lucide-react";
-import { streamContextFeedback, deleteBrand, uploadBrandLogo } from "@/api";
+import { streamContextFeedback, deleteBrand } from "@/api";
 import { navItems } from "@/constants/dashboard";
 import { DashboardShellProps } from "@/props/DashboardShell";
 import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
@@ -221,19 +221,39 @@ function BrandLogoUpload({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !token) return;
+    if (!file) return;
     setUploading(true);
     setErrorMsg(null);
     try {
-      const result = await uploadBrandLogo(brand.id, file, token);
-      setLogoUrl(result.logo_url);
-      onLogoUploaded(brand.id, result.logo_url);
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `logos/${brand.id}.${ext}`;
+
+      // Upload directly to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("brand-assets")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("brand-assets")
+        .getPublicUrl(path);
+
+      // Persist on the brand record
+      const { error: dbError } = await supabase
+        .from("brands")
+        .update({ logo_url: publicUrl })
+        .eq("id", brand.id);
+
+      if (dbError) throw new Error(dbError.message);
+
+      setLogoUrl(publicUrl);
+      onLogoUploaded(brand.id, publicUrl);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Logo upload failed";
       setErrorMsg(message);
     } finally {
       setUploading(false);
-      // Reset input so the same file can be re-selected if needed
       if (inputRef.current) inputRef.current.value = "";
     }
   };
