@@ -151,10 +151,19 @@ export function useCampaignPolling(
         return;
       }
 
+      console.debug("[Poll] checking", activeCampaignIds.length, "campaigns:", activeCampaignIds);
+
       try {
         const results = await Promise.all(
           activeCampaignIds.map((id) => pollCampaignStatus(id, token))
         );
+
+        for (const status of results) {
+          console.log(
+            `[Poll] ${status.campaign_id} → status=${status.status} ` +
+            `complete=${status.complete}/${status.total} failed=${(status as any).failed ?? 0}`
+          );
+        }
 
         setStatuses((prev) => {
           const next = { ...prev };
@@ -168,30 +177,34 @@ export function useCampaignPolling(
         for (const status of results) {
           if (status.complete > 0) {
             try {
+              console.debug(`[Poll] fetching assets for ${status.campaign_id}`);
               const assetData = await getCampaignAssets(status.campaign_id, token);
               const allAssets = Object.values(assetData.by_context).flat();
+              console.log(`[Poll] ${status.campaign_id} → ${allAssets.length} assets received`);
               setAssets((prev) => {
                 const next = { ...prev, [status.campaign_id]: allAssets };
-                // Fire first-asset callback once
                 if (!firstAssetFired.current && allAssets.length > 0 && onFirstAsset) {
                   firstAssetFired.current = true;
                   onFirstAsset();
                 }
                 return next;
               });
-            } catch {
-              // Assets fetch failed, don't block
+            } catch (err) {
+              console.error(`[Poll] assets fetch failed for ${status.campaign_id}:`, err);
             }
           }
           // Mark fully complete or fully failed campaigns so we stop polling them
           if (status.status === "complete" || status.status === "failed") {
+            console.log(`[Poll] ${status.campaign_id} → DONE (${status.status}), stopping poll`);
             fetchedCampaigns.current.add(status.campaign_id);
             if (status.status === "failed") {
+              console.error(`[Poll] ${status.campaign_id} → all jobs failed`);
               setError("Image generation failed for one or more campaigns. Please try generating again.");
             }
           }
         }
       } catch (err) {
+        console.error("[Poll] polling error:", err);
         setError(err instanceof Error ? err.message : "Polling failed");
       }
     };

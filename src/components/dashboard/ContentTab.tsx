@@ -161,11 +161,14 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     };
 
     try {
+      console.log("[Generate] calling bulk API with items:", items);
       const result = await callWithRetry();
+      console.log("[Generate] bulk API response:", result);
 
       for (const c of result.campaigns) {
         const contextBlock = contextBlocks.find((b) => b.context_index === c.context_index);
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === c.ad_type);
+        console.log(`[Generate] registered campaign ${c.campaign_id} — ${c.ad_type} ctx=${c.context_index}`);
         campaign.addCampaign({
           campaignId: c.campaign_id,
           contextIndex: c.context_index,
@@ -175,10 +178,9 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         });
       }
 
-      // Navigate only after campaigns are registered — polling will trigger
-      // onNavigateToAssets via the onFirstAsset callback once data arrives
       onNavigateToAssets();
     } catch (error) {
+      console.error("[Generate] bulk API failed:", error);
       const apiError = error as { message?: string };
       setContentError(apiError.message || "Failed to generate content variations. Check your connection and try again.");
     } finally {
