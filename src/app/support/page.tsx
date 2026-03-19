@@ -15,6 +15,7 @@ import { Search, Mail, BookOpen } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import FAQAccordion from "./FAQAccordion";
+import { CONTACT_EMAIL } from "@/constants/contact";
 
 export const metadata: Metadata = {
   title: "Support | Plug and Play Agent",
@@ -149,7 +150,7 @@ export default function SupportPage() {
                   <Box>
                     <Heading as="h3" fontSize="2xl" mb={2} color="gray.900" fontWeight="700">Email Us</Heading>
                     <Text color="gray.600" mb={4} fontSize="lg">Perfect for complex queries or technical support.</Text>
-                    <Text color="blue.600" fontWeight="700" fontSize="xl">contact@plugandplayagents.com</Text>
+                    <Text color="blue.600" fontWeight="700" fontSize="xl">{CONTACT_EMAIL}</Text>
                   </Box>
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">We reply within 24 hours</Text>
                 </VStack>

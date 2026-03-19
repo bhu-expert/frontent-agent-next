@@ -9,6 +9,7 @@ import {
   MessageCircle,
   PlayCircle,
 } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/constants/contact";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -252,7 +253,7 @@ export default function SupportTab() {
           >
             <Mail size={16} strokeWidth={2} color="#6B7280" />
             <a
-              href="mailto:hi@instaagent.ai"
+              href={`mailto:${SUPPORT_EMAIL}`}
               style={{
                 fontSize: "14px",
                 fontWeight: 600,
@@ -260,7 +261,7 @@ export default function SupportTab() {
                 textDecoration: "none",
               }}
             >
-              hi@instaagent.ai
+              {SUPPORT_EMAIL}
             </a>
           </Flex>
           <Button

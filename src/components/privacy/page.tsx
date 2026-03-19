@@ -17,7 +17,8 @@ import { ArrowLeft, Shield, Lock, Trash2, Mail, Globe, Cpu, Eye, Database } from
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-import { sections, LAST_UPDATED, CONTACT_EMAIL } from "@/constants/privacy";
+import { sections, LAST_UPDATED } from "@/constants/privacy";
+import { CONTACT_EMAIL } from "@/constants/contact";
 
 export default function PrivacyPolicyPage() {
   return (

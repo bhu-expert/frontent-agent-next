@@ -17,6 +17,7 @@ import {
 import NextLink from "next/link";
 import { useAuth } from "@/store/AuthProvider";
 import { toaster } from "@/components/ui/toaster";
+import { SUPPORT_EMAIL } from "@/constants/contact";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -255,11 +256,11 @@ export default function DeleteAccountPage() {
               Having trouble? Contact our support team
             </Text>
             <Link
-              href="mailto:support@plugandplayagents.com?subject=Account Deletion Assistance"
+              href={`mailto:${SUPPORT_EMAIL}?subject=Account Deletion Assistance`}
               color="blue.600"
               fontSize="13px"
             >
-              support@plugandplayagents.com
+              {SUPPORT_EMAIL}
             </Link>
           </Box>
         </VStack>

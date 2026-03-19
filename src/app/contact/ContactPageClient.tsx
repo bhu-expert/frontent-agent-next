@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Mail, Instagram, Twitter, MessageSquare, Send, CheckCircle } from "lucide-react";
+import { CONTACT_EMAIL } from "@/constants/contact";
 
 export default function ContactPageClient() {
   const [form, setForm] = useState({
@@ -60,7 +61,7 @@ export default function ContactPageClient() {
 
     // Simulate SMTP Mailer call
     console.log("Simulating SMTP Mailer sending email...");
-    console.log("To: contact@plugandplayagent.com");
+    console.log(`To: ${CONTACT_EMAIL}`);
     console.log("From:", form.email);
     console.log("Subject:", form.subject);
     console.log("Body:", form.message);
@@ -118,14 +119,14 @@ export default function ContactPageClient() {
                     Email Us
                   </Text>
                   <Link
-                    href="mailto:contact@plugandplayagents.com"
+                    href={`mailto:${CONTACT_EMAIL}`}
                     fontSize="lg"
                     fontWeight="600"
                     color="gray.900"
                     _hover={{ color: "blue.600" }}
                     variant="plain"
                   >
-                    contact@plugandplayagents.com
+                    {CONTACT_EMAIL}
                   </Link>
                 </Box>
               </HStack>

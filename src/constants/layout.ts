@@ -1,4 +1,5 @@
 // src/constants/layout.ts
+import { CONTACT_EMAIL } from "./contact";
 
 export const NAV_LINKS = [
   { label: "Features", href: "/#features" },
@@ -22,7 +23,7 @@ export const FOOTER_LINKS = {
     { label: "Contact Us", href: "/contact" },
   ],
   "Get in touch": [
-    { label: "contact@plugandplayagents.com", href: "mailto:contact@plugandplayagents.com" },
+    { label: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
     { label: "Discord", href: "#" },
     { label: "Instagram", href: "#" },
     { label: "X", href: "#" },

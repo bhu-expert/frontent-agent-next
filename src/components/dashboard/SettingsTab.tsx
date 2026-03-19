@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 import NextLink from "next/link";
+import { SUPPORT_EMAIL } from "@/constants/contact";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -361,11 +362,11 @@ export default function SettingsTab() {
           <Text fontSize="12px" color="#6B7280" textAlign="center">
             Need help? Contact{" "}
             <Link
-              href="mailto:support@plugandplayagents.com"
+              href={`mailto:${SUPPORT_EMAIL}`}
               color="#4F46E5"
               textDecoration="underline"
             >
-              support@plugandplayagents.com
+              {SUPPORT_EMAIL}
             </Link>
           </Text>
         </VStack>

@@ -1,8 +1,8 @@
 import { VStack, Text } from "@chakra-ui/react";
 import { Shield, Lock, Trash2, Mail, Globe, Cpu, Eye, Database } from "lucide-react";
+import { CONTACT_EMAIL } from "@/constants/contact";
 
 export const LAST_UPDATED = "March 17, 2026";
-export const CONTACT_EMAIL = "contact@plugandplayagents.com";
 
 export const sections = [
   {

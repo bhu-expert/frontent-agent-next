@@ -155,6 +155,7 @@ export default function HeroSection() {
               <ArrowRight size={16} />
             </Button>
           </Link>
+          <Link href="#how-it-works">
           <Button
             h="52px"
             px={8}
@@ -170,6 +171,7 @@ export default function HeroSection() {
           >
             See how it works
           </Button>
+          </Link>
         </MotionFlex>
 
         {/* Trust row */}
