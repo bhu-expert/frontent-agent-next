@@ -62,30 +62,20 @@ export default function ContactPageClient() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/contact", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to send message");
-      }
+      if (!res.ok) throw new Error("Failed to send");
 
       setIsSuccess(true);
+    } catch (err) {
       toaster.create({
-        title: "Message sent!",
-        description: "We'll get back to you within 24 hours.",
-        type: "success",
-        duration: 5000,
-      });
-    } catch (error: any) {
-      toaster.create({
-        title: "Failed to send message",
-        description: error.message || "Please try again later.",
+        title: "Failed to send",
+        description: "Please try again or email us directly.",
         type: "error",
-        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);
