@@ -183,9 +183,12 @@ export function useCampaignPolling(
               // Assets fetch failed, don't block
             }
           }
-          // Mark fully complete campaigns so we stop polling them
-          if (status.status === "complete") {
+          // Mark fully complete or fully failed campaigns so we stop polling them
+          if (status.status === "complete" || status.status === "failed") {
             fetchedCampaigns.current.add(status.campaign_id);
+            if (status.status === "failed") {
+              setError("Image generation failed for one or more campaigns. Please try generating again.");
+            }
           }
         }
       } catch (err) {
