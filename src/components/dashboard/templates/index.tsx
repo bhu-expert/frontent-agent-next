@@ -1,18 +1,17 @@
 /**
  * Instagram Ad Templates
- * 
- * A collection of professionally designed Instagram post templates
- * optimized for 4:5 aspect ratio (1080x1350px)
- * 
- * Each ad type has 5 unique variations following Instagram best practices:
- * - Safe zone padding for UI elements
- * - Readable typography with proper line heights
- * - High contrast for accessibility
- * - Brand-consistent color usage
+ *
+ * 10 universal layout templates (ProcessStack … SplitQuote) that replace
+ * the old 25-template (5 ad_types × 5 variations) system.
+ *
+ * All layouts:
+ *  - Accept a `format` prop ("feed_4_5" | "feed" | "stories")
+ *  - Scale entirely via percentage-based dimensions — no fixed px
+ *  - Show imageUrl in every image zone; fall back to primary→secondary gradient
  */
 
-// Base types and utilities
-export type { TemplateProps } from "./base";
+// ─── Base types & utilities ────────────────────────────────────────────────────
+export type { TemplateProps, ImageFormat } from "./base";
 export {
   TemplateWrapper,
   InstagramText,
@@ -26,9 +25,25 @@ export {
   INSTAGRAM_ASPECT_RATIO,
   SAFE_ZONE_PADDING,
   MAX_CHARS,
+  ASPECT_RATIO_MAP,
 } from "./base";
 
-// Awareness templates - Brand storytelling, lifestyle content
+// ─── 10 Layout templates ───────────────────────────────────────────────────────
+export {
+  ProcessStack,
+  TitleSandwich,
+  GridDuo,
+  LFrameNarrative,
+  DataTableau,
+  CinematicLetterbox,
+  DiagonalSplit,
+  SidebarSocial,
+  MinimalistFrame,
+  SplitQuote,
+} from "./layouts";
+
+// ─── Backwards-compat re-exports (old per-type variation names) ────────────────
+// Awareness
 export {
   AwarenessVariation1,
   AwarenessVariation2,
@@ -37,7 +52,7 @@ export {
   AwarenessVariation5,
 } from "./awareness";
 
-// Sale templates - Promotions, discounts, offers
+// Sale
 export {
   SaleVariation1,
   SaleVariation2,
@@ -46,7 +61,7 @@ export {
   SaleVariation5,
 } from "./sale";
 
-// Launch templates - Product launches, announcements
+// Launch
 export {
   LaunchVariation1,
   LaunchVariation2,
@@ -55,7 +70,7 @@ export {
   LaunchVariation5,
 } from "./launch";
 
-// Engagement templates - Questions, polls, interactive content
+// Engagement
 export {
   EngagementVariation1,
   EngagementVariation2,
@@ -64,7 +79,7 @@ export {
   EngagementVariation5,
 } from "./engagement";
 
-// Story Narrative templates - Storytelling, testimonials
+// Story Narrative
 export {
   StoryNarrativeVariation1,
   StoryNarrativeVariation2,
@@ -72,3 +87,90 @@ export {
   StoryNarrativeVariation4,
   StoryNarrativeVariation5,
 } from "./story_narrative";
+
+// ─── Helper: map adType + variationIndex → one of the 10 layout components ─────
+
+import type { ImageFormat } from "./base";
+import {
+  ProcessStack,
+  TitleSandwich,
+  GridDuo,
+  LFrameNarrative,
+  DataTableau,
+  CinematicLetterbox,
+  DiagonalSplit,
+  SidebarSocial,
+  MinimalistFrame,
+  SplitQuote,
+} from "./layouts";
+
+const LAYOUTS = [
+  ProcessStack,
+  TitleSandwich,
+  GridDuo,
+  LFrameNarrative,
+  DataTableau,
+  CinematicLetterbox,
+  DiagonalSplit,
+  SidebarSocial,
+  MinimalistFrame,
+  SplitQuote,
+] as const;
+
+/**
+ * Returns one of the 10 layout components based on ad type + variation index.
+ *
+ * Each ad type starts at a different offset so the layouts are spread across
+ * types and variations do not repeat the same template within one type.
+ *
+ * @param adType         - e.g. "awareness", "sale", "launch", "story_narrative", "engagement"
+ * @param variationIndex - 1-based variation index (1–5)
+ * @param contextIndex   - optional extra offset (0-based) for additional spread
+ */
+export function getTemplateComponent(
+  adType: string,
+  variationIndex: number,
+  contextIndex?: number,
+) {
+  const typeOffset: Record<string, number> = {
+    awareness:       0,
+    sale:            2,
+    launch:          4,
+    story_narrative: 6,
+    engagement:      8,
+  };
+  const offset = typeOffset[adType] ?? 0;
+  const idx =
+    (offset + ((variationIndex - 1) % 5) + (contextIndex ?? 0)) % LAYOUTS.length;
+  return LAYOUTS[idx];
+}
+
+/**
+ * Returns the ImageFormat that corresponds to a given variation index.
+ *
+ * Convention (mirrors backend variation generation):
+ *   variationIndex 1 → feed_4_5 (4:5)
+ *   variationIndex 2 → feed_4_5 (4:5)
+ *   variationIndex 3 → feed     (1:1)
+ *   variationIndex 4 → stories  (9:16)
+ *   variationIndex 5 → stories  (9:16)
+ */
+export function getVariationFormat(variationIndex: number): ImageFormat {
+  if (variationIndex === 3) return "feed";
+  if (variationIndex >= 4) return "stories";
+  return "feed_4_5";
+}
+
+// ─── Format maps (convenience re-exports) ─────────────────────────────────────
+
+export const FORMAT_ASPECT_MAP: Record<ImageFormat, string> = {
+  feed_4_5: "4/5",
+  feed:     "1/1",
+  stories:  "9/16",
+};
+
+export const FORMAT_LABELS_MAP: Record<ImageFormat, string> = {
+  feed_4_5: "Feed 4:5",
+  feed:     "Feed 1:1",
+  stories:  "Stories 9:16",
+};

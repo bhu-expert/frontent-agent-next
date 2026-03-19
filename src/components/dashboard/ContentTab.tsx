@@ -149,9 +149,19 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       })
     );
 
+    // Retry helper with exponential backoff
+    const callWithRetry = async (attempt = 0): Promise<Awaited<ReturnType<typeof generateAdVariationsBulk>>> => {
+      try {
+        return await generateAdVariationsBulk(brand.id, items, token);
+      } catch (err) {
+        if (attempt >= 2) throw err;
+        await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+        return callWithRetry(attempt + 1);
+      }
+    };
+
     try {
-      // Single API call — returns all campaign_ids in <1s
-      const result = await generateAdVariationsBulk(brand.id, items, token);
+      const result = await callWithRetry();
 
       for (const c of result.campaigns) {
         const contextBlock = contextBlocks.find((b) => b.context_index === c.context_index);
@@ -165,10 +175,12 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         });
       }
 
+      // Navigate only after campaigns are registered — polling will trigger
+      // onNavigateToAssets via the onFirstAsset callback once data arrives
       onNavigateToAssets();
     } catch (error) {
       const apiError = error as { message?: string };
-      setContentError(apiError.message || "Failed to generate content variations.");
+      setContentError(apiError.message || "Failed to generate content variations. Check your connection and try again.");
     } finally {
       setIsGenerating(false);
     }

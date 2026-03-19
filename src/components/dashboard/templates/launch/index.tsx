@@ -1,4 +1,14 @@
 /**
+ * @deprecated These templates are superseded by the 10-layout system in
+ * `src/components/dashboard/templates/layouts/index.tsx`.
+ * Use `getTemplateComponent(adType, variationIndex)` from the templates barrel
+ * instead of importing individual variation components.
+ *
+ * These exports are kept only for backwards compatibility and will be removed
+ * in a future cleanup. Do not add new usages.
+ */
+
+/**
  * Launch Template - Variation 1: Dark Cinematic
  * Premium dark theme with glowing accents
  * Best for: Product launches, premium reveals

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { listCampaigns, pollCampaignStatus, getCampaignAssets } from "@/api";
 import type { CampaignStatus, CampaignAsset } from "@/types/onboarding.types";
 
-const POLL_INTERVAL_MS = 4000;
+const POLL_INTERVAL_MS_ACTIVE = 2000;   // fast while generating
+const POLL_INTERVAL_MS_IDLE   = 6000;   // slow once all done (shouldn't happen, but safe)
+const POLL_INTERVAL_MS = POLL_INTERVAL_MS_ACTIVE;
 
 export interface CampaignTracker {
   campaignId: string;
@@ -29,7 +31,11 @@ export interface CampaignState {
   error: string | null;
 }
 
-export function useCampaignPolling(token: string | undefined, brandId?: string) {
+export function useCampaignPolling(
+  token: string | undefined,
+  brandId?: string,
+  onFirstAsset?: () => void,
+) {
   const [trackers, setTrackers] = useState<CampaignTracker[]>([]);
   const [statuses, setStatuses] = useState<Record<string, CampaignStatus>>({});
   const [assets, setAssets] = useState<Record<string, CampaignAsset[]>>({});
@@ -38,6 +44,7 @@ export function useCampaignPolling(token: string | undefined, brandId?: string) 
   const [loaded, setLoaded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchedCampaigns = useRef<Set<string>>(new Set());
+  const firstAssetFired = useRef(false);
 
   // Load existing campaigns from DB on mount
   useEffect(() => {
@@ -116,6 +123,7 @@ export function useCampaignPolling(token: string | undefined, brandId?: string) 
     setIsPolling(false);
     setError(null);
     fetchedCampaigns.current.clear();
+    firstAssetFired.current = false;
   }, []);
 
   // Compute overall progress
@@ -162,10 +170,15 @@ export function useCampaignPolling(token: string | undefined, brandId?: string) 
             try {
               const assetData = await getCampaignAssets(status.campaign_id, token);
               const allAssets = Object.values(assetData.by_context).flat();
-              setAssets((prev) => ({
-                ...prev,
-                [status.campaign_id]: allAssets,
-              }));
+              setAssets((prev) => {
+                const next = { ...prev, [status.campaign_id]: allAssets };
+                // Fire first-asset callback once
+                if (!firstAssetFired.current && allAssets.length > 0 && onFirstAsset) {
+                  firstAssetFired.current = true;
+                  onFirstAsset();
+                }
+                return next;
+              });
             } catch {
               // Assets fetch failed, don't block
             }
@@ -183,12 +196,14 @@ export function useCampaignPolling(token: string | undefined, brandId?: string) 
     // Initial poll immediately
     poll();
 
-    intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    // Use faster interval while actively generating
+    const interval = isPolling ? POLL_INTERVAL_MS_ACTIVE : POLL_INTERVAL_MS_IDLE;
+    intervalRef.current = setInterval(poll, interval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [token, trackers]);
+  }, [token, trackers, isPolling, onFirstAsset]);
 
   return {
     trackers,

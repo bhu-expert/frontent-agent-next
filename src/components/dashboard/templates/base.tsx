@@ -1,11 +1,13 @@
 /**
- * Base types and utilities for Instagram ad templates
- * All templates use 4:5 aspect ratio (1080x1350px) - optimal for Instagram posts
+ * Base types and utilities for ad templates
+ * Supports multiple aspect ratios: 4:5 (feed), 1:1 (square), 9:16 (stories)
  */
 
 import { Box, Flex, Text, Image, type BoxProps } from "@chakra-ui/react";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
+
+export type ImageFormat = "feed_4_5" | "feed" | "stories";
 
 export interface TemplateProps {
   vd: Record<string, string>;
@@ -13,10 +15,12 @@ export interface TemplateProps {
   primary: string;
   secondary: string;
   accent: string;
+  format?: ImageFormat;
 }
 
 export interface BaseTemplateWrapperProps extends BoxProps {
   children: React.ReactNode;
+  format?: ImageFormat;
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
@@ -36,19 +40,26 @@ export const MAX_CHARS = {
   cta: 20,
 };
 
+/** Aspect ratio values per format */
+export const ASPECT_RATIO_MAP: Record<ImageFormat, string> = {
+  feed_4_5: "4/5",
+  feed: "1/1",
+  stories: "9/16",
+};
+
 /* ─── Base Wrapper ───────────────────────────────────────────────────── */
 
 /**
- * Base wrapper for all Instagram templates
- * Enforces 4:5 aspect ratio and overflow hidden
+ * Base wrapper for all ad templates.
+ * Enforces the aspect ratio determined by the format prop and clips overflow.
  */
-export function TemplateWrapper({ children, ...props }: BaseTemplateWrapperProps) {
+export function TemplateWrapper({ children, format, ...props }: BaseTemplateWrapperProps) {
   return (
     <Box
       position="relative"
       w="100%"
       h="100%"
-      style={{ aspectRatio: INSTAGRAM_ASPECT_RATIO }}
+      style={{ aspectRatio: ASPECT_RATIO_MAP[format ?? "feed_4_5"] }}
       overflow="hidden"
       {...props}
     >
