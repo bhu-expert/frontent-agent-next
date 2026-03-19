@@ -20,8 +20,9 @@ import {
   Star,
   LogOut,
   Trash2,
+  Camera,
 } from "lucide-react";
-import { streamContextFeedback, deleteBrand } from "@/api";
+import { streamContextFeedback, deleteBrand, uploadBrandLogo } from "@/api";
 import { navItems } from "@/constants/dashboard";
 import { DashboardShellProps } from "@/props/DashboardShell";
 import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
@@ -46,6 +47,7 @@ interface BrandData {
   manifest: string | null;
   guardrails: string | null;
   industry: string | null;
+  logo_url?: string | null;
   created_at?: string;
 }
 
@@ -201,6 +203,129 @@ function parseStreamedContextBlock(
   };
 }
 
+// ─── Brand Logo Upload Component ─────────────────────────────────────────────
+
+function BrandLogoUpload({
+  brand,
+  token,
+  onLogoUploaded,
+}: {
+  brand: BrandData;
+  token: string | undefined;
+  onLogoUploaded: (brandId: string, logoUrl: string) => void;
+}) {
+  const [logoUrl, setLogoUrl]     = useState<string | null>(brand.logo_url ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    setUploading(true);
+    setErrorMsg(null);
+    try {
+      const result = await uploadBrandLogo(brand.id, file, token);
+      setLogoUrl(result.logo_url);
+      onLogoUploaded(brand.id, result.logo_url);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Logo upload failed";
+      setErrorMsg(message);
+    } finally {
+      setUploading(false);
+      // Reset input so the same file can be re-selected if needed
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <Flex direction="column" align="flex-start" gap={2}>
+      <Text fontSize="11px" fontWeight="700" textTransform="uppercase"
+        color="#9CA3AF" letterSpacing="0.06em">
+        Brand Logo
+      </Text>
+
+      {/* Clickable logo preview / placeholder */}
+      <Box
+        position="relative"
+        w="96px"
+        h="96px"
+        borderRadius="18px"
+        border="2px dashed"
+        borderColor={logoUrl ? "#4F46E5" : "#E5E7EB"}
+        bg={logoUrl ? "#F8F8FF" : "#FAFAFA"}
+        overflow="hidden"
+        cursor={uploading ? "not-allowed" : "pointer"}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        transition="all 0.18s ease"
+        _hover={{ borderColor: "#4F46E5", bg: "#F0EEFF" }}
+        onClick={() => !uploading && inputRef.current?.click()}
+        title="Click to upload brand logo"
+      >
+        {uploading ? (
+          <Spinner size="sm" color="#4F46E5" />
+        ) : logoUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={logoUrl}
+            alt={`${brand.name} logo`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              padding: "8px",
+            }}
+          />
+        ) : (
+          <Flex direction="column" align="center" gap={1}>
+            <Camera size={22} color="#D1D5DB" />
+            <Text fontSize="10px" color="#D1D5DB" fontWeight="600" textAlign="center" lineHeight="1.2">
+              Upload Logo
+            </Text>
+          </Flex>
+        )}
+
+        {/* Overlay on hover when logo is present */}
+        {logoUrl && !uploading && (
+          <Flex
+            position="absolute"
+            inset={0}
+            bg="rgba(0,0,0,0)"
+            align="center"
+            justify="center"
+            transition="background 0.18s ease"
+            borderRadius="16px"
+            _hover={{ bg: "rgba(0,0,0,0.35)" }}
+            className="logo-hover-overlay"
+          >
+            <Camera size={18} color="rgba(255,255,255,0)" style={{ transition: "color 0.18s ease" }} />
+          </Flex>
+        )}
+      </Box>
+
+      {/* Hidden file input */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      <Text fontSize="11px" color="#9CA3AF">PNG, JPG or WebP</Text>
+
+      {errorMsg && (
+        <Text fontSize="12px" color="#DC2626" fontWeight="500" maxW="200px">
+          {errorMsg}
+        </Text>
+      )}
+    </Flex>
+  );
+}
+
+
 /**
  * DashboardShell Component
  * Provides the base dashboard layout with a unified left sidebar navigation.
@@ -309,7 +434,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         let query = supabase
           .from("brands")
           .select(
-            "id, name, website_url, manifest, guardrails, industry, created_at",
+            "id, name, website_url, manifest, guardrails, industry, logo_url, created_at",
           )
           .order("created_at", { ascending: false });
 
@@ -732,10 +857,33 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                         gap={2}
                         fontSize="12px"
                         color="#6B7280"
+                        mb={5}
                       >
                         <FileText size={14} />
                         <Text>Context generated</Text>
                       </Flex>
+                    )}
+
+                    {/* Logo upload — only shown on the selected / active brand card */}
+                    {isSelected && (
+                      <Box
+                        borderTop="1px solid"
+                        borderColor="#F3F4F6"
+                        pt={4}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <BrandLogoUpload
+                          brand={brand}
+                          token={session?.access_token}
+                          onLogoUploaded={(bId, url) => {
+                            setAllBrands((prev) =>
+                              prev.map((b) =>
+                                b.id === bId ? { ...b, logo_url: url } : b,
+                              ),
+                            );
+                          }}
+                        />
+                      </Box>
                     )}
                   </Box>
                 </Box>

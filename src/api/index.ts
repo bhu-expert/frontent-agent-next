@@ -422,6 +422,29 @@ export async function getCampaignAssets(
   return res.json();
 }
 
+/**
+ * Uploads a brand logo image (png/jpg/webp) to the backend.
+ * Backend converts to WebP, stores in Supabase Storage, and updates brands.logo_url.
+ */
+export async function uploadBrandLogo(
+  brandId: string,
+  file: File,
+  token: string,
+): Promise<{ logo_url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/data/brands/${brandId}/logo`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Logo upload failed", res.status);
+  }
+  return res.json();
+}
+
 export async function saveAssetOverlay(
   campaignId: string,
   variationId: string,
