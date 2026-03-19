@@ -433,7 +433,7 @@ export async function uploadBrandLogo(
 ): Promise<{ logo_url: string }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/api/v1/data/brands/${brandId}/logo`, {
+  const res = await fetch(`${BASE_URL}/brands/${brandId}/logo`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
