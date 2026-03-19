@@ -1,23 +1,17 @@
 "use client";
 /* eslint-disable react/no-unstable-nested-components */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  ChevronDown, ChevronUp, Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Sparkles, Wand2, Star, MessageSquare, Library, Copy, Check,
+  Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Star, MessageSquare, Sparkles,
 } from "lucide-react";
-import { useTemplateExport } from "@/hooks/useTemplateExport";
 import type { CampaignAsset } from "@/types/onboarding.types";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
 import { supabase } from "@/lib/supabase";
-import {
-  type TemplateProps,
-  getTemplateComponent,
-  getVariationFormat,
-  FORMAT_ASPECT_MAP,
-} from "./templates";
+import { getVariationFormat, FORMAT_ASPECT_MAP } from "./templates";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -445,157 +439,56 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
  * Renders the correct template without JSX component syntax, avoiding the
  * "cannot create components during render" lint rule while still being correct.
  */
-function AdTemplateSwitch(props: TemplateProps & { adType: string; variationIndex: number }) {
-  const { adType, variationIndex, ...rest } = props;
-  return React.createElement(getTemplateComponent(adType, variationIndex), rest);
-}
-
-// Pixel dimensions per format for full-resolution export
-const EXPORT_DIMENSIONS: Record<string, { w: number; h: number }> = {
-  feed_4_5: { w: 1080, h: 1350 },
-  feed:     { w: 1080, h: 1080 },
-  stories:  { w: 1080, h: 1920 },
-};
-
-function AssetCard({ asset, igConnected, onPublish, onLibraryRefresh }: {
+function AssetCard({ asset, igConnected, onPublish }: {
   asset: CampaignAsset;
   igConnected: boolean;
   onPublish: (t: PublishTarget) => void;
-  onLibraryRefresh?: () => void;
 }) {
-  const [showPrompt, setShowPrompt]   = useState(false);
-  const [exported, setExported]       = useState(false);
-  const [caption, setCaption]         = useState<string | null>(null);
-  const [hashtags, setHashtags]       = useState<string[]>([]);
-  const [captionLoading, setCaptionLoading] = useState(false);
-  const [captionCopied, setCaptionCopied]   = useState(false);
-  const hiddenRef = useRef<HTMLDivElement>(null);
-  const { exportTemplate, status: exportStatus } = useTemplateExport();
-
-  const vd = asset.variation_data as Record<string, string>;
-  const primary   = vd.primary_color   || "#4F46E5";
-  const secondary = vd.secondary_color || "#1E1B4B";
-  const accent    = vd.accent_color    || "#7C3AED";
   const variationIndex = asset.variation_index || 1;
   const format = getVariationFormat(variationIndex);
-  const templateProps: TemplateProps = { vd, imageUrl: asset.image_url, primary, secondary, accent, format };
-  const adType = asset.ad_type || "awareness";
-
-  const handleExportToLibrary = async () => {
-    if (!hiddenRef.current || exportStatus === "capturing" || exportStatus === "uploading") return;
-    const label = `${asset.ad_type?.replace("_", " ")} · ${format.replace("_", " ")}`;
-    const result = await exportTemplate(hiddenRef.current, asset.variation_id || `asset-${Date.now()}`, format, label);
-    if (result) {
-      setExported(true);
-      onLibraryRefresh?.();
-    }
-  };
-
-  const isExporting = exportStatus === "capturing" || exportStatus === "uploading";
-
-  const handleGenerateCaption = async () => {
-    if (!asset.image_url || captionLoading) return;
-    setCaptionLoading(true);
-    try {
-      const res = await fetch("/api/integrations/instagram/generate-caption", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: asset.image_url,
-          brand_name: vd.brand_name || undefined,
-          brand_description: vd.headline ? `${vd.headline}. ${vd.subheadline || ""}`.trim() : undefined,
-          tone: "engaging",
-          include_hashtags: true,
-          include_cta: true,
-          max_hashtags: 10,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.caption) {
-        setCaption(data.caption);
-        setHashtags(data.hashtags || []);
-      }
-    } catch {
-      // silent — button stays available to retry
-    } finally {
-      setCaptionLoading(false);
-    }
-  };
-
-  const handleCopyCaption = () => {
-    const full = caption + (hashtags.length ? `\n\n${hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}` : "");
-    navigator.clipboard.writeText(full).then(() => {
-      setCaptionCopied(true);
-      setTimeout(() => setCaptionCopied(false), 2000);
-    });
-  };
-
-  const { w, h } = EXPORT_DIMENSIONS[format] ?? { w: 1080, h: 1350 };
+  const displayUrl = asset.overlay_url || asset.image_url;
 
   return (
-    <>
-      {/* Hidden full-resolution renderer for html2canvas capture */}
-      <div
-        ref={hiddenRef}
-        style={{
-          position: "fixed",
-          top: "-99999px",
-          left: "-99999px",
-          width: `${w}px`,
-          height: `${h}px`,
-          overflow: "hidden",
-          pointerEvents: "none",
-          zIndex: -1,
-        }}
-      >
-        <AdTemplateSwitch {...templateProps} adType={adType} variationIndex={variationIndex} />
-      </div>
-
     <Box borderRadius="18px" overflow="hidden" bg="white"
       border="1px solid" borderColor="#ECECEC"
       transition="all 0.3s ease"
       _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
       style={{ animation: "fadeInUp 0.4s ease-out" }}>
-      <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_ASPECT_MAP[format] }}>
-        <AdTemplateSwitch {...templateProps} adType={adType} variationIndex={variationIndex} />
 
-        {/* Top bar: ad type badge + format badge + action buttons */}
+      <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_ASPECT_MAP[format] }}>
+        {displayUrl ? (
+          <Image src={displayUrl} alt={asset.ad_type || "ad"}
+            w="full" h="full" objectFit="cover" display="block" />
+        ) : (
+          <Box w="full" h="full" bg="#111111" />
+        )}
+
+        {/* Badge + action buttons */}
         <Flex position="absolute" top={3} left={3} right={3}
           justify="space-between" align="center" zIndex={10}>
-          <Flex gap={1}>
-            <Badge bg="rgba(0,0,0,0.45)" color="white" backdropFilter="blur(4px)"
-              borderRadius="8px" px={2.5} py={1} fontSize="10px" fontWeight="600" textTransform="capitalize">
-              {asset.ad_type?.replace("_", " ")}
-            </Badge>
-            <Badge bg="rgba(0,0,0,0.35)" color="white" backdropFilter="blur(4px)"
-              borderRadius="8px" px={2} py={1} fontSize="10px" fontWeight="500">
-              {format === "stories" ? "9:16" : format === "feed" ? "1:1" : "4:5"}
-            </Badge>
-          </Flex>
+          <Badge bg="rgba(0,0,0,0.45)" color="white" backdropFilter="blur(4px)"
+            borderRadius="8px" px={2.5} py={1} fontSize="10px" fontWeight="600" textTransform="capitalize">
+            {asset.ad_type?.replace(/_/g, " ")}
+          </Badge>
           <Flex gap={1.5}>
-            {igConnected && asset.image_url && (
-              <IgPublishButton
-                url={asset.image_url}
-                label={asset.ad_type || "asset"}
-                onPublish={onPublish}
-              />
+            {igConnected && displayUrl && (
+              <IgPublishButton url={displayUrl} label={asset.ad_type || "asset"} onPublish={onPublish} />
             )}
-            {asset.image_url && (
+            {displayUrl && (
               <Button size="xs" bg="rgba(255,255,255,0.15)" color="white" borderRadius="8px"
                 backdropFilter="blur(4px)" _hover={{ bg: "rgba(255,255,255,0.3)" }}
                 h="28px" w="28px" p={0} minW="28px"
                 onClick={async (e) => {
                   e.stopPropagation();
-                  if (!asset.image_url) return;
                   try {
-                    const res = await fetch(asset.image_url);
+                    const res = await fetch(displayUrl);
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url; a.download = `${asset.variation_id || "ad"}.webp`;
                     document.body.appendChild(a); a.click();
                     document.body.removeChild(a); URL.revokeObjectURL(url);
-                  } catch { window.open(asset.image_url, "_blank"); }
+                  } catch { window.open(displayUrl, "_blank"); }
                 }}>
                 <Download size={13} />
               </Button>
@@ -603,107 +496,35 @@ function AssetCard({ asset, igConnected, onPublish, onLibraryRefresh }: {
           </Flex>
         </Flex>
 
-        {!asset.image_url && (
+        {!displayUrl && (
           <Flex position="absolute" inset={0} align="center" justify="center" zIndex={5}>
             <VStack gap={1}>
               <Loader size={24} color="white" style={{ animation: "spin 1.5s linear infinite" }} />
-              <Text fontSize="12px" color="rgba(255,255,255,0.7)">Generating image...</Text>
+              <Text fontSize="12px" color="rgba(255,255,255,0.7)">Generating…</Text>
             </VStack>
           </Flex>
+        )}
+
+        {asset.image_url && !asset.overlay_url && (
+          <Box position="absolute" bottom={2} right={2} zIndex={10}
+            bg="rgba(0,0,0,0.5)" borderRadius="6px" px={2} py={1}>
+            <Text fontSize="10px" color="rgba(255,255,255,0.75)">Rendering…</Text>
+          </Box>
         )}
       </Box>
 
       <Box p={3.5}>
-        {/* Export to Library button */}
-        <Button
-          size="xs" w="full" mb={2.5} borderRadius="8px" h="30px"
-          bg={exported ? "#D1FAE5" : "#F3F4F6"}
-          color={exported ? "#065F46" : "#374151"}
-          border="1px solid" borderColor={exported ? "#6EE7B7" : "#E5E7EB"}
-          _hover={{ bg: exported ? "#D1FAE5" : "#E5E7EB" }}
-          loading={isExporting}
-          onClick={handleExportToLibrary}
-          gap={1.5}
-        >
-          {isExporting
-            ? <Text fontSize="11px">Saving to library…</Text>
-            : exported
-            ? <Text fontSize="11px">Saved to Library</Text>
-            : <><Library size={11} /><Text fontSize="11px">Save to Library</Text></>}
-        </Button>
-        {/* Caption section */}
-        {asset.image_url && (
-          <Box mb={2.5}>
-            {caption ? (
-              <Box bg="#F8FAFF" border="1px solid" borderColor="#E0E7FF" borderRadius="10px" p={3}>
-                <Flex justify="space-between" align="center" mb={1.5}>
-                  <Text fontSize="10px" fontWeight="700" color="#4338CA" letterSpacing="0.07em" textTransform="uppercase">
-                    Caption
-                  </Text>
-                  <Flex gap={1}>
-                    <Button size="xs" variant="ghost" h="22px" px={1.5} color="#6B7280"
-                      _hover={{ color: "#4338CA", bg: "#EEF2FF" }}
-                      onClick={handleGenerateCaption} loading={captionLoading}
-                      title="Regenerate">
-                      <Sparkles size={10} />
-                    </Button>
-                    <Button size="xs" variant="ghost" h="22px" px={1.5}
-                      color={captionCopied ? "#059669" : "#6B7280"}
-                      _hover={{ color: "#4338CA", bg: "#EEF2FF" }}
-                      onClick={handleCopyCaption}>
-                      {captionCopied ? <Check size={10} /> : <Copy size={10} />}
-                    </Button>
-                  </Flex>
-                </Flex>
-                <Text fontSize="12px" color="#374151" lineHeight="1.55" whiteSpace="pre-line">
-                  {caption}
-                </Text>
-                {hashtags.length > 0 && (
-                  <Text fontSize="11px" color="#6366F1" mt={1.5} lineHeight="1.6">
-                    {hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}
-                  </Text>
-                )}
-              </Box>
-            ) : (
-              <Button
-                size="xs" w="full" borderRadius="8px" h="30px"
-                bg="#F8FAFF" color="#4338CA"
-                border="1px solid" borderColor="#E0E7FF"
-                _hover={{ bg: "#EEF2FF" }}
-                loading={captionLoading}
-                onClick={handleGenerateCaption}
-                gap={1.5}
-              >
-                {captionLoading
-                  ? <Text fontSize="11px">Writing caption…</Text>
-                  : <><Sparkles size={11} /><Text fontSize="11px">Generate Caption</Text></>}
-              </Button>
-            )}
-          </Box>
-        )}
-
-        <Flex align="center" justify="space-between">
-          <Flex gap={1.5}>
-            {[primary, secondary, accent].map((c, i) => (
-              <Box key={i} w="16px" h="16px" borderRadius="4px" bg={c} border="1px solid" borderColor="#E5E7EB" />
-            ))}
-          </Flex>
-          <Button variant="ghost" size="xs" fontSize="11px" color="#9CA3AF" h="26px" px={2}
-            _hover={{ color: "#6B7280", bg: "#F9FAFB" }}
-            onClick={() => setShowPrompt(!showPrompt)}>
-            {showPrompt ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            <Text ml={1}>{showPrompt ? "Hide" : "Prompt"}</Text>
-          </Button>
-        </Flex>
-        {showPrompt && vd.image_prompt && (
-          <Box mt={2.5} bg="#F9FAFB" borderRadius="10px" p={3}>
-            <Text fontSize="11px" fontWeight="600" color="#9CA3AF" mb={1}>IMAGE PROMPT</Text>
-            <Text fontSize="12px" color="#6B7280" lineHeight="1.4">{vd.image_prompt}</Text>
-          </Box>
-        )}
+        <Box>
+          <Text fontSize="13px" fontWeight="600" color="#111111"
+            overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
+            {asset.ad_type?.replace(/_/g, " ") || "Ad"}
+          </Text>
+          <Text fontSize="11px" color="#9CA3AF" mt={0.5}>
+            {format === "stories" ? "9:16 Stories" : format === "feed" ? "1:1 Feed" : "4:5 Feed"}
+          </Text>
+        </Box>
       </Box>
     </Box>
-    </>
   );
 }
 
@@ -903,7 +724,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
 
-  const allAssets   = trackers.flatMap(t => assets[t.campaignId] || []);
+  const allAssets = trackers.flatMap(t => assets[t.campaignId] || []);
   const totalJobs   = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
   const pendingCount = totalJobs - allAssets.length;
 
@@ -1050,8 +871,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
               gap={5}>
               {allAssets.map(asset => (
                 <AssetCard key={asset.variation_id} asset={asset}
-                  igConnected={igConnected} onPublish={setPublishTarget}
-                  onLibraryRefresh={loadLibrary} />
+                  igConnected={igConnected} onPublish={setPublishTarget} />
               ))}
               {isPolling && Array.from({ length: Math.min(pendingCount, 8) }).map((_, i) => (
                 <SkeletonCard key={`skeleton-${i}`} />

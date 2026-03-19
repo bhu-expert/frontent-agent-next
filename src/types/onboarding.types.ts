@@ -196,6 +196,7 @@ export interface CampaignAsset {
   ad_type: string;
   variation_index: number;
   image_url: string | null;
+  overlay_url: string | null;
   html: string | null;
   variation_data: Record<string, unknown>;
 }

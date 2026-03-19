@@ -408,6 +408,7 @@ export async function getCampaignAssets(
     ad_type: string;
     variation_index: number;
     image_url: string | null;
+    overlay_url: string | null;
     html: string | null;
     variation_data: Record<string, unknown>;
   }>>;
@@ -418,5 +419,21 @@ export async function getCampaignAssets(
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) apiError("Failed to fetch campaign assets", res.status);
+  return res.json();
+}
+
+export async function saveAssetOverlay(
+  campaignId: string,
+  variationId: string,
+  blob: Blob,
+  token: string,
+): Promise<{ overlay_url: string }> {
+  const form = new FormData();
+  form.append("file", blob, `${variationId}_overlay.webp`);
+  const res = await fetch(
+    `${BASE_URL}/campaigns/${campaignId}/assets/${variationId}/overlay`,
+    { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form },
+  );
+  if (!res.ok) apiError("Failed to save overlay", res.status);
   return res.json();
 }
