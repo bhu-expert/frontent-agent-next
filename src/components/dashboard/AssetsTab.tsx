@@ -391,7 +391,7 @@ function ProgressHeader({ progress, isPolling, totalAssets, totalJobs }: {
 function SkeletonCard() {
   return (
     <Box border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
-      <Box bg="#F3F4F6" position="relative" h="320px">
+      <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
         <Flex position="absolute" inset={0} align="center" justify="center"
           bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
           backgroundSize="400% 400%"
@@ -455,8 +455,7 @@ function AssetCard({ asset, igConnected, onPublish }: {
       _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
       style={{ animation: "fadeInUp 0.4s ease-out" }}>
 
-      {/* Fixed height keeps every card the same size regardless of format */}
-      <Box position="relative" overflow="hidden" h="320px">
+      <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_ASPECT_MAP[format] }}>
         {displayUrl ? (
           <Image src={displayUrl} alt={asset.ad_type || "ad"}
             w="full" h="full" objectFit="cover" display="block" />
@@ -652,7 +651,7 @@ function LibraryCard({ file, igConnected, onPublish }: {
       border="1px solid" borderColor="#ECECEC"
       transition="all 0.3s ease"
       _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}>
-      <Box position="relative" overflow="hidden" h="320px">
+      <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_RATIO[file.format] }}>
         <Image src={file.url} alt={file.label || file.name} objectFit="cover" w="full" h="full" />
 
         <Flex position="absolute" top={3} left={3} right={3}
