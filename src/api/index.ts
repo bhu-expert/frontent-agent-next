@@ -383,7 +383,7 @@ export async function pollCampaignStatus(
   campaign_id: string;
   total: number;
   complete: number;
-  status: "queued" | "running" | "complete";
+  status: "queued" | "running" | "complete" | "failed";
   by_context: Record<string, { complete: number; total: number }>;
 }> {
   const res = await fetch(`${BASE_URL}${API_ENDPOINTS.CAMPAIGN_STATUS(campaignId)}`, {

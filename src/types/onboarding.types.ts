@@ -187,7 +187,7 @@ export interface CampaignStatus {
   campaign_id: string;
   total: number;
   complete: number;
-  status: "queued" | "running" | "complete";
+  status: "queued" | "running" | "complete" | "failed";
   by_context: Record<string, CampaignContextProgress>;
 }
 
