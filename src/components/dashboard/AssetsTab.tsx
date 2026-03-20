@@ -1,24 +1,22 @@
 "use client";
 /* eslint-disable react/no-unstable-nested-components */
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  Coffee, Download, ImageIcon, Loader, Send, Calendar, X, Star, MessageSquare, Sparkles,
+  Coffee, Download, ImageIcon, Loader, X, Star, MessageSquare, Sparkles,
 } from "lucide-react";
-import type { CampaignAsset } from "@/types/onboarding.types";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
 import { supabase } from "@/lib/supabase";
-import { getVariationFormat, FORMAT_ASPECT_MAP } from "./templates";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AssetsTabProps {
   trackers: CampaignTracker[];
   statuses: Record<string, { total: number; complete: number; status: string }>;
-  assets: Record<string, CampaignAsset[]>;
+  assets: Record<string, unknown[]>;
   progress: number;
   isPolling: boolean;
 }
@@ -326,86 +324,6 @@ function PublishModal({
   );
 }
 
-// ─── Progress Header ──────────────────────────────────────────────────────────
-
-function ProgressHeader({ progress, isPolling, totalAssets, totalJobs }: {
-  progress: number; isPolling: boolean; totalAssets: number; totalJobs: number;
-}) {
-  const isComplete = progress === 100 && !isPolling;
-  return (
-    <Box bg={isComplete ? "#F0FDF4" : "white"} border="1px solid"
-      borderColor={isComplete ? "#BBF7D0" : "#E5E7EB"} borderRadius="20px"
-      p={{ base: 5, md: 6 }}>
-      <Flex align="center" gap={4}>
-        <Flex w="56px" h="56px" borderRadius="full" position="relative"
-          align="center" justify="center" flexShrink={0}
-          bg={isComplete ? "#DCFCE7" : "#F3F4F6"}>
-          <svg width="56" height="56" viewBox="0 0 56 56" style={{ position: "absolute", transform: "rotate(-90deg)" }}>
-            <circle cx="28" cy="28" r="24" fill="none" stroke={isComplete ? "#BBF7D0" : "#E5E7EB"} strokeWidth="4" />
-            <circle cx="28" cy="28" r="24" fill="none"
-              stroke={isComplete ? "#22C55E" : "#4F46E5"} strokeWidth="4"
-              strokeDasharray={`${2 * Math.PI * 24}`}
-              strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
-              strokeLinecap="round"
-              style={{ transition: "stroke-dashoffset 0.6s ease" }} />
-          </svg>
-          <Text fontSize="14px" fontWeight="700" color={isComplete ? "#166534" : "#4F46E5"}>{progress}%</Text>
-        </Flex>
-        <Box flex="1">
-          <Flex align="center" gap={2}>
-            <Text fontSize="18px" fontWeight="700" color="#111">
-              {isComplete ? "All Assets Ready" : "Generating Assets"}
-            </Text>
-            {isPolling && <Loader size={16} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />}
-          </Flex>
-          <Text fontSize="14px" color="#6B7280" mt={0.5}>
-            {isComplete
-              ? `${totalAssets} images generated and uploaded to your library.`
-              : `${totalAssets} of ${totalJobs} images complete. New assets appear below as they finish.`}
-          </Text>
-          {isPolling && !isComplete && (
-            <Flex align="center" gap={1.5} mt={1.5}>
-              <Coffee size={14} color="#A78BFA" />
-              <Text fontSize="13px" color="#7C3AED" fontWeight="500">
-                Go grab a coffee — this runs in the background, even if you close the tab.
-              </Text>
-            </Flex>
-          )}
-        </Box>
-        <Box flex="1" maxW="300px" display={{ base: "none", md: "block" }}>
-          <Box bg="#F3F4F6" borderRadius="999px" h="10px" overflow="hidden">
-            <Box bg={isComplete
-                ? "linear-gradient(90deg, #22C55E 0%, #16A34A 100%)"
-                : "linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)"}
-              h="100%" borderRadius="999px" w={`${progress}%`} transition="width 0.6s ease" />
-          </Box>
-          <Text fontSize="12px" color="#9CA3AF" mt={1} textAlign="right">{totalAssets} / {totalJobs}</Text>
-        </Box>
-      </Flex>
-    </Box>
-  );
-}
-
-// ─── Skeleton Card ────────────────────────────────────────────────────────────
-
-function SkeletonCard() {
-  return (
-    <Box border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
-      <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
-        <Flex position="absolute" inset={0} align="center" justify="center"
-          bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
-          backgroundSize="400% 400%"
-          style={{ animation: "shimmer 1.8s ease-in-out infinite" }}>
-          <ImageIcon size={28} color="#D1D5DB" />
-        </Flex>
-      </Box>
-      <Box p={4}>
-        <Box h="16px" w="70%" bg="#F3F4F6" borderRadius="8px" mb={2} />
-        <Box h="12px" w="50%" bg="#F3F4F6" borderRadius="8px" />
-      </Box>
-    </Box>
-  );
-}
 
 // ─── Instagram Publish Button (overlay) ──────────────────────────────────────
 
@@ -429,104 +347,6 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
   );
 }
 
-// ─── Asset Card (generated template) ─────────────────────────────────────────
-
-/**
- * Stable wrapper defined at module scope to avoid "component created during render" lint error.
- * Picks the correct layout component from the 10 available layouts.
- */
-/**
- * Renders the correct template without JSX component syntax, avoiding the
- * "cannot create components during render" lint rule while still being correct.
- */
-function AssetCard({ asset, igConnected, onPublish }: {
-  asset: CampaignAsset;
-  igConnected: boolean;
-  onPublish: (t: PublishTarget) => void;
-}) {
-  const variationIndex = asset.variation_index || 1;
-  const format = getVariationFormat(variationIndex);
-  const displayUrl = asset.overlay_url || asset.image_url;
-
-  return (
-    <Box borderRadius="18px" overflow="hidden" bg="white"
-      border="1px solid" borderColor="#ECECEC"
-      transition="all 0.3s ease"
-      _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
-      style={{ animation: "fadeInUp 0.4s ease-out" }}>
-
-      <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_ASPECT_MAP[format] }}>
-        {displayUrl ? (
-          <Image src={displayUrl} alt={asset.ad_type || "ad"}
-            w="full" h="full" objectFit="cover" display="block" />
-        ) : (
-          <Box w="full" h="full" bg="#111111" />
-        )}
-
-        {/* Badge + action buttons */}
-        <Flex position="absolute" top={3} left={3} right={3}
-          justify="space-between" align="center" zIndex={10}>
-          <Badge bg="rgba(0,0,0,0.45)" color="white" backdropFilter="blur(4px)"
-            borderRadius="8px" px={2.5} py={1} fontSize="10px" fontWeight="600" textTransform="capitalize">
-            {asset.ad_type?.replace(/_/g, " ")}
-          </Badge>
-          <Flex gap={1.5}>
-            {igConnected && displayUrl && (
-              <IgPublishButton url={displayUrl} label={asset.ad_type || "asset"} onPublish={onPublish} />
-            )}
-            {displayUrl && (
-              <Button size="xs" bg="rgba(255,255,255,0.15)" color="white" borderRadius="8px"
-                backdropFilter="blur(4px)" _hover={{ bg: "rgba(255,255,255,0.3)" }}
-                h="28px" w="28px" p={0} minW="28px"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    const res = await fetch(displayUrl);
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url; a.download = `${asset.variation_id || "ad"}.webp`;
-                    document.body.appendChild(a); a.click();
-                    document.body.removeChild(a); URL.revokeObjectURL(url);
-                  } catch { window.open(displayUrl, "_blank"); }
-                }}>
-                <Download size={13} />
-              </Button>
-            )}
-          </Flex>
-        </Flex>
-
-        {!displayUrl && (
-          <Flex position="absolute" inset={0} align="center" justify="center" zIndex={5}>
-            <VStack gap={1}>
-              <Loader size={24} color="white" style={{ animation: "spin 1.5s linear infinite" }} />
-              <Text fontSize="12px" color="rgba(255,255,255,0.7)">Generating…</Text>
-            </VStack>
-          </Flex>
-        )}
-
-        {asset.image_url && !asset.overlay_url && (
-          <Box position="absolute" bottom={2} right={2} zIndex={10}
-            bg="rgba(0,0,0,0.5)" borderRadius="6px" px={2} py={1}>
-            <Text fontSize="10px" color="rgba(255,255,255,0.75)">Rendering…</Text>
-          </Box>
-        )}
-      </Box>
-
-      <Box p={3.5}>
-        <Box>
-          <Text fontSize="13px" fontWeight="600" color="#111111"
-            overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
-            {asset.ad_type?.replace(/_/g, " ") || "Ad"}
-          </Text>
-          <Text fontSize="11px" color="#9CA3AF" mt={0.5}>
-            {format === "stories" ? "9:16 Stories" : format === "feed" ? "1:1 Feed" : "4:5 Feed"}
-          </Text>
-        </Box>
-      </Box>
-    </Box>
-  );
-}
 
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
@@ -643,7 +463,6 @@ function LibraryCard({ file, igConnected, onPublish }: {
   onPublish: (t: PublishTarget) => void;
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
-  const ratio = FORMAT_RATIO[file.format];
   const igType = FORMAT_IG_TYPE[file.format];
 
   return (
@@ -724,9 +543,10 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
 
-  const allAssets = trackers.flatMap(t => assets[t.campaignId] || []);
-  const totalJobs   = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
-  const pendingCount = totalJobs - allAssets.length;
+  const allAssets  = trackers.flatMap(t => (assets[t.campaignId] || []) as unknown[]);
+  const totalJobs  = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
+  const isGenerating = isPolling && totalJobs > 0;
+  const isComplete   = progress === 100 && !isPolling && totalJobs > 0;
 
   // ── Load IG connection state ────────────────────────────────────────────────
   useEffect(() => {
@@ -801,7 +621,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
 
   // ── Empty state ─────────────────────────────────────────────────────────────
-  if (trackers.length === 0 && libraryFiles.length === 0 && !loadingLib) {
+  if (libraryFiles.length === 0 && !loadingLib) {
     return (
       <Flex direction="column" align="center" justify="center"
         bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px"
@@ -833,7 +653,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
               Assets
             </Text>
             <Text fontSize="15px" color="#6B7280">
-              Your generated ad creatives and uploaded library images.
+              Your uploaded library images.
             </Text>
           </Box>
           <Flex gap={2} align="center">
@@ -843,40 +663,70 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 <Text fontSize="11px" fontWeight="700" color="white">IG Connected</Text>
               </Box>
             )}
-            {(allAssets.length > 0 || libraryFiles.length > 0) && (
+            {libraryFiles.length > 0 && (
               <Badge bg="#EEF2FF" color="#4338CA" px={3} py={2} borderRadius="999px" fontSize="14px">
-                {allAssets.length + libraryFiles.length} {(allAssets.length + libraryFiles.length) === 1 ? "asset" : "assets"}
+                {libraryFiles.length} {libraryFiles.length === 1 ? "asset" : "assets"}
               </Badge>
             )}
           </Flex>
         </Flex>
 
-        {/* Progress bar (generated assets only) */}
-        {trackers.length > 0 && (
-          <ProgressHeader
-            progress={progress} isPolling={isPolling}
-            totalAssets={allAssets.length} totalJobs={totalJobs}
-          />
-        )}
+        {/* Generation progress */}
+        {(isGenerating || isComplete) && (
+          <Box bg={isComplete ? "#F0FDF4" : "white"} border="1px solid"
+            borderColor={isComplete ? "#BBF7D0" : "#E5E7EB"} borderRadius="20px"
+            p={{ base: 5, md: 6 }}>
+            <Flex align="center" gap={4}>
+              {/* Circular progress */}
+              <Flex w="56px" h="56px" borderRadius="full" position="relative"
+                align="center" justify="center" flexShrink={0}
+                bg={isComplete ? "#DCFCE7" : "#F3F4F6"}>
+                <svg width="56" height="56" viewBox="0 0 56 56" style={{ position: "absolute", transform: "rotate(-90deg)" }}>
+                  <circle cx="28" cy="28" r="24" fill="none" stroke={isComplete ? "#BBF7D0" : "#E5E7EB"} strokeWidth="4" />
+                  <circle cx="28" cy="28" r="24" fill="none"
+                    stroke={isComplete ? "#22C55E" : "#4F46E5"} strokeWidth="4"
+                    strokeDasharray={`${2 * Math.PI * 24}`}
+                    strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
+                    strokeLinecap="round"
+                    style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+                </svg>
+                <Text fontSize="14px" fontWeight="700" color={isComplete ? "#166534" : "#4F46E5"}>{progress}%</Text>
+              </Flex>
 
-        {/* Generated assets grid */}
-        {allAssets.length > 0 && (
-          <Box>
-            <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em"
-              textTransform="uppercase" mb={4}>
-              Generated Ads
-            </Text>
-            <Box display="grid"
-              gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
-              gap={5}>
-              {allAssets.map(asset => (
-                <AssetCard key={asset.variation_id} asset={asset}
-                  igConnected={igConnected} onPublish={setPublishTarget} />
-              ))}
-              {isPolling && Array.from({ length: Math.min(pendingCount, 8) }).map((_, i) => (
-                <SkeletonCard key={`skeleton-${i}`} />
-              ))}
-            </Box>
+              {/* Status text */}
+              <Box flex="1">
+                <Flex align="center" gap={2}>
+                  <Text fontSize="18px" fontWeight="700" color="#111">
+                    {isComplete ? "All Assets Ready" : "Generating Assets"}
+                  </Text>
+                  {isGenerating && <Loader size={16} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />}
+                </Flex>
+                <Text fontSize="14px" color="#6B7280" mt={0.5}>
+                  {isComplete
+                    ? `${allAssets.length} images generated — they'll appear in your library once uploaded.`
+                    : `${allAssets.length} of ${totalJobs} images complete. New assets appear as they finish.`}
+                </Text>
+                {isGenerating && (
+                  <Flex align="center" gap={1.5} mt={1.5}>
+                    <Coffee size={14} color="#A78BFA" />
+                    <Text fontSize="13px" color="#7C3AED" fontWeight="500">
+                      Go grab a coffee — this runs in the background, even if you close the tab.
+                    </Text>
+                  </Flex>
+                )}
+              </Box>
+
+              {/* Progress bar */}
+              <Box flex="1" maxW="300px" display={{ base: "none", md: "block" }}>
+                <Box bg="#F3F4F6" borderRadius="999px" h="10px" overflow="hidden">
+                  <Box bg={isComplete
+                      ? "linear-gradient(90deg, #22C55E 0%, #16A34A 100%)"
+                      : "linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)"}
+                    h="100%" borderRadius="999px" w={`${progress}%`} transition="width 0.6s ease" />
+                </Box>
+                <Text fontSize="12px" color="#9CA3AF" mt={1} textAlign="right">{allAssets.length} / {totalJobs}</Text>
+              </Box>
+            </Flex>
           </Box>
         )}
 
@@ -915,7 +765,22 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
             <Box display="grid"
               gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
               gap={5}>
-              {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+              {[1, 2, 3, 4].map(i => (
+                <Box key={i} border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
+                  <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
+                    <Flex position="absolute" inset={0} align="center" justify="center"
+                      bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
+                      backgroundSize="400% 400%"
+                      style={{ animation: "shimmer 1.8s ease-in-out infinite" }}>
+                      <ImageIcon size={28} color="#D1D5DB" />
+                    </Flex>
+                  </Box>
+                  <Box p={4}>
+                    <Box h="16px" w="70%" bg="#F3F4F6" borderRadius="8px" mb={2} />
+                    <Box h="12px" w="50%" bg="#F3F4F6" borderRadius="8px" />
+                  </Box>
+                </Box>
+              ))}
             </Box>
           ) : libraryFiles.length === 0 ? (
             <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="16px" p={6} textAlign="center">

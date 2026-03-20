@@ -143,6 +143,8 @@ export function ProcessStack({ vd, imageUrl, primary, secondary, accent, format 
         bg={secondary}
         direction="column"
         justify="center"
+        align={format === "stories" ? "center" : "flex-start"}
+        textAlign={format === "stories" ? "center" : "left"}
         px="5%"
         gap="1.5%"
       >
@@ -242,7 +244,8 @@ export function TitleSandwich({ vd, imageUrl, primary, secondary, accent, format
         h={footerH}
         bg={secondary}
         align="center"
-        justify="space-between"
+        justify={format === "stories" ? "center" : "space-between"}
+        textAlign={format === "stories" ? "center" : "left"}
         px="5%"
         zIndex={2}
       >
@@ -810,7 +813,8 @@ export function MinimalistFrame({ vd, imageUrl, primary, secondary, accent, form
         h="12%"
         bg={primary}
         align="center"
-        justify="space-between"
+        justify={format === "stories" ? "center" : "space-between"}
+        textAlign={format === "stories" ? "center" : "left"}
         px="5%"
         zIndex={3}
       >
