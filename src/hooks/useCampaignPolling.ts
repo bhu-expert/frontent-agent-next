@@ -46,6 +46,23 @@ export function useCampaignPolling(
   const fetchedCampaigns = useRef<Set<string>>(new Set());
   const firstAssetFired = useRef(false);
 
+  // Reset when brand changes
+  const prevBrandIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (prevBrandIdRef.current === brandId) return;
+    prevBrandIdRef.current = brandId;
+    // Clear any running poll
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    setTrackers([]);
+    setStatuses({});
+    setAssets({});
+    setIsPolling(false);
+    setError(null);
+    setLoaded(false);
+    fetchedCampaigns.current.clear();
+    firstAssetFired.current = false;
+  }, [brandId]);
+
   // Load existing campaigns from DB on mount
   useEffect(() => {
     if (!token || !brandId || loaded) return;
