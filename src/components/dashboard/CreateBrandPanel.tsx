@@ -56,6 +56,7 @@ export default function CreateBrandPanel({
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [brandName, setBrandName] = useState("");
   const [guardrails, setGuardrails] = useState("");
+  const [description, setDescription] = useState("");
   const [error, setError] = useState("");
 
   const {
@@ -90,7 +91,7 @@ export default function CreateBrandPanel({
     }
     completedBrandIdRef.current = null;
     setError("");
-    startDiscovery(websiteUrl, brandName, guardrails);
+    startDiscovery(websiteUrl, brandName, guardrails, description);
   };
 
   const handleReset = () => {
@@ -316,6 +317,36 @@ export default function CreateBrandPanel({
                       color="#111111"
                       letterSpacing="0.02em"
                     >
+                      Tell us about your business
+                    </Text>
+                    <Text fontSize="11px" fontWeight="600" color="#6B7280">
+                      Optional
+                    </Text>
+                  </Flex>
+                  <Textarea
+                    placeholder="e.g. We are a fintech startup helping SMBs manage invoices. Our customers are small business owners aged 30–50 who struggle with late payments."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    minH="100px"
+                    py="14px"
+                    px="16px"
+                    resize="vertical"
+                    lineHeight="1.55"
+                    {...fieldChrome}
+                  />
+                  <Text fontSize="12px" color="#6B7280" mt={2}>
+                    Helps the AI generate more relevant brand identities.
+                  </Text>
+                </Box>
+
+                <Box>
+                  <Flex align="center" justify="space-between" mb={2}>
+                    <Text
+                      fontSize="12px"
+                      fontWeight="700"
+                      color="#111111"
+                      letterSpacing="0.02em"
+                    >
                       Guardrails
                     </Text>
                     <Text fontSize="11px" fontWeight="600" color="#6B7280">
@@ -323,7 +354,7 @@ export default function CreateBrandPanel({
                     </Text>
                   </Flex>
                   <Textarea
-                    placeholder="Avoid aggressive sales language, keep tone professional, and skip slang."
+                    placeholder="e.g. [not investment advice, not a replacement for a doctor, avoid aggressive sales language]"
                     value={guardrails}
                     onChange={(e) => setGuardrails(e.target.value)}
                     minH="132px"

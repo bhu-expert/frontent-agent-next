@@ -30,7 +30,7 @@ function ToolContent() {
   };
 
   return (
-    <Box bg="white" minH="100vh" overflowX="hidden">
+    <Box bg="white" minH="100vh" overflowX="hidden" pt="64px">
       {/* Tool Navbar */}
       <Navbar />
 
@@ -50,6 +50,8 @@ function ToolContent() {
         <BrandAnalysis
           url={ts.url}
           brandName={ts.brandName}
+          guardrails={ts.guardrails}
+          description={ts.description}
           onDone={ts.handleAnalysisDone}
         />
       )}

@@ -13,7 +13,7 @@ import { STATUS_COLORS } from "@/constants";
  * Split-screen brand analysis page showing browser viewport and agent progress.
  * Streams real-time discovery results from the AI agent via SSE.
  */
-export default function Page2Analysing({ url, brandName, onDone }: Page2AnalysingProps) {
+export default function Page2Analysing({ url, brandName, guardrails, description, onDone }: Page2AnalysingProps) {
   const [showThoughts, setShowThoughts] = useState(true);
   const [selectedContextIndex, setSelectedContextIndex] = useState<number | null>(null);
 
@@ -30,9 +30,9 @@ export default function Page2Analysing({ url, brandName, onDone }: Page2Analysin
 
   useEffect(() => {
     if (url) {
-      startDiscovery(url, brandName || "");
+      startDiscovery(url, brandName || "", guardrails, description);
     }
-  }, [url, brandName, startDiscovery]);
+  }, [url, brandName, guardrails, description, startDiscovery]);
 
   useEffect(() => {
     if (status === "finished" && contexts.length > 0) {
@@ -49,7 +49,7 @@ export default function Page2Analysing({ url, brandName, onDone }: Page2Analysin
 
   const handleRetry = () => {
     resetDiscovery();
-    startDiscovery(url, brandName || "");
+    startDiscovery(url, brandName || "", guardrails, description);
   };
 
   const getProgressValue = () => {

@@ -21,6 +21,7 @@ import {
   LogOut,
   Trash2,
   Camera,
+  UserCircle,
 } from "lucide-react";
 import { streamContextFeedback, deleteBrand } from "@/api";
 import { navItems } from "@/constants/dashboard";
@@ -46,6 +47,7 @@ interface BrandData {
   website_url: string | null;
   manifest: string | null;
   guardrails: string | null;
+  description: string | null;
   industry: string | null;
   logo_url?: string | null;
   created_at?: string;
@@ -416,6 +418,25 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>(
     {},
   );
+
+  // Load persisted ratings from DB when brand or user changes
+  useEffect(() => {
+    if (!selectedBrandId || !user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("context_ratings")
+        .select("context_index, rating")
+        .eq("brand_id", selectedBrandId)
+        .eq("user_id", user.id);
+      if (data && data.length > 0) {
+        const loaded: Record<string, number> = {};
+        for (const row of data as { context_index: number; rating: number }[]) {
+          loaded[getFeedbackKey(selectedBrandId, row.context_index)] = row.rating;
+        }
+        setRatings((prev) => ({ ...prev, ...loaded }));
+      }
+    })();
+  }, [selectedBrandId, user?.id]);
   const [openFeedbackKey, setOpenFeedbackKey] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
@@ -454,7 +475,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         let query = supabase
           .from("brands")
           .select(
-            "id, name, website_url, manifest, guardrails, industry, logo_url, created_at",
+            "id, name, website_url, manifest, guardrails, description, industry, logo_url, created_at",
           )
           .order("created_at", { ascending: false });
 
@@ -570,6 +591,25 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       delete next[key];
       return next;
     });
+
+    // Persist rating to database
+    if (user?.id) {
+      supabase
+        .from("context_ratings")
+        .upsert(
+          {
+            brand_id: selectedBrand.id,
+            user_id: user.id,
+            context_index: block.context_index,
+            rating,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "brand_id,user_id,context_index" },
+        )
+        .then(({ error }) => {
+          if (error) console.error("[Rating] failed to save:", error);
+        });
+    }
 
     if (rating < 3) {
       setOpenFeedbackKey(key);
@@ -1491,34 +1531,56 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           <Text fontSize="xl" fontWeight="700" color="#111111">
             {viewTitle}
           </Text>
-          <Flex
-            direction={{ base: "column", sm: "row" }}
-            gap={3}
-            w={{ base: "full", md: "auto" }}
-          >
-            <Button
-              bg="#4F46E5"
-              color="white"
-              h="42px"
-              px={6}
-              fontSize="14px"
-              fontWeight="700"
-              borderRadius="12px"
-              boxShadow="0 6px 16px rgba(79, 70, 229, 0.25)"
-              _hover={{
-                bg: "#4338CA",
-                transform: "translateY(-1px)",
-                boxShadow: "0 10px 24px rgba(79, 70, 229, 0.28)",
-              }}
-              _active={{ transform: "translateY(0)" }}
-              onClick={() => setIsCreateOpen(true)}
-              w={{ base: "full", md: "auto" }}
+          <Flex align="center" gap={3} w={{ base: "full", md: "auto" }}>
+            {activeView === "brands" && (
+              <Button
+                bg="#4F46E5"
+                color="white"
+                h="42px"
+                px={6}
+                fontSize="14px"
+                fontWeight="700"
+                borderRadius="12px"
+                boxShadow="0 6px 16px rgba(79, 70, 229, 0.25)"
+                _hover={{
+                  bg: "#4338CA",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 10px 24px rgba(79, 70, 229, 0.28)",
+                }}
+                _active={{ transform: "translateY(0)" }}
+                onClick={() => setIsCreateOpen(true)}
+                w={{ base: "full", sm: "auto" }}
+              >
+                <Flex align="center" gap={2}>
+                  <Plus size={18} />
+                  Create Brand
+                </Flex>
+              </Button>
+            )}
+
+            {/* Profile avatar */}
+            <Flex
+              align="center"
+              justify="center"
+              w="40px"
+              h="40px"
+              borderRadius="full"
+              bg="#EEF2FF"
+              border="1.5px solid"
+              borderColor="#C7D2FE"
+              color="#4F46E5"
+              cursor="default"
+              flexShrink={0}
+              title={user?.email ?? "Profile"}
             >
-              <Flex align="center" gap={2}>
-                <Plus size={18} />
-                Create Brand
-              </Flex>
-            </Button>
+              {user?.email ? (
+                <Text fontSize="15px" fontWeight="700" lineHeight="1">
+                  {user.email[0].toUpperCase()}
+                </Text>
+              ) : (
+                <UserCircle size={20} />
+              )}
+            </Flex>
           </Flex>
         </Flex>
 
@@ -1554,6 +1616,13 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               token={session?.access_token}
               campaign={campaign}
               onNavigateToAssets={() => setActiveView("assets")}
+              hasRatedContext={
+                contextBlocks.length > 0 &&
+                contextBlocks.every(
+                  (b) => (ratings[getFeedbackKey(selectedBrand!.id, b.context_index)] ?? 0) > 0,
+                )
+              }
+              onNavigateToBrands={() => setActiveView("brands")}
             />
           ) : activeView === "assets" ? (
             <AssetsTab

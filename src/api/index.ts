@@ -132,7 +132,8 @@ export async function* createBrandStream(
 export function getBrandStreamUrl(
   websiteUrl: string,
   name: string = "",
-  guardrails?: string
+  guardrails?: string,
+  description?: string
 ): string {
   const params = new URLSearchParams({
     website_url: websiteUrl,
@@ -140,6 +141,9 @@ export function getBrandStreamUrl(
   });
   if (guardrails) {
     params.set("guardrails", guardrails);
+  }
+  if (description) {
+    params.set("description", description);
   }
   return `${BASE_URL}${API_ENDPOINTS.BRANDS}?${params.toString()}`;
 }

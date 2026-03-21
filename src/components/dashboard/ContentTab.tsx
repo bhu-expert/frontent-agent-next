@@ -13,9 +13,11 @@ import {
 import {
   BadgeCheck,
   Loader,
+  Lock,
   Megaphone,
   Rocket,
   Sparkles,
+  Star,
   Tags,
 } from "lucide-react";
 import { generateAdVariationsBulk } from "@/api";
@@ -44,6 +46,8 @@ interface ContentTabProps {
   token?: string;
   campaign: ReturnType<typeof useCampaignPolling>;
   onNavigateToAssets: () => void;
+  hasRatedContext: boolean;
+  onNavigateToBrands: () => void;
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
@@ -79,7 +83,7 @@ function getContextTags(block: { title: string; content: string }, industry: str
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets }: ContentTabProps) {
+export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands }: ContentTabProps) {
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
@@ -311,11 +315,48 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         />
       </Box>
 
+      {/* Rating gate banner */}
+      {!hasRatedContext && (
+        <Flex
+          align="center" gap={4}
+          bg="#FFFBEB" border="1px solid" borderColor="#FDE68A"
+          borderRadius="16px" px={5} py={4}
+        >
+          <Flex
+            w="36px" h="36px" flexShrink={0} borderRadius="10px"
+            bg="#FEF3C7" align="center" justify="center"
+          >
+            <Lock size={16} color="#D97706" />
+          </Flex>
+          <Box flex={1}>
+            <Text fontSize="14px" fontWeight="700" color="#92400E">
+              Rate all contexts to unlock generation
+            </Text>
+            <Text fontSize="13px" color="#B45309" mt={0.5}>
+              Go to the Brands tab and give every context a star rating before generating.
+            </Text>
+          </Box>
+          <Button
+            size="sm" h="36px" px={4} borderRadius="10px"
+            bg="#D97706" color="white" fontSize="13px" fontWeight="600"
+            _hover={{ bg: "#B45309" }}
+            onClick={onNavigateToBrands}
+            flexShrink={0}
+          >
+            <Flex align="center" gap={1.5}>
+              <Star size={13} />
+              Rate Now
+            </Flex>
+          </Button>
+        </Flex>
+      )}
+
       {/* Sticky Generate Bar */}
       <Box
         position="sticky" bottom={{ base: 2, md: 4 }}
         bg="rgba(255, 255, 255, 0.9)" backdropFilter="blur(12px)"
-        border="1px solid" borderColor="#ECECEC" borderRadius="20px"
+        border="1px solid" borderColor={hasRatedContext ? "#ECECEC" : "#FDE68A"}
+        borderRadius="20px"
         px={{ base: 4, md: 6 }} py={4}
       >
         <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
@@ -336,19 +377,24 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             </Box>
             <Text color="#9CA3AF">=</Text>
             <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color="#4F46E5">{totalPosts}</Text>
-              <Text fontSize="12px" color="#4F46E5" textTransform="uppercase">Total Posts</Text>
+              <Text fontSize="18px" fontWeight="700" color={hasRatedContext ? "#4F46E5" : "#D97706"}>{totalPosts}</Text>
+              <Text fontSize="12px" color={hasRatedContext ? "#4F46E5" : "#D97706"} textTransform="uppercase">Total Posts</Text>
             </Box>
           </Flex>
 
           <Button
-            bg="#4F46E5" color="white" borderRadius="14px" h="52px" px={7}
+            bg={hasRatedContext ? "#4F46E5" : "#D1D5DB"}
+            color="white" borderRadius="14px" h="52px" px={7}
             fontSize="15px" fontWeight="600"
-            _hover={{ bg: "#4338CA" }}
-            disabled={selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
+            _hover={{ bg: hasRatedContext ? "#4338CA" : "#D1D5DB" }}
+            disabled={!hasRatedContext || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
             onClick={handleGenerateContent}
+            cursor={hasRatedContext ? "pointer" : "not-allowed"}
           >
-            {isGenerating ? "Generating..." : totalPosts === 0 ? "Select to Generate" : `Generate ${totalPosts} Posts`}
+            <Flex align="center" gap={2}>
+              {!hasRatedContext && <Lock size={15} />}
+              {isGenerating ? "Generating..." : !hasRatedContext ? "Rate All Contexts First" : totalPosts === 0 ? "Select to Generate" : `Generate ${totalPosts} Posts`}
+            </Flex>
           </Button>
         </Flex>
       </Box>
