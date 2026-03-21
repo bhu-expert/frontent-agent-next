@@ -17,8 +17,10 @@ import {
   Link,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { Mail, Instagram, Twitter, MessageSquare, Send, CheckCircle } from "lucide-react";
+import { Mail, Instagram, Twitter, MessageSquare, Send, CheckCircle, ArrowRight, Home } from "lucide-react";
 import { CONTACT_EMAIL } from "@/constants/contact";
+import { motion, AnimatePresence } from "framer-motion";
+import NextLink from "next/link";
 
 export default function ContactPageClient() {
   const [form, setForm] = useState({
@@ -30,6 +32,7 @@ export default function ContactPageClient() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -59,24 +62,31 @@ export default function ContactPageClient() {
 
     setIsSubmitting(true);
 
-    // Simulate SMTP Mailer call
-    console.log("Simulating SMTP Mailer sending email...");
-    console.log(`To: ${CONTACT_EMAIL}`);
-    console.log("From:", form.email);
-    console.log("Subject:", form.subject);
-    console.log("Body:", form.message);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      const data = await res.json();
 
-    setIsSubmitting(false);
-    setIsSuccess(true);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
 
-    toaster.create({
-      title: "Message sent!",
-      description: "We'll get back to you within 24 hours.",
-      type: "success",
-      duration: 5000,
-    });
+      setSuccessMessage(data.message || "Thanks for reaching out! We've received your inquiry and our team will get back to you within 24 hours.");
+      setIsSuccess(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      toaster.create({
+        title: "Failed to send",
+        description: message,
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -184,53 +194,114 @@ export default function ContactPageClient() {
 
           {/* Right Side: Form */}
           <Box w="full" maxW="500px" mx={{ base: "auto", md: "0" }}>
+            <AnimatePresence mode="wait">
             {isSuccess ? (
-              <VStack
-                bg="white"
-                p={{ base: 8, md: 10 }}
-                borderRadius="2xl"
-                border="1px solid"
-                borderColor="blue.100"
-                boxShadow="xl"
-                gap={6}
-                align="center"
-                textAlign="center"
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                style={{ width: "100%" }}
               >
-                <Box
-                  p={4}
-                  bg="blue.50"
-                  color="blue.600"
-                  borderRadius="full"
+                <VStack
+                  bg="white"
+                  p={{ base: 8, md: 12 }}
+                  borderRadius="3xl"
+                  border="1px solid"
+                  borderColor="blue.100"
+                  boxShadow="2xl"
+                  gap={8}
+                  align="center"
+                  textAlign="center"
+                  position="relative"
+                  overflow="hidden"
                 >
-                  <CheckCircle size={48} />
-                </Box>
-                <VStack gap={2}>
-                  <Heading size="lg" color="gray.900">
-                    Message Sent!
-                  </Heading>
-                  <Text color="gray.600" fontSize="md">
-                    Thanks for reaching out! We&apos;ll get back to you within 24 hours.
-                  </Text>
+                  {/* Background Accents */}
+                  <Box
+                    position="absolute"
+                    top="-20px"
+                    right="-20px"
+                    w="150px"
+                    h="150px"
+                    bg="blue.50"
+                    borderRadius="full"
+                    opacity={0.5}
+                    zIndex={0}
+                  />
+                  
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", damping: 12 }}
+                  >
+                    <Box
+                      p={5}
+                      bg="blue.600"
+                      color="white"
+                      borderRadius="2xl"
+                      boxShadow="0 10px 25px -5px rgba(37, 99, 235, 0.4)"
+                      position="relative"
+                      zIndex={1}
+                    >
+                      <CheckCircle size={40} strokeWidth={2.5} />
+                    </Box>
+                  </motion.div>
+
+                  <VStack gap={3} position="relative" zIndex={1}>
+                    <Heading size="2xl" color="gray.900" letterSpacing="tight">
+                      Message Sent!
+                    </Heading>
+                    <Text color="gray.600" fontSize="lg" lineHeight="1.6" maxW="320px">
+                      {successMessage}
+                    </Text>
+                  </VStack>
+
+                  <VStack w="full" gap={3} pt={4} position="relative" zIndex={1}>
+                    <Button
+                      colorPalette="blue"
+                      size="lg"
+                      w="full"
+                      h="56px"
+                      borderRadius="xl"
+                      fontSize="md"
+                      fontWeight="bold"
+                      asChild
+                    >
+                      <NextLink href="/">
+                        <Home size={18} style={{ marginRight: "8px" }} />
+                        Back to Home
+                      </NextLink>
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      color="gray.500"
+                      onClick={() => setIsSuccess(false)}
+                      fontSize="sm"
+                      _hover={{ color: "blue.600", bg: "blue.50" }}
+                    >
+                      Send another message
+                      <ArrowRight size={14} style={{ marginLeft: "4px" }} />
+                    </Button>
+                  </VStack>
                 </VStack>
-                <Button
-                  colorPalette="blue"
-                  variant="outline"
-                  onClick={() => setIsSuccess(false)}
-                  borderRadius="xl"
-                  size="md"
-                >
-                  Send Another Message
-                </Button>
-              </VStack>
+              </motion.div>
             ) : (
-              <Box 
-                bg="white" 
-                p={{ base: 6, md: 10 }}
-                borderRadius="3xl" 
-                border="1px solid" 
-                borderColor="gray.100" 
-                boxShadow="2xl"
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
+                <Box 
+                  bg="white" 
+                  p={{ base: 6, md: 10 }}
+                  borderRadius="3xl" 
+                  border="1px solid" 
+                  borderColor="gray.100" 
+                  boxShadow="2xl"
+                >
                 <form onSubmit={handleSubmit}>
                   <VStack gap={6}>
                     <Field.Root invalid={!!errors.name} width="full">
@@ -378,7 +449,9 @@ export default function ContactPageClient() {
                   </VStack>
                 </form>
               </Box>
+            </motion.div>
             )}
+          </AnimatePresence>
           </Box>
         </SimpleGrid>
       </Container>
