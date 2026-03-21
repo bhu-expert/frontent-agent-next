@@ -20,7 +20,7 @@ interface AssetsTabProps {
   assets: Record<string, CampaignAsset[]>;
   progress: number;
   isPolling: boolean;
-  onRatingGateChange?: (hasPending: boolean) => void;
+  onRatingGateChange?: (hasPending: boolean, totalAssets: number, ratedAssets: number) => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -353,12 +353,12 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
 function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (imageId: string) => void }) {
-  const [rating, setRating]       = useState(0);
+  const [rating, setRating]           = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [feedback, setFeedback]   = useState("");
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [loaded, setLoaded]       = useState(false);
+  const [feedback, setFeedback]       = useState("");
+  const [saving, setSaving]           = useState(false);
+  const [saved, setSaved]             = useState(false);
+  const [loaded, setLoaded]           = useState(false);
 
   // Load existing feedback on mount
   useEffect(() => {
@@ -380,14 +380,15 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
     })();
   }, [imageId]);
 
-  const handleSave = async () => {
-    if (rating === 0) return;
+  const handleStarClick = async (star: number) => {
+    setRating(star);
     setSaving(true);
+    setSaved(false);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       await supabase.from("image_feedback").upsert(
-        { image_id: imageId, user_id: user.id, rating, feedback: feedback || null, updated_at: new Date().toISOString() },
+        { image_id: imageId, user_id: user.id, rating: star, feedback: feedback || null, updated_at: new Date().toISOString() },
         { onConflict: "image_id,user_id" }
       );
       setSaved(true);
@@ -403,17 +404,17 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
 
   return (
     <Box mt={2} pt={2} borderTop="1px solid" borderColor="#F3F4F6">
-      {/* Star Rating */}
+      {/* Star Rating — auto-saves on click */}
       <Flex align="center" gap={1} mb={1.5}>
         {[1, 2, 3, 4, 5].map(star => (
           <Box
             key={star}
-            cursor="pointer"
-            onMouseEnter={() => setHoverRating(star)}
+            cursor={saving ? "wait" : "pointer"}
+            onMouseEnter={() => !saving && setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
-            onClick={() => { setRating(star); setSaved(false); }}
+            onClick={() => !saving && handleStarClick(star)}
             transition="transform 0.15s"
-            _hover={{ transform: "scale(1.2)" }}
+            _hover={{ transform: saving ? "none" : "scale(1.2)" }}
           >
             <Star
               size={16}
@@ -423,37 +424,28 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
             />
           </Box>
         ))}
-        {rating > 0 && (
-          <Text fontSize="11px" color="#9CA3AF" ml={1}>{rating}/5</Text>
+        {saving && <Loader size={10} color="#9CA3AF" style={{ animation: "spin 1.5s linear infinite", marginLeft: 4 }} />}
+        {!saving && saved && rating > 0 && (
+          <Text fontSize="11px" color="#22C55E" ml={1} fontWeight="600">✓</Text>
+        )}
+        {!saving && rating > 0 && (
+          <Text fontSize="11px" color="#9CA3AF" ml={saved ? 0 : 1}>{rating}/5</Text>
         )}
       </Flex>
 
       {/* Feedback input */}
-      <Flex gap={1.5}>
-        <input
-          value={feedback}
-          onChange={e => { setFeedback(e.target.value); setSaved(false); }}
-          placeholder="Leave feedback..."
-          style={{
-            flex: 1, fontSize: "12px", padding: "6px 10px",
-            border: "1px solid #E5E7EB", borderRadius: "8px",
-            outline: "none", color: "#374151", background: "#F9FAFB",
-          }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#6366F1"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
-        />
-        <Button
-          size="xs" h="30px" px={2.5} borderRadius="8px"
-          bg={saved ? "#DCFCE7" : "#4F46E5"}
-          color={saved ? "#166534" : "white"}
-          fontSize="11px" fontWeight="600"
-          _hover={{ opacity: 0.85 }}
-          disabled={rating === 0 || saving}
-          onClick={handleSave}
-        >
-          {saving ? <Loader size={10} style={{ animation: "spin 1.5s linear infinite" }} /> : saved ? "Saved" : "Save"}
-        </Button>
-      </Flex>
+      <input
+        value={feedback}
+        onChange={e => setFeedback(e.target.value)}
+        placeholder="Leave feedback..."
+        style={{
+          width: "100%", fontSize: "12px", padding: "6px 10px",
+          border: "1px solid #E5E7EB", borderRadius: "8px",
+          outline: "none", color: "#374151", background: "#F9FAFB",
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = "#6366F1"; }}
+        onBlur={e => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
+      />
     </Box>
   );
 }
@@ -675,19 +667,19 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   // Report gate status to parent whenever library or rating state changes
   useEffect(() => {
     const hasPending = libraryFiles.length > 0 && libraryFiles.some(f => !ratedFileIds.has(f.id));
-    onRatingGateChange?.(hasPending);
+    onRatingGateChange?.(hasPending, libraryFiles.length, ratedFileIds.size);
   }, [libraryFiles, ratedFileIds, onRatingGateChange]);
 
   const handleFileRated = useCallback((fileId: string) => {
     setRatedFileIds(prev => new Set([...prev, fileId]));
   }, []);
 
-  // ── Auto-refresh library while generation or overlay is active ──────────────
+  // ── Auto-refresh library only while generation or overlay is actively in progress ──
   useEffect(() => {
-    if (!isGenerating && !isOverlaying && !isComplete) return;
+    if (!isGenerating && !isOverlaying) return;
     const interval = setInterval(() => { loadLibrary(); }, 5000);
     return () => clearInterval(interval);
-  }, [isGenerating, isOverlaying, isComplete, loadLibrary]);
+  }, [isGenerating, isOverlaying, loadLibrary]);
 
   // ── Auto-dismiss "All Assets Ready" banner after 8s ─────────────────────────
   useEffect(() => {
@@ -816,13 +808,27 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         {/* Library images */}
         <Box>
           <Flex justify="space-between" align="center" mb={4}>
-            <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em" textTransform="uppercase">
-              Upload Library
-            </Text>
-            <Button variant="ghost" size="xs" onClick={loadLibrary} loading={loadingLib}
-              color="#6B7280" _hover={{ color: "#111111" }}>
-              Refresh
-            </Button>
+            <Flex align="center" gap={3}>
+              <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em" textTransform="uppercase">
+                Upload Library
+              </Text>
+              {libraryFiles.length > 0 && (
+                <Flex gap={1.5} align="center">
+                  <Box px={2} py={0.5} borderRadius="999px" bg="#F0FDF4" border="1px solid #BBF7D0">
+                    <Text fontSize="11px" fontWeight="600" color="#166534">
+                      {ratedFileIds.size} rated
+                    </Text>
+                  </Box>
+                  {libraryFiles.length - ratedFileIds.size > 0 && (
+                    <Box px={2} py={0.5} borderRadius="999px" bg="#FFFBEB" border="1px solid #FDE68A">
+                      <Text fontSize="11px" fontWeight="600" color="#92400E">
+                        {libraryFiles.length - ratedFileIds.size} unrated
+                      </Text>
+                    </Box>
+                  )}
+                </Flex>
+              )}
+            </Flex>
           </Flex>
 
           {/* Format filter tabs */}

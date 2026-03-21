@@ -494,6 +494,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
 
   // ── Batch-rating gate state (driven by AssetsTab via onRatingGateChange) ─────
   const [hasPendingBatch, setHasPendingBatch] = useState(false);
+  const [assetCounts, setAssetCounts] = useState<{ total: number; rated: number }>({ total: 0, rated: 0 });
 
   // Load persisted ratings from DB when brand or user changes
   useEffect(() => {
@@ -1677,6 +1678,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               }
               onNavigateToBrands={() => navigateTo("brands")}
               hasPendingBatch={hasPendingBatch}
+              assetCounts={assetCounts}
               onBatchGenerated={handleBatchGenerated}
             />
           ) : activeView === "assets" ? (
@@ -1686,7 +1688,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               assets={campaign.assets}
               progress={campaign.progress}
               isPolling={campaign.isPolling}
-              onRatingGateChange={setHasPendingBatch}
+              onRatingGateChange={(hasPending, total, rated) => {
+                setHasPendingBatch(hasPending);
+                setAssetCounts({ total, rated });
+              }}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />

@@ -49,6 +49,7 @@ interface ContentTabProps {
   hasRatedContext: boolean;
   onNavigateToBrands: () => void;
   hasPendingBatch: boolean;
+  assetCounts?: { total: number; rated: number };
   onBatchGenerated: (campaignIds: string[]) => void;
 }
 
@@ -69,7 +70,7 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands, hasPendingBatch, onBatchGenerated }: ContentTabProps) {
+export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands, hasPendingBatch, assetCounts, onBatchGenerated }: ContentTabProps) {
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
@@ -205,9 +206,27 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             Select your approved contexts and pair them with content formats to generate posts.
           </Text>
         </Box>
-        <Badge bg="#EEF2FF" color="#4338CA" px={3} py={2} borderRadius="999px">
-          {brand.name} &middot; Active Brand
-        </Badge>
+        <Flex align="center" gap={2} wrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
+          {assetCounts && assetCounts.total > 0 && (
+            <Flex gap={1.5} align="center">
+              <Box px={2} py={1} borderRadius="999px" bg="#F0FDF4" border="1px solid #BBF7D0">
+                <Text fontSize="11px" fontWeight="600" color="#166534">
+                  {assetCounts.rated} rated
+                </Text>
+              </Box>
+              {assetCounts.total - assetCounts.rated > 0 && (
+                <Box px={2} py={1} borderRadius="999px" bg="#FFFBEB" border="1px solid #FDE68A">
+                  <Text fontSize="11px" fontWeight="600" color="#92400E">
+                    {assetCounts.total - assetCounts.rated} unrated
+                  </Text>
+                </Box>
+              )}
+            </Flex>
+          )}
+          <Badge bg="#EEF2FF" color="#4338CA" px={3} py={2} borderRadius="999px">
+            {brand.name} &middot; Active Brand
+          </Badge>
+        </Flex>
       </Flex>
 
       {/* Step 1: Contexts */}
