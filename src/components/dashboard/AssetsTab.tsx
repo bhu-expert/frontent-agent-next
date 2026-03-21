@@ -6,7 +6,7 @@ import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  Coffee, Download, ImageIcon, Loader, X, Star, MessageSquare, Sparkles,
+  Coffee, Download, ImageIcon, Loader, X, Star, Sparkles,
 } from "lucide-react";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
 import type { CampaignAsset } from "@/types/onboarding.types";
@@ -20,6 +20,7 @@ interface AssetsTabProps {
   assets: Record<string, CampaignAsset[]>;
   progress: number;
   isPolling: boolean;
+  onRatingGateChange?: (hasPending: boolean) => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -459,17 +460,18 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
 
 // ─── Library Image Card ───────────────────────────────────────────────────────
 
-function LibraryCard({ file, igConnected, onPublish }: {
+function LibraryCard({ file, igConnected, onPublish, onRated, isRated }: {
   file: LibraryFile;
   igConnected: boolean;
   onPublish: (t: PublishTarget) => void;
+  onRated?: (fileId: string) => void;
+  isRated?: boolean;
 }) {
-  const [showFeedback, setShowFeedback] = useState(false);
   const igType = FORMAT_IG_TYPE[file.format];
 
   return (
     <Box borderRadius="18px" overflow="hidden" bg="white"
-      border="1px solid" borderColor="#ECECEC"
+      border="1.5px solid" borderColor={isRated ? "#D1FAE5" : "#FDE68A"}
       transition="all 0.3s ease"
       _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}>
       <Box position="relative" overflow="hidden" style={{ aspectRatio: FORMAT_RATIO[file.format] }}>
@@ -511,23 +513,14 @@ function LibraryCard({ file, igConnected, onPublish }: {
       </Box>
 
       <Box p={3.5}>
-        <Flex justify="space-between" align="center">
-          <Box flex={1} minW={0}>
-            <Text fontSize="13px" fontWeight="600" color="#111111"
-              overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
-              {file.label || file.name}
-            </Text>
-            <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
-          </Box>
-          <Button variant="ghost" size="xs" h="26px" px={2} borderRadius="8px"
-            color={showFeedback ? "#4F46E5" : "#9CA3AF"}
-            _hover={{ color: "#4F46E5", bg: "#EEF2FF" }}
-            onClick={() => setShowFeedback(!showFeedback)}>
-            <MessageSquare size={13} />
-            <Text ml={1} fontSize="11px">{showFeedback ? "Hide" : "Rate"}</Text>
-          </Button>
-        </Flex>
-        {showFeedback && <FeedbackPanel imageId={file.id} />}
+        <Box mb={2}>
+          <Text fontSize="13px" fontWeight="600" color="#111111"
+            overflow="hidden" whiteSpace="nowrap" style={{ textOverflow: "ellipsis" }}>
+            {file.label || file.name}
+          </Text>
+          <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
+        </Box>
+        <FeedbackPanel imageId={file.id} onRated={onRated} />
       </Box>
     </Box>
   );
@@ -538,13 +531,14 @@ function LibraryCard({ file, igConnected, onPublish }: {
 const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
-export default function AssetsTab({ trackers, statuses, assets, progress, isPolling }: AssetsTabProps) {
+export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, onRatingGateChange }: AssetsTabProps) {
   const [igConnected,    setIgConnected]    = useState(false);
   const [libraryFiles,   setLibraryFiles]   = useState<LibraryFile[]>([]);
   const [loadingLib,     setLoadingLib]     = useState(true);
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
   const [completeBannerDismissed, setCompleteBannerDismissed] = useState(false);
+  const [ratedFileIds,   setRatedFileIds]   = useState<Set<string>>(new Set());
 
   const allAssets    = trackers.flatMap(t => (assets[t.campaignId] || []));
   const totalJobs    = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
@@ -616,6 +610,23 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         created_at: row.created_at as string | null,
       }));
       setLibraryFiles(files);
+
+      // Seed which files already have ratings
+      if (files.length > 0) {
+        const { data: { user: ratingUser } } = await supabase.auth.getUser();
+        if (ratingUser) {
+          const { data: existingRatings } = await supabase
+            .from("image_feedback")
+            .select("image_id")
+            .in("image_id", files.map(f => f.id))
+            .eq("user_id", ratingUser.id);
+          if (existingRatings) {
+            setRatedFileIds(new Set((existingRatings as { image_id: string }[]).map(r => r.image_id)));
+          }
+        }
+      } else {
+        setRatedFileIds(new Set());
+      }
     } catch (err) {
       console.error("Library load error:", err);
       setLibraryFiles([]);
@@ -625,6 +636,16 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   }, []);
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  // Report gate status to parent whenever library or rating state changes
+  useEffect(() => {
+    const hasPending = libraryFiles.length > 0 && libraryFiles.some(f => !ratedFileIds.has(f.id));
+    onRatingGateChange?.(hasPending);
+  }, [libraryFiles, ratedFileIds, onRatingGateChange]);
+
+  const handleFileRated = useCallback((fileId: string) => {
+    setRatedFileIds(prev => new Set([...prev, fileId]));
+  }, []);
 
   // ── Auto-refresh library while generation or overlay is active ──────────────
   useEffect(() => {
@@ -685,11 +706,6 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 style={{ background: "linear-gradient(135deg, #f09433, #dc2743, #bc1888)" }}>
                 <Text fontSize="11px" fontWeight="700" color="white">IG Connected</Text>
               </Box>
-            )}
-            {libraryFiles.length > 0 && (
-              <Badge bg="#EEF2FF" color="#4338CA" px={3} py={2} borderRadius="999px" fontSize="14px">
-                {libraryFiles.length} {libraryFiles.length === 1 ? "asset" : "assets"}
-              </Badge>
             )}
           </Flex>
         </Flex>
@@ -885,7 +901,8 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 {/* Real library cards */}
                 {filteredFiles.map(file => (
                   <LibraryCard key={file.id} file={file}
-                    igConnected={igConnected} onPublish={setPublishTarget} />
+                    igConnected={igConnected} onPublish={setPublishTarget}
+                    onRated={handleFileRated} isRated={ratedFileIds.has(file.id)} />
                 ))}
               </Box>
             );

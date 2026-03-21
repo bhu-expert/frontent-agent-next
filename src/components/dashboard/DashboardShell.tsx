@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
-  Badge,
   Box,
   Button,
   Flex,
@@ -98,43 +97,6 @@ function getPrimaryObjective(context: string | null): string {
   return firstSentence || "No primary objective available yet.";
 }
 
-function getContextTags(
-  block: { title: string; content: string },
-  industry: string | null,
-): string[] {
-  const baseTags = industry ? [industry] : [];
-  const keywordMap = [
-    {
-      label: "Employer Branding",
-      keywords: ["employee", "team", "culture", "retention", "workforce"],
-    },
-    {
-      label: "Compliance",
-      keywords: ["compliance", "certificate", "reporting", "esg"],
-    },
-    { label: "B2B Culture", keywords: ["b2b", "corporate", "business"] },
-    {
-      label: "Sustainability",
-      keywords: ["sustainability", "environmental", "eco", "carbon"],
-    },
-    {
-      label: "Community",
-      keywords: ["community", "movement", "participation"],
-    },
-    { label: "Innovation", keywords: ["innovation", "design", "technology"] },
-    {
-      label: "Data-Driven",
-      keywords: ["data", "measurable", "analytics", "dashboard"],
-    },
-  ];
-  const source = `${block.title} ${block.content}`.toLowerCase();
-  const derivedTags = keywordMap
-    .filter((tag) => tag.keywords.some((keyword) => source.includes(keyword)))
-    .slice(0, 2)
-    .map((tag) => tag.label);
-
-  return [...baseTags, ...derivedTags].slice(0, 2);
-}
 
 function getBrandSummary(brand: BrandData) {
   const contextBlocks = brand.manifest ? splitContextMd(brand.manifest) : [];
@@ -458,6 +420,8 @@ function EditBrandPanel({
  */
 export default function DashboardShell({ brandId }: DashboardShellProps) {
   const { user, session, signOut } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const noticeTimeoutsRef = useRef<
     Record<string, ReturnType<typeof setTimeout>>
   >({});
@@ -491,22 +455,23 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     | "support"
   >("brands");
 
-  // Sync ?tab= query param → activeView on mount and when it changes
+  // Sync ?tab= query param → activeView on mount and when URL changes
   useEffect(() => {
     const tab = searchParams.get("tab");
     const valid = [
-      "brands",
-      "content",
-      "assets",
-      "calendar",
-      "integrations",
-      "settings",
-      "support",
+      "brands", "content", "assets", "calendar",
+      "integrations", "settings", "support",
     ];
     if (tab && valid.includes(tab)) {
       setActiveView(tab as typeof activeView);
     }
   }, [searchParams]);
+
+  // Navigate: update state AND push ?tab= into the URL so reload restores the tab
+  const navigateTo = (view: typeof activeView) => {
+    setActiveView(view);
+    router.replace(`${pathname}?tab=${view}`, { scroll: false });
+  };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [allBrands, setAllBrands] = useState<BrandData[]>([]);
@@ -527,9 +492,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     {},
   );
 
-  // ── Batch-rating gate state ──────────────────────────────────────────────────
-  const [currentBatchCampaignIds, setCurrentBatchCampaignIds] = useState<string[]>([]);
-  const [batchRatedVariationIds, setBatchRatedVariationIds] = useState<Set<string>>(new Set());
+  // ── Batch-rating gate state (driven by AssetsTab via onRatingGateChange) ─────
+  const [hasPendingBatch, setHasPendingBatch] = useState(false);
 
   // Load persisted ratings from DB when brand or user changes
   useEffect(() => {
@@ -561,52 +525,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   >({});
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // ── Batch gate derived values ────────────────────────────────────────────────
-  const currentBatchVariationIds = useMemo(
-    () => currentBatchCampaignIds.flatMap(cid => (campaign.assets[cid] ?? []).map(a => a.variation_id)),
-    [currentBatchCampaignIds, campaign.assets],
-  );
-  const allCurrentBatchAssetsRated =
-    currentBatchCampaignIds.length === 0 ||
-    (currentBatchVariationIds.length > 0 &&
-      currentBatchVariationIds.every(vid => batchRatedVariationIds.has(vid)));
-
-  // Seed rated set from DB when batch assets load
-  useEffect(() => {
-    if (currentBatchCampaignIds.length === 0) return;
-    const variationIds = currentBatchVariationIds.filter(Boolean);
-    if (variationIds.length === 0) return;
-    (async () => {
-      const { data: { user: batchUser } } = await supabase.auth.getUser();
-      if (!batchUser) return;
-      const { data } = await supabase
-        .from("image_feedback")
-        .select("image_id")
-        .in("image_id", variationIds)
-        .eq("user_id", batchUser.id);
-      if (data) {
-        setBatchRatedVariationIds(prev => {
-          const next = new Set(prev);
-          for (const row of data as { image_id: string }[]) next.add(row.image_id);
-          return next;
-        });
-      }
-    })();
-  }, [currentBatchCampaignIds, currentBatchVariationIds]);
-
-  // Reset batch when brand changes
-  useEffect(() => {
-    setCurrentBatchCampaignIds([]);
-    setBatchRatedVariationIds(new Set());
-  }, [selectedBrandId]);
-
-  const handleBatchGenerated = useCallback((campaignIds: string[]) => {
-    setCurrentBatchCampaignIds(campaignIds);
-    setBatchRatedVariationIds(new Set());
-  }, []);
-
-  const handleVariationRated = useCallback((variationId: string) => {
-    setBatchRatedVariationIds(prev => new Set([...prev, variationId]));
+  const handleBatchGenerated = useCallback((_campaignIds: string[]) => {
+    // gate is driven by AssetsTab via onRatingGateChange
   }, []);
 
   useEffect(() => {
@@ -1093,14 +1013,9 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               <Text fontSize="12px" fontWeight="800" color="#9CA3AF"
                 letterSpacing="0.07em" textTransform="uppercase">Brand Context</Text>
               <Box flex={1} h="1px" bg="#ECECEC" />
-              <Badge bg="#EEF2FF" color="#4338CA" borderRadius="999px" px={3} py={1}
-                fontSize="12px" fontWeight="600">
-                {contextBlocks.length} sections
-              </Badge>
             </Flex>
             <VStack align="stretch" gap={6}>
               {contextBlocks.map((block) => {
-            const tags = getContextTags(block, selectedBrand.industry);
             const feedbackKey = getFeedbackKey(
               selectedBrand.id,
               block.context_index,
@@ -1174,24 +1089,6 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                     />
                   </Box>
                 )}
-                <Flex gap={3} wrap="wrap" mb={6}>
-                  {tags.map((tag) => (
-                    <Box
-                      key={`${block.context_index}-${tag}`}
-                      px={4}
-                      py={2}
-                      borderRadius="999px"
-                      border="1px solid"
-                      borderColor="#E5E7EB"
-                      bg="#FAFAFA"
-                    >
-                      <Text fontSize="14px" fontWeight="700" color="#6B7280">
-                        {tag}
-                      </Text>
-                    </Box>
-                  ))}
-                </Flex>
-
                 <Text
                   fontSize={{ base: "2xl", md: "3xl" }}
                   fontWeight="700"
@@ -1480,7 +1377,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 transition="all 0.15s ease"
                 fontSize="14px"
                 onClick={() => {
-                  setActiveView(viewKey);
+                  navigateTo(viewKey);
                   setIsMobileSidebarOpen(false);
                 }}
               >
@@ -1590,7 +1487,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                   _hover={{ bg: "#F8F8F6" }}
                   fontSize="14px"
                   onClick={() => {
-                    setActiveView(viewKey);
+                    navigateTo(viewKey);
                     setIsMobileSidebarOpen(false);
                   }}
                 >
@@ -1762,15 +1659,15 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               contextBlocks={contextBlocks}
               token={session?.access_token}
               campaign={campaign}
-              onNavigateToAssets={() => setActiveView("assets")}
+              onNavigateToAssets={() => navigateTo("assets")}
               hasRatedContext={
                 contextBlocks.length > 0 &&
                 contextBlocks.every(
                   (b) => (ratings[getFeedbackKey(selectedBrand!.id, b.context_index)] ?? 0) > 0,
                 )
               }
-              onNavigateToBrands={() => setActiveView("brands")}
-              hasPendingBatch={!allCurrentBatchAssetsRated}
+              onNavigateToBrands={() => navigateTo("brands")}
+              hasPendingBatch={hasPendingBatch}
               onBatchGenerated={handleBatchGenerated}
             />
           ) : activeView === "assets" ? (
@@ -1780,6 +1677,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               assets={campaign.assets}
               progress={campaign.progress}
               isPolling={campaign.isPolling}
+              onRatingGateChange={setHasPendingBatch}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />
