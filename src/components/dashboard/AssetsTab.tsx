@@ -6,7 +6,7 @@ import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  Coffee, Download, ImageIcon, Loader, Lock, X, Star, MessageSquare, Sparkles,
+  Coffee, Download, ImageIcon, Loader, X, Star, MessageSquare, Sparkles,
 } from "lucide-react";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
 import type { CampaignAsset } from "@/types/onboarding.types";
@@ -20,8 +20,6 @@ interface AssetsTabProps {
   assets: Record<string, CampaignAsset[]>;
   progress: number;
   isPolling: boolean;
-  currentBatchCampaignIds: string[];
-  onVariationRated: (variationId: string) => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -459,55 +457,6 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
   );
 }
 
-// ─── Batch Asset Card ─────────────────────────────────────────────────────────
-
-function BatchAssetCard({ asset, isRated, onRated }: {
-  asset: CampaignAsset;
-  isRated: boolean;
-  onRated: (variationId: string) => void;
-}) {
-  const imageUrl = asset.overlay_url || asset.image_url;
-
-  return (
-    <Box
-      borderRadius="18px" overflow="hidden" bg="white"
-      border="2px solid" borderColor={isRated ? "#22C55E" : "#ECECEC"}
-      transition="all 0.3s ease"
-      _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
-    >
-      <Box position="relative" style={{ aspectRatio: "4/5" }} overflow="hidden" bg="#F3F4F6">
-        {imageUrl ? (
-          <Image src={imageUrl} alt={`Variation ${asset.variation_index}`} objectFit="cover" w="full" h="full" />
-        ) : (
-          <Flex position="absolute" inset={0} align="center" justify="center" direction="column" gap={2}>
-            <Loader size={24} color="#9CA3AF" style={{ animation: "spin 1.5s linear infinite" }} />
-            <Text fontSize="11px" color="#9CA3AF">Generating...</Text>
-          </Flex>
-        )}
-        {isRated && (
-          <Flex
-            position="absolute" inset={0}
-            align="center" justify="center"
-            bg="rgba(34,197,94,0.15)"
-          >
-            <Flex
-              w="40px" h="40px" borderRadius="full" bg="#22C55E"
-              align="center" justify="center"
-              boxShadow="0 4px 12px rgba(34,197,94,0.4)"
-            >
-              <Text color="white" fontSize="18px" fontWeight="700">&#10003;</Text>
-            </Flex>
-          </Flex>
-        )}
-      </Box>
-      <Box p={3}>
-        <Text fontSize="12px" color="#6B7280" mb={2}>Variation {asset.variation_index + 1}</Text>
-        <FeedbackPanel imageId={asset.variation_id} onRated={onRated} />
-      </Box>
-    </Box>
-  );
-}
-
 // ─── Library Image Card ───────────────────────────────────────────────────────
 
 function LibraryCard({ file, igConnected, onPublish }: {
@@ -589,51 +538,21 @@ function LibraryCard({ file, igConnected, onPublish }: {
 const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
-export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, currentBatchCampaignIds, onVariationRated }: AssetsTabProps) {
+export default function AssetsTab({ trackers, statuses, assets, progress, isPolling }: AssetsTabProps) {
   const [igConnected,    setIgConnected]    = useState(false);
   const [libraryFiles,   setLibraryFiles]   = useState<LibraryFile[]>([]);
   const [loadingLib,     setLoadingLib]     = useState(true);
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
-  const [localBatchRated, setLocalBatchRated] = useState<Set<string>>(new Set());
+  const [completeBannerDismissed, setCompleteBannerDismissed] = useState(false);
 
-  const allAssets  = trackers.flatMap(t => (assets[t.campaignId] || []));
-  const totalJobs  = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
+  const allAssets    = trackers.flatMap(t => (assets[t.campaignId] || []));
+  const totalJobs    = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
   const isGenerating = isPolling && totalJobs > 0;
-  const isComplete   = progress === 100 && !isPolling && totalJobs > 0;
-
-  // Batch assets and rating state
-  const batchAssets = currentBatchCampaignIds.flatMap(cid => assets[cid] ?? []);
-  const allBatchRated = batchAssets.length > 0 && batchAssets.every(a => localBatchRated.has(a.variation_id));
-
-  // Seed localBatchRated from DB when batch assets load
-  useEffect(() => {
-    if (currentBatchCampaignIds.length === 0 || batchAssets.length === 0) return;
-    const variationIds = batchAssets.map(a => a.variation_id).filter(Boolean);
-    if (variationIds.length === 0) return;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("image_feedback")
-        .select("image_id")
-        .in("image_id", variationIds)
-        .eq("user_id", user.id);
-      if (data) {
-        setLocalBatchRated(prev => {
-          const next = new Set(prev);
-          for (const row of data as { image_id: string }[]) next.add(row.image_id);
-          return next;
-        });
-      }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBatchCampaignIds, assets]);
-
-  const handleBatchVariationRated = (variationId: string) => {
-    setLocalBatchRated(prev => new Set([...prev, variationId]));
-    onVariationRated(variationId);
-  };
+  // All base-image jobs done but overlay hasn't written to library_images yet
+  const allJobsDone  = progress === 100 && !isPolling && totalJobs > 0;
+  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs;
+  const isComplete   = allJobsDone && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────
   useEffect(() => {
@@ -707,8 +626,25 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
 
+  // ── Auto-refresh library while generation or overlay is active ──────────────
+  useEffect(() => {
+    if (!isGenerating && !isOverlaying && !isComplete) return;
+    const interval = setInterval(() => { loadLibrary(); }, 5000);
+    return () => clearInterval(interval);
+  }, [isGenerating, isOverlaying, isComplete, loadLibrary]);
+
+  // ── Auto-dismiss "All Assets Ready" banner after 8s ─────────────────────────
+  useEffect(() => {
+    if (!isComplete) { setCompleteBannerDismissed(false); return; }
+    const t = setTimeout(() => setCompleteBannerDismissed(true), 8000);
+    return () => clearTimeout(t);
+  }, [isComplete]);
+
   // ── Empty state ─────────────────────────────────────────────────────────────
-  if (libraryFiles.length === 0 && !loadingLib && batchAssets.length === 0) {
+  // Guard: also require trackers.length === 0 so we don't flash "No Assets Yet"
+  // in the window between library load completing and the polling hook initializing
+  // (isPolling starts false until listCampaigns() returns, even during active generation).
+  if (libraryFiles.length === 0 && !loadingLib && !isGenerating && !isOverlaying && trackers.length === 0) {
     return (
       <Flex direction="column" align="center" justify="center"
         bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px"
@@ -759,11 +695,18 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         </Flex>
 
         {/* Generation progress */}
-        {(isGenerating || isComplete) && (
+        {(isGenerating || isOverlaying || isComplete) && !completeBannerDismissed && (
           <Box bg={isComplete ? "#F0FDF4" : "white"} border="1px solid"
             borderColor={isComplete ? "#BBF7D0" : "#E5E7EB"} borderRadius="20px"
             p={{ base: 5, md: 6 }}>
-            <Flex align="center" gap={4}>
+            <Flex align="center" gap={4} position="relative">
+              <Button
+                variant="ghost" size="xs" position="absolute" top="-12px" right="-12px"
+                p={1} borderRadius="8px" _hover={{ bg: isComplete ? "#DCFCE7" : "#F3F4F6" }}
+                onClick={() => setCompleteBannerDismissed(true)}
+              >
+                <X size={14} color="#9CA3AF" />
+              </Button>
               {/* Circular progress */}
               <Flex w="56px" h="56px" borderRadius="full" position="relative"
                 align="center" justify="center" flexShrink={0}
@@ -784,16 +727,18 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
               <Box flex="1">
                 <Flex align="center" gap={2}>
                   <Text fontSize="18px" fontWeight="700" color="#111">
-                    {isComplete ? "All Assets Ready" : "Generating Assets"}
+                    {isComplete ? "All Assets Ready" : isOverlaying ? "Applying Overlays" : "Generating Assets"}
                   </Text>
-                  {isGenerating && <Loader size={16} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />}
+                  {(isGenerating || isOverlaying) && <Loader size={16} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />}
                 </Flex>
                 <Text fontSize="14px" color="#6B7280" mt={0.5}>
                   {isComplete
-                    ? `${allAssets.length} images generated — they'll appear in your library once uploaded.`
+                    ? `${libraryFiles.length} ads ready in your library.`
+                    : isOverlaying
+                    ? `Base images done — applying brand overlays. Ads will appear shortly.`
                     : `${allAssets.length} of ${totalJobs} images complete. New assets appear as they finish.`}
                 </Text>
-                {isGenerating && (
+                {(isGenerating || isOverlaying) && (
                   <Flex align="center" gap={1.5} mt={1.5}>
                     <Coffee size={14} color="#A78BFA" />
                     <Text fontSize="13px" color="#7C3AED" fontWeight="500">
@@ -814,77 +759,6 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 <Text fontSize="12px" color="#9CA3AF" mt={1} textAlign="right">{allAssets.length} / {totalJobs}</Text>
               </Box>
             </Flex>
-          </Box>
-        )}
-
-        {/* Current Batch section */}
-        {currentBatchCampaignIds.length > 0 && batchAssets.length > 0 && (
-          <Box>
-            {/* Header */}
-            <Flex align="center" justify="space-between" mb={4}>
-              <Flex align="center" gap={3}>
-                <Text fontSize="13px" fontWeight="800" color="#111111" letterSpacing="0.06em" textTransform="uppercase">
-                  Current Batch
-                </Text>
-                <Badge
-                  bg={allBatchRated ? "#DCFCE7" : "#FFF7ED"}
-                  color={allBatchRated ? "#166534" : "#9A3412"}
-                  border="1px solid"
-                  borderColor={allBatchRated ? "#BBF7D0" : "#FED7AA"}
-                  borderRadius="999px" px={3} py={1} fontSize="12px" fontWeight="700"
-                >
-                  {localBatchRated.size} / {batchAssets.length} rated
-                </Badge>
-              </Flex>
-              {allBatchRated && (
-                <Badge bg="#DCFCE7" color="#166534" borderRadius="999px" px={3} py={1} fontSize="12px" fontWeight="700">
-                  Next batch unlocked!
-                </Badge>
-              )}
-            </Flex>
-
-            {/* Progress bar */}
-            <Box bg="#F3F4F6" borderRadius="999px" h="8px" overflow="hidden" mb={3}>
-              <Box
-                bg={allBatchRated
-                  ? "linear-gradient(90deg, #22C55E 0%, #16A34A 100%)"
-                  : "linear-gradient(90deg, #F97316 0%, #EA580C 100%)"}
-                h="100%" borderRadius="999px"
-                w={`${batchAssets.length > 0 ? (localBatchRated.size / batchAssets.length) * 100 : 0}%`}
-                transition="width 0.4s ease"
-              />
-            </Box>
-
-            {/* Lock notice */}
-            {!allBatchRated && (
-              <Flex
-                align="center" gap={3} mb={5}
-                bg="#FFF7ED" border="1px solid" borderColor="#FED7AA"
-                borderRadius="12px" px={4} py={3}
-              >
-                <Lock size={14} color="#EA580C" />
-                <Text fontSize="13px" color="#9A3412" fontWeight="500">
-                  Rate all {batchAssets.length} assets to unlock the next generation batch
-                </Text>
-              </Flex>
-            )}
-
-            {/* Batch asset grid */}
-            <Box
-              display="grid"
-              gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
-              gap={5}
-              mb={8}
-            >
-              {batchAssets.map(asset => (
-                <BatchAssetCard
-                  key={asset.variation_id}
-                  asset={asset}
-                  isRated={localBatchRated.has(asset.variation_id)}
-                  onRated={handleBatchVariationRated}
-                />
-              ))}
-            </Box>
           </Box>
         )}
 
@@ -919,46 +793,103 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
             </Flex>
           )}
 
-          {loadingLib ? (
-            <Box display="grid"
-              gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
-              gap={5}>
-              {[1, 2, 3, 4].map(i => (
-                <Box key={i} border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
-                  <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
-                    <Flex position="absolute" inset={0} align="center" justify="center"
-                      bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
-                      backgroundSize="400% 400%"
-                      style={{ animation: "shimmer 1.8s ease-in-out infinite" }}>
-                      <ImageIcon size={28} color="#D1D5DB" />
-                    </Flex>
-                  </Box>
-                  <Box p={4}>
-                    <Box h="16px" w="70%" bg="#F3F4F6" borderRadius="8px" mb={2} />
-                    <Box h="12px" w="50%" bg="#F3F4F6" borderRadius="8px" />
-                  </Box>
+          {(() => {
+            const pendingCount = (isGenerating || isOverlaying) ? Math.max(0, totalJobs - libraryFiles.length) : 0;
+            const filteredFiles = libraryFiles.filter(f => activeFormat === "all" || f.format === activeFormat);
+
+            if (loadingLib && libraryFiles.length === 0) {
+              return (
+                <Box display="grid"
+                  gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
+                  gap={5}>
+                  {[1, 2, 3, 4].map(i => (
+                    <Box key={i} border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
+                      <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
+                        <Flex position="absolute" inset={0} align="center" justify="center"
+                          bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
+                          backgroundSize="400% 400%"
+                          style={{ animation: "shimmer 1.8s ease-in-out infinite" }}>
+                          <ImageIcon size={28} color="#D1D5DB" />
+                        </Flex>
+                      </Box>
+                      <Box p={4}>
+                        <Box h="16px" w="70%" bg="#F3F4F6" borderRadius="8px" mb={2} />
+                        <Box h="12px" w="50%" bg="#F3F4F6" borderRadius="8px" />
+                      </Box>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Box>
-          ) : libraryFiles.length === 0 ? (
-            <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="16px" p={6} textAlign="center">
-              <Text fontSize="14px" color="#9CA3AF">No library images assigned to you yet.</Text>
-              <Text fontSize="13px" color="#D1D5DB" mt={1}>
-                Upload to Supabase Storage → <strong>{STORAGE_BUCKET}/</strong>&#123;stories|feed|feed_4_5&#125;/ then insert a row in <strong>library_images</strong>.
-              </Text>
-            </Box>
-          ) : (
-            <Box display="grid"
-              gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
-              gap={5}>
-              {libraryFiles
-                .filter(f => activeFormat === "all" || f.format === activeFormat)
-                .map(file => (
+              );
+            }
+
+            if (filteredFiles.length === 0 && pendingCount === 0) {
+              // If campaigns exist but polling hasn't initialised yet, show skeleton rather than empty
+              if (trackers.length > 0) {
+                return (
+                  <Box display="grid"
+                    gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
+                    gap={5}>
+                    {[1, 2, 3, 4].map(i => (
+                      <Box key={i} border="1px solid" borderColor="#F3F4F6" borderRadius="18px" overflow="hidden" bg="white">
+                        <Box bg="#F3F4F6" position="relative" style={{ aspectRatio: "4/5" }}>
+                          <Flex position="absolute" inset={0} align="center" justify="center"
+                            bg="linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)"
+                            backgroundSize="400% 400%"
+                            style={{ animation: "shimmer 1.8s ease-in-out infinite" }}>
+                            <ImageIcon size={28} color="#D1D5DB" />
+                          </Flex>
+                        </Box>
+                        <Box p={4}>
+                          <Box h="16px" w="70%" bg="#F3F4F6" borderRadius="8px" mb={2} />
+                          <Box h="12px" w="50%" bg="#F3F4F6" borderRadius="8px" />
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                );
+              }
+              return (
+                <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="16px" p={6} textAlign="center">
+                  <Text fontSize="14px" color="#9CA3AF">No library images assigned to you yet.</Text>
+                  <Text fontSize="13px" color="#D1D5DB" mt={1}>
+                    Upload to Supabase Storage → <strong>{STORAGE_BUCKET}/</strong>&#123;stories|feed|feed_4_5&#125;/ then insert a row in <strong>library_images</strong>.
+                  </Text>
+                </Box>
+              );
+            }
+
+            return (
+              <Box display="grid"
+                gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
+                gap={5}>
+                {/* Skeleton placeholders for in-flight ads */}
+                {Array.from({ length: pendingCount }).map((_, i) => (
+                  <Box key={`skel-${i}`} borderRadius="18px" overflow="hidden" border="1px solid" borderColor="#F3F4F6" bg="white">
+                    <Flex
+                      style={{
+                        aspectRatio: "4/5",
+                        animation: "shimmer 1.8s ease-in-out infinite",
+                        background: "linear-gradient(135deg, #F9FAFB 25%, #F3F4F6 50%, #F9FAFB 75%)",
+                        backgroundSize: "400% 400%",
+                      }}
+                      align="center" justify="center" direction="column" gap={2}>
+                      <Loader size={20} color="#D1D5DB" style={{ animation: "spin 1.5s linear infinite" }} />
+                      <Text fontSize="11px" color="#D1D5DB">Generating...</Text>
+                    </Flex>
+                    <Box p={4}>
+                      <Box h="14px" w="60%" bg="#F3F4F6" borderRadius="8px" mb={2} />
+                      <Box h="11px" w="40%" bg="#F3F4F6" borderRadius="8px" />
+                    </Box>
+                  </Box>
+                ))}
+                {/* Real library cards */}
+                {filteredFiles.map(file => (
                   <LibraryCard key={file.id} file={file}
                     igConnected={igConnected} onPublish={setPublishTarget} />
                 ))}
-            </Box>
-          )}
+              </Box>
+            );
+          })()}
         </Box>
       </VStack>
 
