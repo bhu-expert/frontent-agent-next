@@ -66,24 +66,6 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 
-function getContextTags(block: { title: string; content: string }, industry: string | null): string[] {
-  const baseTags = industry ? [industry] : [];
-  const keywordMap = [
-    { label: "Employer Branding", keywords: ["employee", "team", "culture", "retention", "workforce"] },
-    { label: "Compliance", keywords: ["compliance", "certificate", "reporting", "esg"] },
-    { label: "B2B Culture", keywords: ["b2b", "corporate", "business"] },
-    { label: "Sustainability", keywords: ["sustainability", "environmental", "eco", "carbon"] },
-    { label: "Community", keywords: ["community", "movement", "participation"] },
-    { label: "Innovation", keywords: ["innovation", "design", "technology"] },
-    { label: "Data-Driven", keywords: ["data", "measurable", "analytics", "dashboard"] },
-  ];
-  const source = `${block.title} ${block.content}`.toLowerCase();
-  const derivedTags = keywordMap
-    .filter((tag) => tag.keywords.some((keyword) => source.includes(keyword)))
-    .slice(0, 2)
-    .map((tag) => tag.label);
-  return [...baseTags, ...derivedTags].slice(0, 2);
-}
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
@@ -235,8 +217,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
           {contextBlocks.map((block) => {
             const isSelected = selectedContextIds.includes(block.context_index);
-            const tags = getContextTags(block, brand.industry);
-            const primaryTag = tags[0] || "Context";
             return (
               <Box
                 key={block.context_index}
@@ -256,9 +236,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
                 >
                   {isSelected ? <Text fontSize="10px">&#10003;</Text> : null}
                 </Flex>
-                <Badge bg="white" border="1px solid" borderColor="#ECECEC" color="#6B7280" borderRadius="12px" px={2.5} py={1} mb={3}>
-                  {primaryTag}
-                </Badge>
                 <Text fontSize="14px" fontWeight="600" color="#111111" pr={6} mb={2}>
                   {block.title}
                 </Text>
