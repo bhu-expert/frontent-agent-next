@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react/no-unstable-nested-components */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
@@ -545,7 +545,31 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const isGenerating = isPolling && totalJobs > 0;
   // All base-image jobs done but overlay hasn't written to library_images yet
   const allJobsDone  = progress === 100 && !isPolling && totalJobs > 0;
-  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs;
+
+  // Overlay timeout: give up waiting after 90 seconds to prevent infinite loop
+  const [overlayTimedOut, setOverlayTimedOut] = useState(false);
+  const overlayDeadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (allJobsDone) {
+      // Only start the timer if one isn't already running
+      if (!overlayDeadlineRef.current) {
+        overlayDeadlineRef.current = setTimeout(() => {
+          overlayDeadlineRef.current = null;
+          setOverlayTimedOut(true);
+        }, 90_000);
+      }
+    } else {
+      // Generation restarted — cancel timer and reset
+      if (overlayDeadlineRef.current) { clearTimeout(overlayDeadlineRef.current); overlayDeadlineRef.current = null; }
+      setOverlayTimedOut(false);
+    }
+    return () => {
+      if (overlayDeadlineRef.current) { clearTimeout(overlayDeadlineRef.current); overlayDeadlineRef.current = null; }
+    };
+  }, [allJobsDone]);
+
+  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs && !overlayTimedOut;
   const isComplete   = allJobsDone && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────

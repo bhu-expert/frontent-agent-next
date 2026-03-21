@@ -570,9 +570,15 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         } else {
           setAllBrands(data || []);
           if (data && data.length > 0) {
-            setSelectedBrandId(
-              (current) => current || createdBrandId || brandId || data[0].id,
-            );
+            setSelectedBrandId((current) => {
+              // Validate current selection still exists
+              if (current && data.some((b) => b.id === current)) return current;
+              // Stale/deleted brand — clear localStorage and pick first
+              if (typeof window !== "undefined") {
+                window.localStorage.removeItem(ACTIVE_BRAND_STORAGE_KEY);
+              }
+              return createdBrandId || brandId || data[0].id;
+            });
           }
         }
       } catch (err) {
@@ -647,9 +653,12 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     setDeletingBrandId(brandId);
     try {
       await deleteBrand(brandId, session.access_token);
-      setAllBrands((prev) => prev.filter((b) => b.id !== brandId));
+      const remaining = allBrands.filter((b) => b.id !== brandId);
+      setAllBrands(remaining);
       if (selectedBrandId === brandId) {
-        const remaining = allBrands.filter((b) => b.id !== brandId);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(ACTIVE_BRAND_STORAGE_KEY);
+        }
         setSelectedBrandId(remaining[0]?.id ?? null);
       }
     } catch (err) {
