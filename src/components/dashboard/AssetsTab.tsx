@@ -546,12 +546,21 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   // All base-image jobs done but overlay hasn't written to library_images yet
   const allJobsDone  = progress === 100 && !isPolling && totalJobs > 0;
 
-  // Overlay timeout: give up waiting after 90 seconds to prevent infinite loop
+  // Track whether isPolling was ever true in this session.
+  // Overlay state only makes sense when polling transitioned true→false (live generation).
+  // On a cold page reload where all campaigns are already complete, isPolling is never
+  // set to true, so we skip overlay entirely and go straight to isComplete.
+  const wasPollingRef = useRef(false);
+  useEffect(() => {
+    if (isPolling) wasPollingRef.current = true;
+  }, [isPolling]);
+
+  // Overlay timeout: safety net — give up after 90s even if library count never catches up
   const [overlayTimedOut, setOverlayTimedOut] = useState(false);
   const overlayDeadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (allJobsDone) {
+    if (allJobsDone && wasPollingRef.current) {
       // Only start the timer if one isn't already running
       if (!overlayDeadlineRef.current) {
         overlayDeadlineRef.current = setTimeout(() => {
@@ -560,7 +569,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         }, 90_000);
       }
     } else {
-      // Generation restarted — cancel timer and reset
+      // Generation restarted or cold load — cancel timer and reset
       if (overlayDeadlineRef.current) { clearTimeout(overlayDeadlineRef.current); overlayDeadlineRef.current = null; }
       setOverlayTimedOut(false);
     }
@@ -569,7 +578,9 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
     };
   }, [allJobsDone]);
 
-  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs && !overlayTimedOut;
+  // Only enter overlay state during a live generation session (wasPollingRef.current),
+  // never on a cold reload where all campaigns are already complete in the DB.
+  const isOverlaying = allJobsDone && wasPollingRef.current && libraryFiles.length < totalJobs && !overlayTimedOut;
   const isComplete   = allJobsDone && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────
