@@ -32,6 +32,7 @@ export default function ContactPageClient() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -68,13 +69,19 @@ export default function ContactPageClient() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Failed to send");
+      const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      setSuccessMessage(data.message || "Thanks for reaching out! We've received your inquiry and our team will get back to you within 24 hours.");
       setIsSuccess(true);
-    } catch (err) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       toaster.create({
         title: "Failed to send",
-        description: "Please try again or email us directly.",
+        description: message,
         type: "error",
       });
     } finally {
@@ -246,7 +253,7 @@ export default function ContactPageClient() {
                       Message Sent!
                     </Heading>
                     <Text color="gray.600" fontSize="lg" lineHeight="1.6" maxW="320px">
-                      Thanks for reaching out! We&apos;ve received your inquiry and our team will get back to you within 24 hours.
+                      {successMessage}
                     </Text>
                   </VStack>
 
