@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  Badge,
   Box,
   Button,
   Flex,
+  Input,
   Text,
   VStack,
   Spinner,
@@ -13,8 +15,6 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import {
-  Sparkles,
-  FileText,
   Plus,
   Building2,
   Star,
@@ -22,6 +22,8 @@ import {
   Trash2,
   Camera,
   UserCircle,
+  Pencil,
+  X,
 } from "lucide-react";
 import { streamContextFeedback, deleteBrand } from "@/api";
 import { navItems } from "@/constants/dashboard";
@@ -275,14 +277,19 @@ function BrandLogoUpload({
         borderRadius="18px"
         border="2px dashed"
         borderColor={logoUrl ? "#4F46E5" : "#E5E7EB"}
-        bg={logoUrl ? "#F8F8FF" : "#FAFAFA"}
+        bg={logoUrl ? undefined : "#FAFAFA"}
+        style={logoUrl ? {
+          backgroundImage: "repeating-conic-gradient(#E5E7EB 0% 25%, #ffffff 0% 50%)",
+          backgroundSize: "12px 12px",
+          backgroundPosition: "0 0",
+        } : undefined}
         overflow="hidden"
         cursor={uploading ? "not-allowed" : "pointer"}
         display="flex"
         alignItems="center"
         justifyContent="center"
         transition="all 0.18s ease"
-        _hover={{ borderColor: "#4F46E5", bg: "#F0EEFF" }}
+        _hover={{ borderColor: "#4F46E5", ...(logoUrl ? {} : { bg: "#F0EEFF" }) }}
         onClick={() => !uploading && inputRef.current?.click()}
         title="Click to upload brand logo"
       >
@@ -347,6 +354,103 @@ function BrandLogoUpload({
   );
 }
 
+
+// ─── Edit Brand Slide-Over Panel ─────────────────────────────────────────────
+
+function EditBrandPanel({
+  draft,
+  onChange,
+  onSave,
+  onClose,
+  isSaving,
+}: {
+  draft: { name: string; website_url: string; industry: string; description: string; guardrails: string };
+  onChange: (field: string, value: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+  isSaving: boolean;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <Box position="fixed" inset={0} bg="rgba(0,0,0,0.4)" zIndex={200}
+        backdropFilter="blur(2px)" onClick={onClose} />
+      {/* Drawer */}
+      <Box position="fixed" top={0} right={0} bottom={0}
+        w={{ base: "full", sm: "460px" }} bg="white" zIndex={201}
+        boxShadow="-8px 0 48px rgba(0,0,0,0.14)"
+        display="flex" flexDirection="column">
+        {/* Header */}
+        <Flex align="center" justify="space-between" px={6} py={5}
+          borderBottom="1px solid" borderColor="#F3F4F6">
+          <Text fontSize="18px" fontWeight="700" color="#111111">Edit Brand</Text>
+          <Button variant="ghost" size="xs" borderRadius="10px" p={1.5}
+            _hover={{ bg: "#F3F4F6" }} onClick={onClose}>
+            <X size={18} color="#6B7280" />
+          </Button>
+        </Flex>
+        {/* Scrollable form */}
+        <VStack align="stretch" gap={5} flex={1} overflowY="auto" px={6} py={6}>
+          {/* Brand Name */}
+          <Box>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Brand Name</Text>
+            <Input value={draft.name} onChange={e => onChange("name", e.target.value)}
+              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
+              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+          </Box>
+          {/* Website URL */}
+          <Box>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Website URL</Text>
+            <Input value={draft.website_url} onChange={e => onChange("website_url", e.target.value)}
+              placeholder="https://example.com"
+              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
+              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+          </Box>
+          {/* Industry */}
+          <Box>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Industry</Text>
+            <Input value={draft.industry} onChange={e => onChange("industry", e.target.value)}
+              placeholder="e.g. SaaS, Healthcare, E-commerce"
+              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
+              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+          </Box>
+          {/* Description */}
+          <Box>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Description</Text>
+            <Textarea value={draft.description} onChange={e => onChange("description", e.target.value)}
+              placeholder="Brief description of what the brand does..."
+              fontSize="14px" borderRadius="10px" minH="90px" borderColor="#E5E7EB" resize="vertical"
+              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+          </Box>
+          {/* Guardrails */}
+          <Box>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1}>Guardrails</Text>
+            <Text fontSize="12px" color="#9CA3AF" mb={1.5}>
+              Rules the AI must follow when generating content for this brand.
+            </Text>
+            <Textarea value={draft.guardrails} onChange={e => onChange("guardrails", e.target.value)}
+              placeholder="e.g. Never use aggressive language. Always mention the free trial."
+              fontSize="14px" borderRadius="10px" minH="130px" borderColor="#E5E7EB" resize="vertical"
+              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+          </Box>
+        </VStack>
+        {/* Footer */}
+        <Flex gap={3} px={6} py={5} borderTop="1px solid" borderColor="#F3F4F6">
+          <Button flex={1} h="44px" borderRadius="12px" bg="#4F46E5" color="white"
+            fontSize="14px" fontWeight="700" _hover={{ bg: "#4338CA" }}
+            loading={isSaving} onClick={onSave}>
+            Save Changes
+          </Button>
+          <Button h="44px" px={5} borderRadius="12px" bg="#F3F4F6" color="#374151"
+            fontSize="14px" fontWeight="600" _hover={{ bg: "#E5E7EB" }}
+            disabled={isSaving} onClick={onClose}>
+            Cancel
+          </Button>
+        </Flex>
+      </Box>
+    </>
+  );
+}
 
 /**
  * DashboardShell Component
@@ -413,6 +517,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   );
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [deletingBrandId, setDeletingBrandId] = useState<string | null>(null);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ name: string; website_url: string; industry: string; description: string; guardrails: string }>({ name: "", website_url: "", industry: "", description: "", guardrails: "" });
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [createdBrandId, setCreatedBrandId] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>(
@@ -570,6 +678,46 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     setSelectedBrandId(brandIdValue);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(ACTIVE_BRAND_STORAGE_KEY, brandIdValue);
+    }
+  };
+
+  const handleOpenEditPanel = (brand: BrandData) => {
+    setEditDraft({
+      name:        brand.name,
+      website_url: brand.website_url ?? "",
+      industry:    brand.industry ?? "",
+      description: brand.description ?? "",
+      guardrails:  brand.guardrails ?? "",
+    });
+    setEditingBrandId(brand.id);
+    setIsEditPanelOpen(true);
+  };
+
+  const handleSaveBrand = async () => {
+    if (!editingBrandId) return;
+    setIsSavingBrand(true);
+    try {
+      const { error } = await supabase
+        .from("brands")
+        .update({
+          name:        editDraft.name.trim(),
+          website_url: editDraft.website_url.trim() || null,
+          industry:    editDraft.industry.trim() || null,
+          description: editDraft.description.trim() || null,
+          guardrails:  editDraft.guardrails.trim() || null,
+        })
+        .eq("id", editingBrandId);
+      if (error) throw error;
+      setAllBrands(prev => prev.map(b =>
+        b.id === editingBrandId
+          ? { ...b, ...editDraft, name: editDraft.name.trim(), website_url: editDraft.website_url.trim() || null, industry: editDraft.industry.trim() || null, description: editDraft.description.trim() || null, guardrails: editDraft.guardrails.trim() || null }
+          : b
+      ));
+      setIsEditPanelOpen(false);
+    } catch (err) {
+      console.error("Failed to save brand:", err);
+    } finally {
+      setIsSavingBrand(false);
     }
   };
 
@@ -788,240 +936,170 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 ? `Your Brands (${allBrands.length})`
                 : "Create Your First Brand";
 
-  /* ─── Brand selector list (only rendered in Brands tab) ─── */
-  const renderBrandSelector = () => (
-    <Box
-      w={{ base: "full", xl: "400px" }}
-      flexShrink={0}
-      overflowY={{ base: "visible", xl: "auto" }}
-      maxH={{ base: "none", xl: "calc(100vh - 160px)" }}
-    >
-      {isLoadingBrands ? (
-        <Flex align="center" justify="center" py={8}>
-          <Spinner size="md" color="#4F46E5" />
-        </Flex>
-      ) : allBrands.length === 0 ? (
-        <Box
-          bg="white"
-          border="1px solid"
-          borderColor="#ECECEC"
-          borderRadius="20px"
-          p={6}
-          textAlign="center"
-        >
-          <Flex
-            w="48px"
-            h="48px"
-            borderRadius="12px"
-            bg="rgba(79, 70, 229, 0.08)"
-            color="#4F46E5"
-            align="center"
-            justify="center"
-            mx="auto"
-            mb={3}
-          >
-            <Building2 size={24} />
+  /* ─── Brand tabs (pill row) ─── */
+  const renderBrandTabs = () => (
+    <Flex gap={2} mb={6} overflowX="auto" pb={1} flexShrink={0}
+      css={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+
+      {allBrands.map(brand => {
+        const isActive = brand.id === selectedBrandId;
+        return (
+          <Flex key={brand.id} align="center" gap={2.5}
+            px={4} py={2.5} borderRadius="14px" cursor="pointer" flexShrink={0}
+            bg={isActive ? "#4F46E5" : "white"}
+            border="1.5px solid" borderColor={isActive ? "#4F46E5" : "#E5E7EB"}
+            boxShadow={isActive ? "0 4px 14px rgba(79,70,229,0.22)" : "0 1px 4px rgba(0,0,0,0.05)"}
+            transition="all 0.18s ease"
+            _hover={{ borderColor: "#4F46E5", transform: "translateY(-1px)" }}
+            onClick={() => handleSelectActiveBrand(brand.id)}>
+
+            {/* Initials circle */}
+            <Flex w="26px" h="26px" borderRadius="7px" flexShrink={0}
+              bg={isActive ? "rgba(255,255,255,0.18)" : "#E6F5EC"}
+              color={isActive ? "white" : "#2F855A"}
+              align="center" justify="center" fontSize="10px" fontWeight="800">
+              {getInitials(brand.name)}
+            </Flex>
+
+            <Text fontSize="13px" fontWeight="600"
+              color={isActive ? "white" : "#374151"} whiteSpace="nowrap">
+              {brand.name}
+            </Text>
+
+            {/* Active dot */}
+            {isActive && (
+              <Box w="5px" h="5px" borderRadius="full" bg="rgba(255,255,255,0.65)" />
+            )}
           </Flex>
-          <Text fontSize="md" fontWeight="600" color="#111111" mb={2}>
-            No brands yet
-          </Text>
-          <Text fontSize="sm" color="#6B7280" mb={4}>
-            Create your first brand to get started
-          </Text>
-          <Button
-            bg="#4F46E5"
-            color="white"
-            h="38px"
-            fontSize="13px"
-            fontWeight="600"
-            borderRadius="10px"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            Create Brand
-          </Button>
-        </Box>
-      ) : (
-        <Box>
-          <Text
-            fontSize="13px"
-            fontWeight="800"
-            color="#6B7280"
-            letterSpacing="0.04em"
-            mb={4}
-          >
-            SELECT BRAND
-          </Text>
-          <VStack gap={5} align="stretch">
-            {allBrands.map((brand) => {
-              const summary = getBrandSummary(brand);
-              const isSelected = selectedBrandId === brand.id;
+        );
+      })}
 
-              return (
-                <Box
-                  key={brand.id}
-                  bg="white"
-                  border="1px solid"
-                  borderColor={isSelected ? "#4F46E5" : "#ECECEC"}
-                  borderRadius="24px"
-                  p={{ base: 5, md: 8 }}
-                  boxShadow={
-                    isSelected
-                      ? "0 14px 36px rgba(79, 70, 229, 0.14)"
-                      : "0 12px 48px rgba(0, 0, 0, 0.04)"
-                  }
-                  transition="all 0.2s ease"
-                  _hover={{
-                    borderColor: "#4F46E5",
-                    transform: "translateY(-2px)",
-                  }}
-                  cursor="pointer"
-                  onClick={() => handleSelectActiveBrand(brand.id)}
-                >
-                  <Flex align="center" justify="space-between" mb={5}>
-                    <Flex align="center" gap={4} minW={0}>
-                      <Flex
-                        w={{ base: "52px", md: "60px" }}
-                        h={{ base: "52px", md: "60px" }}
-                        borderRadius="18px"
-                        bg="#E6F5EC"
-                        color="#2F855A"
-                        align="center"
-                        justify="center"
-                        fontSize="lg"
-                        fontWeight="800"
-                        flexShrink={0}
-                      >
-                        {getInitials(brand.name)}
-                      </Flex>
-                      <Box minW={0}>
-                        <Text
-                          fontSize={{ base: "xl", md: "2xl" }}
-                          fontWeight="700"
-                          color="#111111"
-                          lineHeight="1.15"
-                        >
-                          {brand.name}
-                        </Text>
-                        <Text
-                          fontSize={{ base: "lg", md: "xl" }}
-                          color="#6B7280"
-                          truncate
-                        >
-                          {summary.hostname}
-                        </Text>
-                      </Box>
-                    </Flex>
-                    <Flex gap={2} align="center">
-                      <Button
-                        size="sm"
-                        bg={isSelected ? "#EEF2FF" : "#4F46E5"}
-                        color={isSelected ? "#4338CA" : "white"}
-                        borderRadius="999px"
-                        px={4}
-                        _hover={{ bg: isSelected ? "#E0E7FF" : "#4338CA" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectActiveBrand(brand.id);
-                        }}
-                      >
-                        {isSelected ? "Active Brand" : "Set Active"}
-                      </Button>
-                      <IconButton
-                        aria-label="Delete brand"
-                        size="sm"
-                        variant="ghost"
-                        color="#9CA3AF"
-                        borderRadius="999px"
-                        loading={deletingBrandId === brand.id}
-                        _hover={{ bg: "#FEE2E2", color: "#DC2626" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteBrand(brand.id);
-                        }}
-                      >
-                        <Trash2 size={15} />
-                      </IconButton>
-                    </Flex>
-                  </Flex>
-
-                  <Box borderTop="1px solid" borderColor="#ECECEC" pt={5}>
-                    <Text
-                      fontSize="11px"
-                      fontWeight="800"
-                      color="#6B7280"
-                      letterSpacing="0.08em"
-                      mb={3}
-                    >
-                      MAIN OBJECTIVE
-                    </Text>
-                    <Text
-                      fontSize={{ base: "15px", md: "16px" }}
-                      lineHeight="1.55"
-                      color="#111111"
-                      mb={6}
-                    >
-                      {summary.primaryObjective}
-                    </Text>
-
-                    {brand.manifest && (
-                      <Flex
-                        align="center"
-                        gap={2}
-                        fontSize="12px"
-                        color="#6B7280"
-                        mb={5}
-                      >
-                        <FileText size={14} />
-                        <Text>Context generated</Text>
-                      </Flex>
-                    )}
-
-                    {/* Logo upload — only shown on the selected / active brand card */}
-                    {isSelected && (
-                      <Box
-                        borderTop="1px solid"
-                        borderColor="#F3F4F6"
-                        pt={4}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <BrandLogoUpload
-                          brand={brand}
-                          token={session?.access_token}
-                          onLogoUploaded={(bId, url) => {
-                            setAllBrands((prev) =>
-                              prev.map((b) =>
-                                b.id === bId ? { ...b, logo_url: url } : b,
-                              ),
-                            );
-                          }}
-                        />
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-              );
-            })}
-          </VStack>
-        </Box>
-      )}
-    </Box>
+      {/* + New Brand pill */}
+      <Flex align="center" gap={2} px={4} py={2.5} borderRadius="14px"
+        cursor="pointer" flexShrink={0} bg="transparent"
+        border="1.5px dashed" borderColor="#D1D5DB" color="#9CA3AF"
+        _hover={{ borderColor: "#4F46E5", color: "#4F46E5" }}
+        transition="all 0.18s ease"
+        onClick={() => setIsCreateOpen(true)}>
+        <Plus size={13} />
+        <Text fontSize="13px" fontWeight="600" whiteSpace="nowrap">New Brand</Text>
+      </Flex>
+    </Flex>
   );
 
-  /* ─── Brand details (context cards with ratings) ─── */
-  const renderBrandDetails = () => (
-    <Box
-      flex={1}
-      w="full"
-      overflowY={{ base: "visible", xl: "auto" }}
-      maxH={{ base: "none", xl: "calc(100vh - 160px)" }}
-    >
-      {isLoadingBrands ? (
-        <Flex align="center" justify="center" h="full">
-          <Spinner size="lg" color="#4F46E5" />
-        </Flex>
-      ) : selectedBrand && selectedBrand.manifest ? (
-        <VStack align="stretch" gap={6}>
-          {contextBlocks.map((block) => {
+  /* ─── Brand profile (full-width vertical layout) ─── */
+  const renderBrandProfile = () => {
+    if (!selectedBrand) return null;
+    return (
+      <Box>
+        {/* Header card */}
+        <Box bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px"
+          p={{ base: 5, md: 7 }} mb={5} boxShadow="0 4px 24px rgba(0,0,0,0.05)">
+          <Flex align="flex-start" justify="space-between" gap={5}
+            direction={{ base: "column", sm: "row" }}>
+
+            {/* Logo + identity */}
+            <Flex align="center" gap={5} flex={1} minW={0}
+              onClick={e => e.stopPropagation()}>
+              <BrandLogoUpload brand={selectedBrand} token={session?.access_token}
+                onLogoUploaded={(bId, url) =>
+                  setAllBrands(prev => prev.map(b => b.id === bId ? { ...b, logo_url: url } : b))
+                } />
+              <Box minW={0}>
+                <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="800"
+                  color="#111111" lineHeight="1.1" mb={1.5}>
+                  {selectedBrand.name}
+                </Text>
+                <Flex align="center" gap={2.5} flexWrap="wrap">
+                  {selectedBrand.website_url && (
+                    <Text fontSize="14px" color="#6B7280">{selectedBrandSummary?.hostname}</Text>
+                  )}
+                  {selectedBrand.industry && selectedBrand.website_url && (
+                    <Box w="3px" h="3px" borderRadius="full" bg="#D1D5DB" />
+                  )}
+                  {selectedBrand.industry && (
+                    <Text fontSize="13px" color="#6B7280">{selectedBrand.industry}</Text>
+                  )}
+                  <Box w="3px" h="3px" borderRadius="full" bg="#D1D5DB" />
+                  <Flex align="center" gap={1.5}>
+                    <Box w="6px" h="6px" borderRadius="full" bg="#22C55E" />
+                    <Text fontSize="12px" color="#22C55E" fontWeight="600">Active</Text>
+                  </Flex>
+                </Flex>
+              </Box>
+            </Flex>
+
+            {/* Actions */}
+            <Flex gap={2} flexShrink={0} align="center">
+              <Button h="36px" px={4} borderRadius="10px" fontSize="13px" fontWeight="600"
+                bg="#F3F4F6" color="#374151" _hover={{ bg: "#E5E7EB" }}
+                onClick={() => handleOpenEditPanel(selectedBrand)}>
+                <Pencil size={13} style={{ marginRight: 5 }} />
+                Edit
+              </Button>
+              <IconButton aria-label="Delete brand" h="36px" w="36px" minW="36px"
+                borderRadius="10px" bg="transparent" color="#9CA3AF"
+                border="1px solid" borderColor="#E5E7EB"
+                _hover={{ bg: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }}
+                loading={deletingBrandId === selectedBrand.id}
+                onClick={() => handleDeleteBrand(selectedBrand.id)}>
+                <Trash2 size={14} />
+              </IconButton>
+            </Flex>
+          </Flex>
+        </Box>
+
+        {/* Description + Guardrails */}
+        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={5}>
+          {/* Description */}
+          <Box bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="20px"
+            p={5} boxShadow="0 2px 12px rgba(0,0,0,0.04)" minH="100px">
+            <Text fontSize="11px" fontWeight="800" color="#9CA3AF" letterSpacing="0.08em" mb={3}>
+              DESCRIPTION
+            </Text>
+            {selectedBrand.description ? (
+              <Text fontSize="14px" color="#374151" lineHeight="1.7">
+                {selectedBrand.description}
+              </Text>
+            ) : (
+              <Text fontSize="13px" color="#D1D5DB" fontStyle="italic">
+                No description yet — click Edit to add one.
+              </Text>
+            )}
+          </Box>
+
+          {/* Guardrails */}
+          <Box bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="20px"
+            p={5} boxShadow="0 2px 12px rgba(0,0,0,0.04)" minH="100px">
+            <Text fontSize="11px" fontWeight="800" color="#92400E" letterSpacing="0.08em" mb={3}>
+              GUARDRAILS
+            </Text>
+            {selectedBrand.guardrails ? (
+              <Text fontSize="14px" color="#78350F" lineHeight="1.7" whiteSpace="pre-wrap">
+                {selectedBrand.guardrails}
+              </Text>
+            ) : (
+              <Text fontSize="13px" color="#D97706" fontStyle="italic">
+                No guardrails set — click Edit to define AI content rules.
+              </Text>
+            )}
+          </Box>
+        </Box>
+
+        {/* Context cards */}
+        {selectedBrand.manifest ? (
+          <>
+            <Flex align="center" gap={3} mb={5}>
+              <Text fontSize="12px" fontWeight="800" color="#9CA3AF"
+                letterSpacing="0.07em" textTransform="uppercase">Brand Context</Text>
+              <Box flex={1} h="1px" bg="#ECECEC" />
+              <Badge bg="#EEF2FF" color="#4338CA" borderRadius="999px" px={3} py={1}
+                fontSize="12px" fontWeight="600">
+                {contextBlocks.length} sections
+              </Badge>
+            </Flex>
+            <VStack align="stretch" gap={6}>
+              {contextBlocks.map((block) => {
             const tags = getContextTags(block, selectedBrand.industry);
             const feedbackKey = getFeedbackKey(
               selectedBrand.id,
@@ -1316,37 +1394,19 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               </Box>
             );
           })}
-        </VStack>
-      ) : selectedBrand ? (
-        <Box
-          border="1px dashed"
-          borderColor="#E5E7EB"
-          borderRadius="18px"
-          p={5}
-          bg="#F9FAFB"
-          textAlign="center"
-        >
-          <Text fontSize="sm" color="#6B7280">
-            No brand context generated yet. Run discovery to generate context.
-          </Text>
-        </Box>
-      ) : (
-        <Box
-          bg="white"
-          border="1px solid"
-          borderColor="#ECECEC"
-          borderRadius="24px"
-          p={{ base: 6, md: 10 }}
-          w="full"
-          textAlign="center"
-        >
-          <Text fontSize="lg" color="#6B7280">
-            Select a brand to view the Brands overview
-          </Text>
-        </Box>
-      )}
-    </Box>
-  );
+            </VStack>
+          </>
+        ) : (
+          <Box border="1px dashed" borderColor="#E5E7EB" borderRadius="18px"
+            p={5} bg="#F9FAFB" textAlign="center">
+            <Text fontSize="sm" color="#6B7280">
+              No brand context generated yet. Run discovery to generate context.
+            </Text>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   return (
     <Flex minH="100vh" bg="#F8F8F6">
@@ -1645,14 +1705,49 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           maxH={{ base: "none", lg: "calc(100vh - 80px)" }}
         >
           {activeView === "brands" ? (
-            <Flex
-              gap={{ base: 6, xl: 8 }}
-              align="flex-start"
-              direction={{ base: "column", xl: "row" }}
-            >
-              {renderBrandSelector()}
-              {renderBrandDetails()}
-            </Flex>
+            <Box>
+              {/* Slide-over edit panel */}
+              {isEditPanelOpen && (
+                <EditBrandPanel
+                  draft={editDraft}
+                  onChange={(field, value) => setEditDraft(d => ({ ...d, [field]: value }))}
+                  onSave={handleSaveBrand}
+                  onClose={() => setIsEditPanelOpen(false)}
+                  isSaving={isSavingBrand}
+                />
+              )}
+
+              {isLoadingBrands ? (
+                <Flex align="center" justify="center" h="200px">
+                  <Spinner size="lg" color="#4F46E5" />
+                </Flex>
+              ) : allBrands.length === 0 ? (
+                <Box bg="white" border="1px solid" borderColor="#ECECEC"
+                  borderRadius="20px" p={6} textAlign="center">
+                  <Flex w="48px" h="48px" borderRadius="12px"
+                    bg="rgba(79, 70, 229, 0.08)" color="#4F46E5"
+                    align="center" justify="center" mx="auto" mb={3}>
+                    <Building2 size={24} />
+                  </Flex>
+                  <Text fontSize="md" fontWeight="600" color="#111111" mb={2}>
+                    No brands yet
+                  </Text>
+                  <Text fontSize="sm" color="#6B7280" mb={4}>
+                    Create your first brand to get started
+                  </Text>
+                  <Button bg="#4F46E5" color="white" h="38px" fontSize="13px"
+                    fontWeight="600" borderRadius="10px"
+                    onClick={() => setIsCreateOpen(true)}>
+                    Create Brand
+                  </Button>
+                </Box>
+              ) : (
+                <>
+                  {renderBrandTabs()}
+                  {selectedBrand ? renderBrandProfile() : null}
+                </>
+              )}
+            </Box>
           ) : activeView === "content" ? (
             <ContentTab
               brand={
@@ -1685,8 +1780,6 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               assets={campaign.assets}
               progress={campaign.progress}
               isPolling={campaign.isPolling}
-              currentBatchCampaignIds={currentBatchCampaignIds}
-              onVariationRated={handleVariationRated}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />
