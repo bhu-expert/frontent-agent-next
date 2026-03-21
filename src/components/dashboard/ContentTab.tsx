@@ -48,9 +48,13 @@ interface ContentTabProps {
   onNavigateToAssets: () => void;
   hasRatedContext: boolean;
   onNavigateToBrands: () => void;
+  hasPendingBatch: boolean;
+  onBatchGenerated: (campaignIds: string[]) => void;
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
+
+const MAX_COMBINATIONS = 6; // 6 × 5 variations = 30 posts max per batch
 
 const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "awareness", label: "Awareness", description: "Top-of-funnel concepts for reach and recall.", icon: Megaphone },
@@ -83,17 +87,19 @@ function getContextTags(block: { title: string; content: string }, industry: str
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands }: ContentTabProps) {
+export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands, hasPendingBatch, onBatchGenerated }: ContentTabProps) {
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
 
-  const totalPosts = useMemo(
-    () => selectedContextIds.length * selectedTemplateIds.length * 5,
+  const cappedCombinations = useMemo(
+    () => Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS),
     [selectedContextIds, selectedTemplateIds]
   );
+  const effectiveTotalPosts = cappedCombinations * 5;
+  const isTrimmed = (selectedContextIds.length * selectedTemplateIds.length) > MAX_COMBINATIONS;
 
   useEffect(() => {
     if (contextBlocks.length === 0) {
@@ -138,8 +144,8 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     setContentError(null);
     campaign.clearCampaigns();
 
-    // Build all items for a single bulk request
-    const items = selectedContextIds.flatMap((contextIndex) =>
+    // Build all items for a single bulk request (hard cap at MAX_COMBINATIONS)
+    const allItems = selectedContextIds.flatMap((contextIndex) =>
       selectedTemplateIds.map((templateId) => {
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === templateId);
         const contextBlock = contextBlocks.find((b) => b.context_index === contextIndex);
@@ -152,6 +158,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         };
       })
     );
+    const items = allItems.slice(0, MAX_COMBINATIONS);
 
     // Retry helper with exponential backoff
     const callWithRetry = async (attempt = 0): Promise<Awaited<ReturnType<typeof generateAdVariationsBulk>>> => {
@@ -169,6 +176,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       const result = await callWithRetry();
       console.log("[Generate] bulk API response:", result);
 
+      const newCampaignIds: string[] = [];
       for (const c of result.campaigns) {
         const contextBlock = contextBlocks.find((b) => b.context_index === c.context_index);
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === c.ad_type);
@@ -180,8 +188,9 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
           templateId: c.ad_type,
           templateLabel: template?.label || c.ad_type,
         });
+        newCampaignIds.push(c.campaign_id);
       }
-
+      onBatchGenerated(newCampaignIds);
       onNavigateToAssets();
     } catch (error) {
       console.error("[Generate] bulk API failed:", error);
@@ -315,6 +324,42 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         />
       </Box>
 
+      {/* Pending batch banner */}
+      {hasRatedContext && hasPendingBatch && (
+        <Flex
+          align="center" gap={4}
+          bg="#FFF7ED" border="1px solid" borderColor="#FED7AA"
+          borderRadius="16px" px={5} py={4}
+        >
+          <Flex
+            w="36px" h="36px" flexShrink={0} borderRadius="10px"
+            bg="#FFEDD5" align="center" justify="center"
+          >
+            <Lock size={16} color="#EA580C" />
+          </Flex>
+          <Box flex={1}>
+            <Text fontSize="14px" fontWeight="700" color="#9A3412">
+              Rate your generated assets to unlock the next batch
+            </Text>
+            <Text fontSize="13px" color="#C2410C" mt={0.5}>
+              Go to Assets and give every image a star rating before generating again.
+            </Text>
+          </Box>
+          <Button
+            size="sm" h="36px" px={4} borderRadius="10px"
+            bg="#EA580C" color="white" fontSize="13px" fontWeight="600"
+            _hover={{ bg: "#C2410C" }}
+            onClick={onNavigateToAssets}
+            flexShrink={0}
+          >
+            <Flex align="center" gap={1.5}>
+              <Star size={13} />
+              View Assets
+            </Flex>
+          </Button>
+        </Flex>
+      )}
+
       {/* Rating gate banner */}
       {!hasRatedContext && (
         <Flex
@@ -377,23 +422,33 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             </Box>
             <Text color="#9CA3AF">=</Text>
             <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color={hasRatedContext ? "#4F46E5" : "#D97706"}>{totalPosts}</Text>
-              <Text fontSize="12px" color={hasRatedContext ? "#4F46E5" : "#D97706"} textTransform="uppercase">Total Posts</Text>
+              <Text fontSize="18px" fontWeight="700" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"}>{effectiveTotalPosts}</Text>
+              <Text fontSize="12px" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"} textTransform="uppercase">
+                {isTrimmed ? "Posts (capped)" : "Total Posts"}
+              </Text>
             </Box>
           </Flex>
 
           <Button
-            bg={hasRatedContext ? "#4F46E5" : "#D1D5DB"}
+            bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
             color="white" borderRadius="14px" h="52px" px={7}
             fontSize="15px" fontWeight="600"
-            _hover={{ bg: hasRatedContext ? "#4338CA" : "#D1D5DB" }}
-            disabled={!hasRatedContext || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
+            _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
+            disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
             onClick={handleGenerateContent}
-            cursor={hasRatedContext ? "pointer" : "not-allowed"}
+            cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
           >
             <Flex align="center" gap={2}>
-              {!hasRatedContext && <Lock size={15} />}
-              {isGenerating ? "Generating..." : !hasRatedContext ? "Rate All Contexts First" : totalPosts === 0 ? "Select to Generate" : `Generate ${totalPosts} Posts`}
+              {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+              {isGenerating
+                ? "Generating..."
+                : !hasRatedContext
+                  ? "Rate All Contexts First"
+                  : hasPendingBatch
+                    ? "Rate Assets to Unlock"
+                    : effectiveTotalPosts === 0
+                      ? "Select to Generate"
+                      : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
             </Flex>
           </Button>
         </Flex>
@@ -427,10 +482,10 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
               <Loader size={28} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />
             </Flex>
             <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>
-              Queuing {totalPosts} Ads
+              Queuing {effectiveTotalPosts} Ads
             </Text>
             <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
-              Setting up {totalPosts} ad variations across {selectedContextIds.length} context{selectedContextIds.length > 1 ? "s" : ""} and {selectedTemplateIds.length} template{selectedTemplateIds.length > 1 ? "s" : ""}.
+              Setting up {effectiveTotalPosts} ad variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
             </Text>
             <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
               Go grab a coffee — everything generates in the background, even if you close this tab.

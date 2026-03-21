@@ -6,9 +6,10 @@ import {
   Badge, Box, Button, Flex, Image, Text, VStack, Textarea,
 } from "@chakra-ui/react";
 import {
-  Coffee, Download, ImageIcon, Loader, X, Star, MessageSquare, Sparkles,
+  Coffee, Download, ImageIcon, Loader, Lock, X, Star, MessageSquare, Sparkles,
 } from "lucide-react";
 import type { CampaignTracker } from "@/hooks/useCampaignPolling";
+import type { CampaignAsset } from "@/types/onboarding.types";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -16,9 +17,11 @@ import { supabase } from "@/lib/supabase";
 interface AssetsTabProps {
   trackers: CampaignTracker[];
   statuses: Record<string, { total: number; complete: number; status: string }>;
-  assets: Record<string, unknown[]>;
+  assets: Record<string, CampaignAsset[]>;
   progress: number;
   isPolling: boolean;
+  currentBatchCampaignIds: string[];
+  onVariationRated: (variationId: string) => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -350,7 +353,7 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
 
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
-function FeedbackPanel({ imageId }: { imageId: string }) {
+function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (imageId: string) => void }) {
   const [rating, setRating]       = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback]   = useState("");
@@ -389,6 +392,7 @@ function FeedbackPanel({ imageId }: { imageId: string }) {
         { onConflict: "image_id,user_id" }
       );
       setSaved(true);
+      onRated?.(imageId);
     } catch (err) {
       console.error("Feedback save error:", err);
     } finally {
@@ -451,6 +455,55 @@ function FeedbackPanel({ imageId }: { imageId: string }) {
           {saving ? <Loader size={10} style={{ animation: "spin 1.5s linear infinite" }} /> : saved ? "Saved" : "Save"}
         </Button>
       </Flex>
+    </Box>
+  );
+}
+
+// ─── Batch Asset Card ─────────────────────────────────────────────────────────
+
+function BatchAssetCard({ asset, isRated, onRated }: {
+  asset: CampaignAsset;
+  isRated: boolean;
+  onRated: (variationId: string) => void;
+}) {
+  const imageUrl = asset.overlay_url || asset.image_url;
+
+  return (
+    <Box
+      borderRadius="18px" overflow="hidden" bg="white"
+      border="2px solid" borderColor={isRated ? "#22C55E" : "#ECECEC"}
+      transition="all 0.3s ease"
+      _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}
+    >
+      <Box position="relative" style={{ aspectRatio: "4/5" }} overflow="hidden" bg="#F3F4F6">
+        {imageUrl ? (
+          <Image src={imageUrl} alt={`Variation ${asset.variation_index}`} objectFit="cover" w="full" h="full" />
+        ) : (
+          <Flex position="absolute" inset={0} align="center" justify="center" direction="column" gap={2}>
+            <Loader size={24} color="#9CA3AF" style={{ animation: "spin 1.5s linear infinite" }} />
+            <Text fontSize="11px" color="#9CA3AF">Generating...</Text>
+          </Flex>
+        )}
+        {isRated && (
+          <Flex
+            position="absolute" inset={0}
+            align="center" justify="center"
+            bg="rgba(34,197,94,0.15)"
+          >
+            <Flex
+              w="40px" h="40px" borderRadius="full" bg="#22C55E"
+              align="center" justify="center"
+              boxShadow="0 4px 12px rgba(34,197,94,0.4)"
+            >
+              <Text color="white" fontSize="18px" fontWeight="700">&#10003;</Text>
+            </Flex>
+          </Flex>
+        )}
+      </Box>
+      <Box p={3}>
+        <Text fontSize="12px" color="#6B7280" mb={2}>Variation {asset.variation_index + 1}</Text>
+        <FeedbackPanel imageId={asset.variation_id} onRated={onRated} />
+      </Box>
     </Box>
   );
 }
@@ -536,17 +589,51 @@ function LibraryCard({ file, igConnected, onPublish }: {
 const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
-export default function AssetsTab({ trackers, statuses, assets, progress, isPolling }: AssetsTabProps) {
+export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, currentBatchCampaignIds, onVariationRated }: AssetsTabProps) {
   const [igConnected,    setIgConnected]    = useState(false);
   const [libraryFiles,   setLibraryFiles]   = useState<LibraryFile[]>([]);
   const [loadingLib,     setLoadingLib]     = useState(true);
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
+  const [localBatchRated, setLocalBatchRated] = useState<Set<string>>(new Set());
 
-  const allAssets  = trackers.flatMap(t => (assets[t.campaignId] || []) as unknown[]);
+  const allAssets  = trackers.flatMap(t => (assets[t.campaignId] || []));
   const totalJobs  = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
   const isGenerating = isPolling && totalJobs > 0;
   const isComplete   = progress === 100 && !isPolling && totalJobs > 0;
+
+  // Batch assets and rating state
+  const batchAssets = currentBatchCampaignIds.flatMap(cid => assets[cid] ?? []);
+  const allBatchRated = batchAssets.length > 0 && batchAssets.every(a => localBatchRated.has(a.variation_id));
+
+  // Seed localBatchRated from DB when batch assets load
+  useEffect(() => {
+    if (currentBatchCampaignIds.length === 0 || batchAssets.length === 0) return;
+    const variationIds = batchAssets.map(a => a.variation_id).filter(Boolean);
+    if (variationIds.length === 0) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("image_feedback")
+        .select("image_id")
+        .in("image_id", variationIds)
+        .eq("user_id", user.id);
+      if (data) {
+        setLocalBatchRated(prev => {
+          const next = new Set(prev);
+          for (const row of data as { image_id: string }[]) next.add(row.image_id);
+          return next;
+        });
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBatchCampaignIds, assets]);
+
+  const handleBatchVariationRated = (variationId: string) => {
+    setLocalBatchRated(prev => new Set([...prev, variationId]));
+    onVariationRated(variationId);
+  };
 
   // ── Load IG connection state ────────────────────────────────────────────────
   useEffect(() => {
@@ -621,7 +708,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
 
   // ── Empty state ─────────────────────────────────────────────────────────────
-  if (libraryFiles.length === 0 && !loadingLib) {
+  if (libraryFiles.length === 0 && !loadingLib && batchAssets.length === 0) {
     return (
       <Flex direction="column" align="center" justify="center"
         bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px"
@@ -727,6 +814,77 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 <Text fontSize="12px" color="#9CA3AF" mt={1} textAlign="right">{allAssets.length} / {totalJobs}</Text>
               </Box>
             </Flex>
+          </Box>
+        )}
+
+        {/* Current Batch section */}
+        {currentBatchCampaignIds.length > 0 && batchAssets.length > 0 && (
+          <Box>
+            {/* Header */}
+            <Flex align="center" justify="space-between" mb={4}>
+              <Flex align="center" gap={3}>
+                <Text fontSize="13px" fontWeight="800" color="#111111" letterSpacing="0.06em" textTransform="uppercase">
+                  Current Batch
+                </Text>
+                <Badge
+                  bg={allBatchRated ? "#DCFCE7" : "#FFF7ED"}
+                  color={allBatchRated ? "#166534" : "#9A3412"}
+                  border="1px solid"
+                  borderColor={allBatchRated ? "#BBF7D0" : "#FED7AA"}
+                  borderRadius="999px" px={3} py={1} fontSize="12px" fontWeight="700"
+                >
+                  {localBatchRated.size} / {batchAssets.length} rated
+                </Badge>
+              </Flex>
+              {allBatchRated && (
+                <Badge bg="#DCFCE7" color="#166534" borderRadius="999px" px={3} py={1} fontSize="12px" fontWeight="700">
+                  Next batch unlocked!
+                </Badge>
+              )}
+            </Flex>
+
+            {/* Progress bar */}
+            <Box bg="#F3F4F6" borderRadius="999px" h="8px" overflow="hidden" mb={3}>
+              <Box
+                bg={allBatchRated
+                  ? "linear-gradient(90deg, #22C55E 0%, #16A34A 100%)"
+                  : "linear-gradient(90deg, #F97316 0%, #EA580C 100%)"}
+                h="100%" borderRadius="999px"
+                w={`${batchAssets.length > 0 ? (localBatchRated.size / batchAssets.length) * 100 : 0}%`}
+                transition="width 0.4s ease"
+              />
+            </Box>
+
+            {/* Lock notice */}
+            {!allBatchRated && (
+              <Flex
+                align="center" gap={3} mb={5}
+                bg="#FFF7ED" border="1px solid" borderColor="#FED7AA"
+                borderRadius="12px" px={4} py={3}
+              >
+                <Lock size={14} color="#EA580C" />
+                <Text fontSize="13px" color="#9A3412" fontWeight="500">
+                  Rate all {batchAssets.length} assets to unlock the next generation batch
+                </Text>
+              </Flex>
+            )}
+
+            {/* Batch asset grid */}
+            <Box
+              display="grid"
+              gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
+              gap={5}
+              mb={8}
+            >
+              {batchAssets.map(asset => (
+                <BatchAssetCard
+                  key={asset.variation_id}
+                  asset={asset}
+                  isRated={localBatchRated.has(asset.variation_id)}
+                  onRated={handleBatchVariationRated}
+                />
+              ))}
+            </Box>
           </Box>
         )}
 

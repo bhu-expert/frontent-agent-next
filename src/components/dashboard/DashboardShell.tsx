@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Box,
@@ -419,6 +419,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     {},
   );
 
+  // ── Batch-rating gate state ──────────────────────────────────────────────────
+  const [currentBatchCampaignIds, setCurrentBatchCampaignIds] = useState<string[]>([]);
+  const [batchRatedVariationIds, setBatchRatedVariationIds] = useState<Set<string>>(new Set());
+
   // Load persisted ratings from DB when brand or user changes
   useEffect(() => {
     if (!selectedBrandId || !user?.id) return;
@@ -448,6 +452,54 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     Record<string, ContextBlock>
   >({});
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // ── Batch gate derived values ────────────────────────────────────────────────
+  const currentBatchVariationIds = useMemo(
+    () => currentBatchCampaignIds.flatMap(cid => (campaign.assets[cid] ?? []).map(a => a.variation_id)),
+    [currentBatchCampaignIds, campaign.assets],
+  );
+  const allCurrentBatchAssetsRated =
+    currentBatchCampaignIds.length === 0 ||
+    (currentBatchVariationIds.length > 0 &&
+      currentBatchVariationIds.every(vid => batchRatedVariationIds.has(vid)));
+
+  // Seed rated set from DB when batch assets load
+  useEffect(() => {
+    if (currentBatchCampaignIds.length === 0) return;
+    const variationIds = currentBatchVariationIds.filter(Boolean);
+    if (variationIds.length === 0) return;
+    (async () => {
+      const { data: { user: batchUser } } = await supabase.auth.getUser();
+      if (!batchUser) return;
+      const { data } = await supabase
+        .from("image_feedback")
+        .select("image_id")
+        .in("image_id", variationIds)
+        .eq("user_id", batchUser.id);
+      if (data) {
+        setBatchRatedVariationIds(prev => {
+          const next = new Set(prev);
+          for (const row of data as { image_id: string }[]) next.add(row.image_id);
+          return next;
+        });
+      }
+    })();
+  }, [currentBatchCampaignIds, currentBatchVariationIds]);
+
+  // Reset batch when brand changes
+  useEffect(() => {
+    setCurrentBatchCampaignIds([]);
+    setBatchRatedVariationIds(new Set());
+  }, [selectedBrandId]);
+
+  const handleBatchGenerated = useCallback((campaignIds: string[]) => {
+    setCurrentBatchCampaignIds(campaignIds);
+    setBatchRatedVariationIds(new Set());
+  }, []);
+
+  const handleVariationRated = useCallback((variationId: string) => {
+    setBatchRatedVariationIds(prev => new Set([...prev, variationId]));
+  }, []);
 
   useEffect(() => {
     const timeoutRegistry = noticeTimeoutsRef.current;
@@ -1623,6 +1675,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 )
               }
               onNavigateToBrands={() => setActiveView("brands")}
+              hasPendingBatch={!allCurrentBatchAssetsRated}
+              onBatchGenerated={handleBatchGenerated}
             />
           ) : activeView === "assets" ? (
             <AssetsTab
@@ -1631,6 +1685,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               assets={campaign.assets}
               progress={campaign.progress}
               isPolling={campaign.isPolling}
+              currentBatchCampaignIds={currentBatchCampaignIds}
+              onVariationRated={handleVariationRated}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />
