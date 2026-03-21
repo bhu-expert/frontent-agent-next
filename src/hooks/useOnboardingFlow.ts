@@ -16,6 +16,8 @@ export function useOnboardingFlow() {
   // Page 1
   const [url, setUrl] = useState("");
   const [brandName, setBrandName] = useState("");
+  const [guardrails, setGuardrails] = useState("");
+  const [description, setDescription] = useState("");
 
   // Page 3 – Brand contexts
   const [ctx, setCtx] = useState<BrandContext[]>(CTXS);
@@ -68,9 +70,11 @@ export function useOnboardingFlow() {
   // ─── Page 1 ────────────────────────────────────────────────────────
 
   const handleAnalyse = useCallback(
-    (inputUrl: string, inputBrandName: string) => {
+    (inputUrl: string, inputBrandName: string, inputGuardrails: string = "", inputDescription: string = "") => {
       setUrl(inputUrl);
       setBrandName(inputBrandName);
+      setGuardrails(inputGuardrails);
+      setDescription(inputDescription);
       goTo(2);
     },
     [goTo]
@@ -206,6 +210,8 @@ export function useOnboardingFlow() {
   const newAnalysis = useCallback(() => {
     setUrl("");
     setBrandName("");
+    setGuardrails("");
+    setDescription("");
     setCtx(CTXS);
     setRatings({});
     setBm(new Set());
@@ -233,6 +239,8 @@ export function useOnboardingFlow() {
     maxReached,
     url,
     brandName,
+    guardrails,
+    description,
     ctx,
     ratings,
     bm,
@@ -263,6 +271,8 @@ export function useOnboardingFlow() {
     // Page 1
     handleAnalyse,
     setBrandName,
+    setGuardrails,
+    setDescription,
 
     // Page 2
     handleAnalysisDone,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Text, Button, Input, VStack } from "@chakra-ui/react";
+import { Box, Flex, Text, Button, Input, Textarea, VStack } from "@chakra-ui/react";
 import { Globe } from "lucide-react";
 import { URLInputProps } from "@/props/URLInput";
 
@@ -12,6 +12,8 @@ import { URLInputProps } from "@/props/URLInput";
 export default function URLInput({ onAnalyse }: URLInputProps) {
   const [url, setUrl] = useState("");
   const [brandName, setBrandName] = useState("");
+  const [guardrails, setGuardrails] = useState("");
+  const [description, setDescription] = useState("");
   const [err, setErr] = useState(false);
 
   const go = () => {
@@ -20,11 +22,11 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
       return;
     }
     setErr(false);
-    onAnalyse(url, brandName);
+    onAnalyse(url, brandName, guardrails, description);
   };
 
   return (
-    <Flex minH="calc(100vh - 140px)" align="center" justify="center" position="relative" w="full" px={4} py={12}>
+    <Flex minH="calc(100vh - 64px)" align="center" justify="center" position="relative" w="full" px={4} py={12}>
       {/* Background blobs */}
       <Box
         position="absolute"
@@ -144,6 +146,62 @@ export default function URLInput({ onAnalyse }: URLInputProps) {
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
               />
+            </Box>
+
+            {/* Business Description */}
+            <Box>
+              <Flex justify="space-between" align="center" mb={1.5}>
+                <Text fontSize="13px" fontWeight="bold" color="#111827">Tell us about your business</Text>
+                <Text fontSize="11px" color="#9CA3AF">Optional</Text>
+              </Flex>
+              <Textarea
+                placeholder="e.g. We are a fintech startup helping SMBs manage invoices. Our customers are small business owners aged 30–50 who struggle with late payments."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                minH="90px"
+                px="16px"
+                py="12px"
+                bg="white"
+                border="1px solid"
+                borderColor="gray.200"
+                rounded="xl"
+                fontSize="14px"
+                resize="vertical"
+                lineHeight="1.5"
+                _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 3px rgba(79,70,229,0.12)" }}
+                _placeholder={{ color: "gray.400" }}
+              />
+              <Text fontSize="12px" color="#9CA3AF" mt={1}>
+                Helps the AI generate more relevant brand identities.
+              </Text>
+            </Box>
+
+            {/* Guardrails Input */}
+            <Box>
+              <Flex justify="space-between" align="center" mb={1.5}>
+                <Text fontSize="13px" fontWeight="bold" color="#111827">Guardrails</Text>
+                <Text fontSize="11px" color="#9CA3AF">Optional</Text>
+              </Flex>
+              <Textarea
+                placeholder="e.g. [not investment advice, not a replacement for a doctor, avoid aggressive sales language]"
+                value={guardrails}
+                onChange={(e) => setGuardrails(e.target.value)}
+                minH="90px"
+                px="16px"
+                py="12px"
+                bg="white"
+                border="1px solid"
+                borderColor="gray.200"
+                rounded="xl"
+                fontSize="14px"
+                resize="vertical"
+                lineHeight="1.5"
+                _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 3px rgba(79,70,229,0.12)" }}
+                _placeholder={{ color: "gray.400" }}
+              />
+              <Text fontSize="12px" color="#9CA3AF" mt={1}>
+                Constraints applied during brand identity generation.
+              </Text>
             </Box>
           </VStack>
 
