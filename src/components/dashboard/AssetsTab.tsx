@@ -529,6 +529,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const [loadingLib,     setLoadingLib]     = useState(true);
   const [publishTarget,  setPublishTarget]  = useState<PublishTarget | null>(null);
   const [activeFormat,   setActiveFormat]   = useState<ImageFormat | "all">("all");
+  const [ratingFilter,   setRatingFilter]   = useState<"all" | "rated" | "unrated">("all");
   const [completeBannerDismissed, setCompleteBannerDismissed] = useState(false);
   const [ratedFileIds,   setRatedFileIds]   = useState<Set<string>>(new Set());
 
@@ -807,29 +808,50 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
 
         {/* Library images */}
         <Box>
-          <Flex justify="space-between" align="center" mb={4}>
-            <Flex align="center" gap={3}>
-              <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em" textTransform="uppercase">
-                Upload Library
-              </Text>
-              {libraryFiles.length > 0 && (
-                <Flex gap={1.5} align="center">
-                  <Box px={2} py={0.5} borderRadius="999px" bg="#F0FDF4" border="1px solid #BBF7D0">
-                    <Text fontSize="11px" fontWeight="600" color="#166534">
-                      {ratedFileIds.size} rated
-                    </Text>
-                  </Box>
-                  {libraryFiles.length - ratedFileIds.size > 0 && (
-                    <Box px={2} py={0.5} borderRadius="999px" bg="#FFFBEB" border="1px solid #FDE68A">
-                      <Text fontSize="11px" fontWeight="600" color="#92400E">
-                        {libraryFiles.length - ratedFileIds.size} unrated
+          <Text fontSize="13px" fontWeight="800" color="#6B7280" letterSpacing="0.06em" textTransform="uppercase" mb={4}>
+            Upload Library
+          </Text>
+
+          {/* Rating stat blocks — clickable filters */}
+          {libraryFiles.length > 0 && (() => {
+            const unratedCount = libraryFiles.length - ratedFileIds.size;
+            const statBlocks: { key: "all" | "rated" | "unrated"; label: string; count: number; activeBg: string; activeBorder: string; activeText: string; idleBg: string; idleBorder: string; idleText: string; dotColor: string }[] = [
+              { key: "all",     label: "All Assets",  count: libraryFiles.length, activeBg: "#111111",  activeBorder: "#111111",  activeText: "white",   idleBg: "white", idleBorder: "#E5E7EB", idleText: "#374151", dotColor: "#9CA3AF" },
+              { key: "rated",   label: "Rated",       count: ratedFileIds.size,   activeBg: "#F0FDF4",  activeBorder: "#22C55E",  activeText: "#166534", idleBg: "white", idleBorder: "#E5E7EB", idleText: "#374151", dotColor: "#22C55E" },
+              { key: "unrated", label: "Unrated",     count: unratedCount,        activeBg: "#FFFBEB",  activeBorder: "#F59E0B",  activeText: "#92400E", idleBg: "white", idleBorder: "#E5E7EB", idleText: "#374151", dotColor: "#F59E0B" },
+            ];
+            return (
+              <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={3} mb={5}>
+                {statBlocks.map(({ key, label, count, activeBg, activeBorder, activeText, idleBg, idleBorder, idleText, dotColor }) => {
+                  const isActive = ratingFilter === key;
+                  return (
+                    <Box
+                      key={key}
+                      cursor="pointer"
+                      bg={isActive ? activeBg : idleBg}
+                      border="2px solid"
+                      borderColor={isActive ? activeBorder : idleBorder}
+                      borderRadius="16px"
+                      p={4}
+                      transition="all 0.18s ease"
+                      _hover={{ borderColor: activeBorder, boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}
+                      onClick={() => setRatingFilter(key)}
+                    >
+                      <Flex align="center" gap={1.5} mb={2}>
+                        <Box w="8px" h="8px" borderRadius="full" bg={isActive ? (key === "all" ? "white" : dotColor) : dotColor} flexShrink={0} />
+                        <Text fontSize="12px" fontWeight="600" color={isActive ? activeText : "#6B7280"}>
+                          {label}
+                        </Text>
+                      </Flex>
+                      <Text fontSize="28px" fontWeight="800" color={isActive ? activeText : "#111111"} lineHeight="1">
+                        {count}
                       </Text>
                     </Box>
-                  )}
-                </Flex>
-              )}
-            </Flex>
-          </Flex>
+                  );
+                })}
+              </Box>
+            );
+          })()}
 
           {/* Format filter tabs */}
           {libraryFiles.length > 0 && (
@@ -852,7 +874,9 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
 
           {(() => {
             const pendingCount = (isGenerating || isOverlaying) ? Math.max(0, totalJobs - libraryFiles.length) : 0;
-            const filteredFiles = libraryFiles.filter(f => activeFormat === "all" || f.format === activeFormat);
+            const filteredFiles = libraryFiles
+              .filter(f => activeFormat === "all" || f.format === activeFormat)
+              .filter(f => ratingFilter === "all" || (ratingFilter === "rated" ? ratedFileIds.has(f.id) : !ratedFileIds.has(f.id)));
 
             if (loadingLib && libraryFiles.length === 0) {
               return (
