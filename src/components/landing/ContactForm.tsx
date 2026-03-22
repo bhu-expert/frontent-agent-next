@@ -5,6 +5,11 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Send, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button, Input, Textarea, VStack, Field } from "@chakra-ui/react";
+import {
+  API_ENDPOINTS,
+  DEFAULT_CONTACT_SUBJECT,
+  CONTACT_FORM_MESSAGES,
+} from "@/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MotionBox = motion.create(Box as any);
@@ -13,7 +18,7 @@ export default function ContactForm() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    subject: "Landing Page Inquiry",
+    subject: DEFAULT_CONTACT_SUBJECT,
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
@@ -23,14 +28,14 @@ export default function ContactForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
-      setError("Please fill in all required fields.");
+      setError(CONTACT_FORM_MESSAGES.REQUIRED_FIELDS);
       return;
     }
     setError("");
     setLoading(true);
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch(API_ENDPOINTS.CONTACT_PROXY, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -47,7 +52,7 @@ export default function ContactForm() {
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again.",
+          : CONTACT_FORM_MESSAGES.ERROR,
       );
     } finally {
       setLoading(false);
@@ -120,7 +125,7 @@ export default function ContactForm() {
             >
               <CheckCircle size={40} color="#4F46E5" />
               <Text fontWeight="700" fontSize="lg" color="gray.900">
-                Message sent!
+                {CONTACT_FORM_MESSAGES.SUCCESS}
               </Text>
               <Text color="gray.500" fontSize="sm" textAlign="center">
                 Thanks for reaching out. We&apos;ll get back to you shortly.

@@ -25,4 +25,11 @@ export const API_ENDPOINTS = {
   USER_STATS: "/users/me/stats",
   USER_AVATAR: "/users/me/avatar",
   USER_PASSWORD: "/users/me/change-password",
+  // Integration endpoints
+  INTEGRATIONS_STATUS: "/data/integrations/status",
+  INTEGRATIONS_DISCONNECT: (platform: string) =>
+    `/data/integrations/${platform}/disconnect`,
+  // Contact endpoints
+  CONTACT_PROXY: "/api/contact",
+  CONTACT: "/contact/",
 } as const;

@@ -34,7 +34,15 @@ import {
   RefreshCw,
 } from "lucide-react";
 import NextLink from "next/link";
-import { SUPPORT_EMAIL } from "@/constants/contact";
+import {
+  API_ENDPOINTS,
+  SUPPORT_EMAIL,
+  CARD_STYLE,
+  INPUT_STYLE,
+  SECTION_LABEL_STYLE,
+  PLATFORMS_METADATA,
+  DEFAULT_NOTIFICATION_SETTINGS,
+} from "@/constants";
 import { useAuth } from "@/store/AuthProvider";
 import { toaster } from "@/components/ui/toaster";
 import {
@@ -56,37 +64,7 @@ interface ConnectedAccount {
   connectedAt?: string | null;
 }
 
-// ─── Shared styles ────────────────────────────────────────────────────────────
-
-const CARD_STYLE = {
-  bg: "white",
-  border: "1px solid",
-  borderColor: "#ECECEC",
-  borderRadius: "24px",
-  p: { base: 5, md: 8 } as Record<string, number>,
-  boxShadow: "0 12px 48px rgba(0,0,0,0.04)",
-} as const;
-
-const INPUT_STYLE = {
-  border: "1px solid",
-  borderColor: "#E5E7EB",
-  borderRadius: "12px",
-  px: "14px",
-  py: "10px",
-  fontSize: "14px",
-  color: "#374151",
-  bg: "#FAFAFA",
-  w: "full",
-} as const;
-
-const SECTION_LABEL_STYLE = {
-  fontSize: "11px" as const,
-  fontWeight: "700" as const,
-  textTransform: "uppercase" as const,
-  color: "#9CA3AF",
-  letterSpacing: "0.06em",
-  mb: 1,
-};
+// Styles & types moved to @/constants/settings and @/types
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -255,11 +233,11 @@ function ConnectedAccountRow({
   onConnect: (platform: string) => void;
   isLoading: boolean;
 }) {
-  const isInstagram = account.platform === "instagram";
-  const platformColor = isInstagram ? "#E1306C" : "#1877F2";
-  const platformBg = isInstagram ? "#FFF0F5" : "#F0F6FF";
-  const PlatformIcon = isInstagram ? Instagram : Facebook;
-  const platformLabel = isInstagram ? "Instagram" : "Facebook";
+  const metadata = PLATFORMS_METADATA[account.platform as keyof typeof PLATFORMS_METADATA];
+  const platformColor = metadata.color;
+  const platformBg = metadata.bg;
+  const PlatformIcon = metadata.icon;
+  const platformLabel = metadata.label;
 
   return (
     <Flex align="center" justify="space-between" gap={4} py={1}>
@@ -367,9 +345,9 @@ export default function SettingsTab() {
 
   // ── Notifications ─────────────────────────────────────────────────────────
 
-  const [emailDigests, setEmailDigests] = useState(true);
-  const [postAlerts, setPostAlerts] = useState(true);
-  const [weeklyReport, setWeeklyReport] = useState(false);
+  const [emailDigests, setEmailDigests] = useState<boolean>(DEFAULT_NOTIFICATION_SETTINGS.emailDigests);
+  const [postAlerts, setPostAlerts] = useState<boolean>(DEFAULT_NOTIFICATION_SETTINGS.postAlerts);
+  const [weeklyReport, setWeeklyReport] = useState<boolean>(DEFAULT_NOTIFICATION_SETTINGS.weeklyReport);
 
   // ── Change password ───────────────────────────────────────────────────────
 
@@ -421,7 +399,7 @@ export default function SettingsTab() {
     if (!session?.access_token) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/data/integrations/status`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ENDPOINTS.INTEGRATIONS_STATUS}`,
         { headers: { Authorization: `Bearer ${session.access_token}` } },
       );
       if (!res.ok) return;
@@ -531,7 +509,7 @@ export default function SettingsTab() {
     setConnectionsLoading(true);
     try {
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/data/integrations/${platform}/disconnect`,
+        `${process.env.NEXT_PUBLIC_API_URL}${API_ENDPOINTS.INTEGRATIONS_DISCONNECT(platform)}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -1186,3 +1164,4 @@ export default function SettingsTab() {
     </VStack>
   );
 }
+

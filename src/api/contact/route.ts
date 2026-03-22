@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { API_BASE_URL, API_ENDPOINTS, CONTACT_FORM_MESSAGES } from "@/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/contact/`;
+    const backendUrl = `${API_BASE_URL}${API_ENDPOINTS.CONTACT}`;
 
     const response = await fetch(backendUrl, {
       method: "POST",
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Contact API Proxy Error:", message);
     return NextResponse.json(
-      { error: "Failed to send message. Please try again." },
+      { error: CONTACT_FORM_MESSAGES.ERROR },
       { status: 500 }
     );
   }
