@@ -10,7 +10,12 @@ import { Button, Input, Textarea, VStack, Field } from "@chakra-ui/react";
 const MotionBox = motion.create(Box as any);
 
 export default function ContactForm() {
-  const [form, setForm] = useState({ name: "", email: "", subject: "Landing Page Inquiry", message: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    subject: "Landing Page Inquiry",
+    message: "",
+  });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +44,11 @@ export default function ContactForm() {
 
       setSubmitted(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -93,7 +102,8 @@ export default function ContactForm() {
             maxW="lg"
             mx="auto"
           >
-            Have a question or want to know more? Drop us a message and we&apos;ll get back to you.
+            Have a question or want to know more? Drop us a message and
+            we&apos;ll get back to you.
           </Text>
 
           {submitted ? (
@@ -126,101 +136,134 @@ export default function ContactForm() {
               boxShadow="0 4px 20px rgba(79,70,229,0.06)"
             >
               <form onSubmit={handleSubmit}>
-              <VStack gap="5" align="stretch">
-                {/* Name */}
-                <Field.Root invalid={!form.name && !!error}>
-                  <Field.Label fontSize="sm" fontWeight="600" color="gray.700" mb="2">
-                    Your name
-                  </Field.Label>
-                  <Input
-                    required
-                    placeholder="Jane Smith"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                <VStack gap="7" align="stretch">
+                  {/* Name */}
+                  <Field.Root invalid={!form.name && !!error}>
+                    <Field.Label
+                      fontSize="sm"
+                      fontWeight="600"
+                      color="gray.700"
+                      mb="3"
+                    >
+                      Your name
+                    </Field.Label>
+                    <Input
+                      required
+                      placeholder="Jane Smith"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
+                      size="lg"
+                      borderRadius="xl-custom"
+                      px="5"
+                      bg="white"
+                    />
+                  </Field.Root>
+
+                  {/* Email */}
+                  <Field.Root invalid={!form.email && !!error}>
+                    <Field.Label
+                      fontSize="sm"
+                      fontWeight="600"
+                      color="gray.700"
+                      mb="3"
+                    >
+                      Email address
+                    </Field.Label>
+                    <Input
+                      type="email"
+                      required
+                      placeholder="jane@example.com"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      size="lg"
+                      borderRadius="xl-custom"
+                      px="5"
+                      bg="white"
+                    />
+                  </Field.Root>
+
+                  {/* Subject */}
+                  <Field.Root invalid={!form.subject && !!error}>
+                    <Field.Label
+                      fontSize="sm"
+                      fontWeight="600"
+                      color="gray.700"
+                      mb="3"
+                    >
+                      Subject
+                    </Field.Label>
+                    <Input
+                      required
+                      placeholder="Inquiry"
+                      value={form.subject}
+                      onChange={(e) =>
+                        setForm({ ...form, subject: e.target.value })
+                      }
+                      size="lg"
+                      borderRadius="xl-custom"
+                      px="5"
+                      bg="white"
+                    />
+                  </Field.Root>
+
+                  {/* Message */}
+                  <Field.Root invalid={!form.message && !!error}>
+                    <Field.Label
+                      fontSize="sm"
+                      fontWeight="600"
+                      color="gray.700"
+                      mb="3"
+                    >
+                      Message
+                    </Field.Label>
+                    <Textarea
+                      required
+                      placeholder="Tell us what's on your mind..."
+                      value={form.message}
+                      onChange={(e) =>
+                        setForm({ ...form, message: e.target.value })
+                      }
+                      rows={5}
+                      size="lg"
+                      borderRadius="xl-custom"
+                      p="4"
+                      px="5"
+                      bg="white"
+                      resize="vertical"
+                    />
+                  </Field.Root>
+
+                  {error && (
+                    <Flex align="center" gap={2} color="red.500">
+                      <AlertTriangle size={14} />
+                      <Text fontSize="xs" fontWeight="600">
+                        {error}
+                      </Text>
+                    </Flex>
+                  )}
+
+                  {/* Submit */}
+                  <Button
+                    type="submit"
+                    loading={loading}
+                    loadingText="Sending..."
                     size="lg"
-                    borderRadius="12px"
-                    bg="white"
-                  />
-                </Field.Root>
-
-                {/* Email */}
-                <Field.Root invalid={!form.email && !!error}>
-                  <Field.Label fontSize="sm" fontWeight="600" color="gray.700" mb="2">
-                    Email address
-                  </Field.Label>
-                  <Input
-                    type="email"
-                    required
-                    placeholder="jane@example.com"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    size="lg"
-                    borderRadius="12px"
-                    bg="white"
-                  />
-                </Field.Root>
-
-                {/* Subject */}
-                <Field.Root invalid={!form.subject && !!error}>
-                  <Field.Label fontSize="sm" fontWeight="600" color="gray.700" mb="2">
-                    Subject
-                  </Field.Label>
-                  <Input
-                    required
-                    placeholder="Inquiry"
-                    value={form.subject}
-                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    size="lg"
-                    borderRadius="12px"
-                    bg="white"
-                  />
-                </Field.Root>
-
-                {/* Message */}
-                <Field.Root invalid={!form.message && !!error}>
-                  <Field.Label fontSize="sm" fontWeight="600" color="gray.700" mb="2">
-                    Message
-                  </Field.Label>
-                  <Textarea
-                    required
-                    placeholder="Tell us what's on your mind..."
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    rows={5}
-                    size="lg"
-                    borderRadius="12px"
-                    bg="white"
-                    resize="vertical"
-                  />
-                </Field.Root>
-
-                {error && (
-                  <Flex align="center" gap={2} color="red.500">
-                    <AlertTriangle size={14} />
-                    <Text fontSize="xs" fontWeight="600">
-                      {error}
-                    </Text>
-                  </Flex>
-                )}
-
-                {/* Submit */}
-                <Button
-                  type="submit"
-                  loading={loading}
-                  loadingText="Sending..."
-                  size="lg"
-                  h="52px"
-                  bg="#4F46E5"
-                  color="white"
-                  rounded="14px"
-                  _hover={{ bg: "#4338CA", transform: "translateY(-1px)" }}
-                  _active={{ transform: "translateY(0)" }}
-                  transition="all 0.2s"
-                >
-                  Send message
-                  <Send size={15} style={{ marginLeft: "8px" }} />
-                </Button>
-              </VStack>
+                    h="52px"
+                    bg="#4F46E5"
+                    color="white"
+                    rounded="14px"
+                    _hover={{ bg: "#4338CA", transform: "translateY(-1px)" }}
+                    _active={{ transform: "translateY(0)" }}
+                    transition="all 0.2s"
+                  >
+                    Send message
+                    <Send size={15} style={{ marginLeft: "8px" }} />
+                  </Button>
+                </VStack>
               </form>
             </Box>
           )}

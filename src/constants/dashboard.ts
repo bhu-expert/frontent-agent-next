@@ -6,6 +6,6 @@ export const navItems = [
   { label: "Assets", icon: ImageIcon, active: false },
   { label: "Calendar", icon: Calendar, active: false },
   { label: "Integrations", icon: Grid2X2, active: false },
-  { label: "Settings", icon: Settings, active: false },
   { label: "Support", icon: LifeBuoy, active: false },
+  { label: "Settings", icon: Settings, active: false },
 ];
