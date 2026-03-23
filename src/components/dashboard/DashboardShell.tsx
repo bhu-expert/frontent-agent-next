@@ -1701,7 +1701,12 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           ) : activeView === "settings" ? (
             <SettingsTab />
           ) : activeView === "support" ? (
-            <SupportTab />
+            <SupportTab
+              onNavigateToAssets={() => navigateTo("assets")}
+              onNavigateToContent={() => navigateTo("content")}
+              onNavigateToCalendar={() => navigateTo("calendar")}
+              onNavigateToIntegrations={() => navigateTo("integrations")}
+            />
           ) : null}
         </Box>
       </Flex>
