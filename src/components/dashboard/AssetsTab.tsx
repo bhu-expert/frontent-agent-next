@@ -400,8 +400,6 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
     }
   };
 
-  if (!loaded) return null;
-
   return (
     <Box mt={2} pt={2} borderTop="1px solid" borderColor="#F3F4F6">
       {/* Star Rating — auto-saves on click */}
@@ -409,10 +407,10 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
         {[1, 2, 3, 4, 5].map(star => (
           <Box
             key={star}
-            cursor={saving ? "wait" : "pointer"}
-            onMouseEnter={() => !saving && setHoverRating(star)}
+            cursor={saving || !loaded ? "wait" : "pointer"}
+            onMouseEnter={() => loaded && !saving && setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
-            onClick={() => !saving && handleStarClick(star)}
+            onClick={() => loaded && !saving && handleStarClick(star)}
             transition="transform 0.15s"
             _hover={{ transform: saving ? "none" : "scale(1.2)" }}
           >
