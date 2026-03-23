@@ -353,46 +353,40 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
 
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
-function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated?: (imageId: string) => void; isRated?: boolean }) {
-  const [rating, setRating]           = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [feedback, setFeedback]       = useState("");
-  const [saving, setSaving]           = useState(false);
-  const [saved, setSaved]             = useState(false);
-  const [loaded, setLoaded]           = useState(false);
+function FeedbackPanel({ imageId, onRated, initialRating = 0, initialFeedback = "" }: {
+  imageId: string;
+  onRated?: (imageId: string) => void;
+  initialRating?: number;
+  initialFeedback?: string;
+}) {
+  const [rating, setRating]               = useState(initialRating);
+  const [hoverRating, setHoverRating]     = useState(0);
+  const [feedback, setFeedback]           = useState(initialFeedback);
+  const [saving, setSaving]               = useState(false);
+  const [savedFeedback, setSavedFeedback] = useState(initialFeedback);
 
-  // Load existing feedback on mount
+  // Sync when parent's async loadLibrary delivers rating data
   useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("image_feedback")
-        .select("rating, feedback")
-        .eq("image_id", imageId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setRating((data as { rating: number; feedback: string | null }).rating);
-        setFeedback((data as { rating: number; feedback: string | null }).feedback || "");
-        setSaved(true);
-      }
-      setLoaded(true);
-    })();
-  }, [imageId]);
+    setRating(initialRating);
+    setFeedback(initialFeedback);
+    setSavedFeedback(initialFeedback);
+  }, [initialRating, initialFeedback]);
+
+  const saveToDb = async (star: number, text: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("image_feedback").upsert(
+      { image_id: imageId, user_id: user.id, rating: star, feedback: text || null, updated_at: new Date().toISOString() },
+      { onConflict: "image_id,user_id" }
+    );
+  };
 
   const handleStarClick = async (star: number) => {
     setRating(star);
     setSaving(true);
-    setSaved(false);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase.from("image_feedback").upsert(
-        { image_id: imageId, user_id: user.id, rating: star, feedback: feedback || null, updated_at: new Date().toISOString() },
-        { onConflict: "image_id,user_id" }
-      );
-      setSaved(true);
+      await saveToDb(star, feedback);
+      setSavedFeedback(feedback);
       onRated?.(imageId);
     } catch (err) {
       console.error("Feedback save error:", err);
@@ -401,6 +395,22 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
     }
   };
 
+  const handleFeedbackBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = "#E5E7EB";
+    if (rating === 0 || feedback === savedFeedback || saving) return;
+    setSaving(true);
+    try {
+      await saveToDb(rating, feedback);
+      setSavedFeedback(feedback);
+    } catch (err) {
+      console.error("Feedback save error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isSaved = rating > 0 && feedback === savedFeedback && !saving;
+
   return (
     <Box mt={2} pt={2} borderTop="1px solid" borderColor="#F3F4F6">
       {/* Star Rating — auto-saves on click */}
@@ -408,10 +418,10 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
         {[1, 2, 3, 4, 5].map(star => (
           <Box
             key={star}
-            cursor={saving || !loaded ? "wait" : "pointer"}
-            onMouseEnter={() => loaded && !saving && setHoverRating(star)}
+            cursor={saving ? "wait" : "pointer"}
+            onMouseEnter={() => !saving && setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
-            onClick={() => loaded && !saving && handleStarClick(star)}
+            onClick={() => !saving && handleStarClick(star)}
             transition="transform 0.15s"
             _hover={{ transform: saving ? "none" : "scale(1.2)" }}
           >
@@ -424,15 +434,15 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
           </Box>
         ))}
         {saving && <Loader size={10} color="#9CA3AF" style={{ animation: "spin 1.5s linear infinite", marginLeft: 4 }} />}
-        {!saving && saved && rating > 0 && (
+        {!saving && isSaved && (
           <Text fontSize="11px" color="#22C55E" ml={1} fontWeight="600">✓</Text>
         )}
         {!saving && rating > 0 && (
-          <Text fontSize="11px" color="#9CA3AF" ml={saved ? 0 : 1}>{rating}/5</Text>
+          <Text fontSize="11px" color="#9CA3AF" ml={isSaved ? 0 : 1}>{rating}/5</Text>
         )}
       </Flex>
 
-      {/* Feedback input */}
+      {/* Feedback input — saves on blur when already rated */}
       <input
         value={feedback}
         onChange={e => setFeedback(e.target.value)}
@@ -443,7 +453,7 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
           outline: "none", color: "#374151", background: "#F9FAFB",
         }}
         onFocus={e => { e.currentTarget.style.borderColor = "#6366F1"; }}
-        onBlur={e => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
+        onBlur={handleFeedbackBlur}
       />
     </Box>
   );
@@ -451,12 +461,13 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
 
 // ─── Library Image Card ───────────────────────────────────────────────────────
 
-function LibraryCard({ file, igConnected, onPublish, onRated, isRated }: {
+function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingData }: {
   file: LibraryFile;
   igConnected: boolean;
   onPublish: (t: PublishTarget) => void;
   onRated?: (fileId: string) => void;
   isRated?: boolean;
+  ratingData?: { rating: number; feedback: string };
 }) {
   const igType = FORMAT_IG_TYPE[file.format];
 
@@ -511,7 +522,7 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated }: {
           </Text>
           <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
         </Box>
-        <FeedbackPanel imageId={file.id} onRated={onRated} isRated={isRated} />
+        <FeedbackPanel imageId={file.id} onRated={onRated} initialRating={ratingData?.rating ?? 0} initialFeedback={ratingData?.feedback ?? ""} />
       </Box>
     </Box>
   );
@@ -531,6 +542,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const [ratingFilter,   setRatingFilter]   = useState<"all" | "rated" | "unrated">("all");
   const [completeBannerDismissed, setCompleteBannerDismissed] = useState(false);
   const [ratedFileIds,   setRatedFileIds]   = useState<Set<string>>(new Set());
+  const [ratingDataMap,  setRatingDataMap]  = useState<Map<string, { rating: number; feedback: string }>>(new Map());
 
   const allAssets    = trackers.flatMap(t => (assets[t.campaignId] || []));
   const totalJobs    = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
@@ -632,7 +644,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
           .order("created_at", { ascending: false }),
         supabase
           .from("image_feedback")
-          .select("image_id")
+          .select("image_id, rating, feedback")
           .eq("user_id", user.id),
       ]);
 
@@ -649,14 +661,15 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         created_at: row.created_at as string | null,
       }));
 
-      const ratedIds = new Set(
-        (existingRatings as { image_id: string }[] | null)?.map(r => r.image_id) ?? []
-      );
+      const ratingRows = (existingRatings as { image_id: string; rating: number; feedback: string | null }[] | null) ?? [];
+      const ratedIds   = new Set(ratingRows.map(r => r.image_id));
+      const ratingMap  = new Map(ratingRows.map(r => [r.image_id, { rating: r.rating, feedback: r.feedback || "" }]));
 
-      // Set both atomically — React 18 batches these into one render,
+      // Set atomically — React 18 batches these into one render,
       // so onRatingGateChange always sees consistent files + ratings from DB.
       setLibraryFiles(files);
       setRatedFileIds(ratedIds);
+      setRatingDataMap(ratingMap);
     } catch (err) {
       console.error("Library load error:", err);
       setLibraryFiles([]);
@@ -980,7 +993,8 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                 {filteredFiles.map(file => (
                   <LibraryCard key={file.id} file={file}
                     igConnected={igConnected} onPublish={setPublishTarget}
-                    onRated={handleFileRated} isRated={ratedFileIds.has(file.id)} />
+                    onRated={handleFileRated} isRated={ratedFileIds.has(file.id)}
+                    ratingData={ratingDataMap.get(file.id)} />
                 ))}
               </Box>
             );
