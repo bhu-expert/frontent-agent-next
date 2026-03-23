@@ -86,14 +86,25 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   const effectiveTotalPosts = cappedCombinations * 5;
   const isTrimmed = (selectedContextIds.length * selectedTemplateIds.length) > MAX_COMBINATIONS;
 
+  // Stable key based on actual context indices — changes only when the brand's
+  // contexts genuinely change, not on every parent re-render that produces a
+  // new array reference. This prevents wiping the user's manual selection.
+  const contextBlocksKey = useMemo(
+    () => contextBlocks.map((b) => b.context_index).join(","),
+    [contextBlocks],
+  );
+
   useEffect(() => {
     if (contextBlocks.length === 0) {
       setSelectedContextIds([]);
       return;
     }
+    // Always re-initialize when the context set changes (brand switch),
+    // but NOT on every parent re-render with the same data.
     setSelectedContextIds(contextBlocks.slice(0, 2).map((block) => block.context_index));
     setContentError(null);
-  }, [contextBlocks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextBlocksKey]);
 
   const fieldChrome = {
     bg: "white",
