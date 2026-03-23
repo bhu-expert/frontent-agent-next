@@ -466,10 +466,13 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     }
   }, [searchParams]);
 
-  // Navigate: update state AND push ?tab= into the URL so reload restores the tab
+  // Navigate: update state AND update the URL so reload restores the tab.
+  // window.history.replaceState is used instead of router.replace because
+  // Next.js App Router's router.replace silently drops same-pathname query
+  // param updates in some rendering modes.
   const navigateTo = (view: typeof activeView) => {
     setActiveView(view);
-    router.replace(`${pathname}?tab=${view}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}?tab=${view}`);
   };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -1691,6 +1694,15 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 setHasPendingBatch(hasPending);
                 setAssetCounts({ total, rated });
               }}
+              onNavigateToContent={() => navigateTo("content")}
+              brandId={selectedBrand?.id}
+              currentGuardrails={selectedBrand?.guardrails}
+              onGuardrailUpdated={(newGuardrails) => {
+                if (!selectedBrand) return;
+                setAllBrands(prev =>
+                  prev.map(b => b.id === selectedBrand.id ? { ...b, guardrails: newGuardrails } : b)
+                );
+              }}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />
@@ -1699,7 +1711,12 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           ) : activeView === "settings" ? (
             <SettingsTab />
           ) : activeView === "support" ? (
-            <SupportTab />
+            <SupportTab
+              onNavigateToAssets={() => navigateTo("assets")}
+              onNavigateToContent={() => navigateTo("content")}
+              onNavigateToCalendar={() => navigateTo("calendar")}
+              onNavigateToIntegrations={() => navigateTo("integrations")}
+            />
           ) : null}
         </Box>
       </Flex>

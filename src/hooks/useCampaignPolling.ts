@@ -45,6 +45,8 @@ export function useCampaignPolling(
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchedCampaigns = useRef<Set<string>>(new Set());
   const firstAssetFired = useRef(false);
+  // Incremented on every clearCampaigns so in-flight poll() calls can detect they are stale
+  const generationRef = useRef(0);
 
   // Reset when brand changes
   const prevBrandIdRef = useRef<string | undefined>(undefined);
@@ -134,6 +136,10 @@ export function useCampaignPolling(
   }, []);
 
   const clearCampaigns = useCallback(() => {
+    // Invalidate any in-flight poll() calls so they don't write stale data back
+    generationRef.current += 1;
+    // Stop the interval immediately — don't wait for effect cleanup
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     setTrackers([]);
     setStatuses({});
     setAssets({});
@@ -158,6 +164,9 @@ export function useCampaignPolling(
     if (!token || trackers.length === 0) return;
 
     const poll = async () => {
+      // Snapshot generation at poll-start; discard results if clearCampaigns was called mid-flight
+      const generation = generationRef.current;
+
       const activeCampaignIds = trackers
         .map((t) => t.campaignId)
         .filter((id) => !fetchedCampaigns.current.has(id));
@@ -174,6 +183,9 @@ export function useCampaignPolling(
         const results = await Promise.all(
           activeCampaignIds.map((id) => pollCampaignStatus(id, token))
         );
+
+        // Discard results if clearCampaigns was called while we were awaiting
+        if (generationRef.current !== generation) return;
 
         for (const status of results) {
           console.log(

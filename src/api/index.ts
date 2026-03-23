@@ -485,6 +485,27 @@ export async function uploadBrandLogo(
   return res.json();
 }
 
+/**
+ * Queues carousel generation for a brand (3 variations × 5 slides = 15 images).
+ * Returns immediately with campaign_id — image generation happens in the background.
+ */
+export async function generateCarousel(
+  brandId: string,
+  userBrief: string,
+  token: string,
+): Promise<{ campaign_id: string; total: number; status: string; variations: number; slides_per_variation: number }> {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.CAROUSEL_GENERATE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ brand_id: brandId, user_brief: userBrief }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to queue carousel generation", res.status);
+  }
+  return res.json();
+}
+
 export async function saveAssetOverlay(
   campaignId: string,
   variationId: string,
