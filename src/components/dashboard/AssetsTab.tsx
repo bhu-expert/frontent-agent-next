@@ -543,8 +543,13 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   // set to true, so we skip overlay entirely and go straight to isComplete.
   const wasPollingRef = useRef(false);
   useEffect(() => {
-    if (isPolling) wasPollingRef.current = true;
-  }, [isPolling]);
+    if (isPolling) {
+      wasPollingRef.current = true;
+    } else if (trackers.length === 0) {
+      // Polling stopped because campaigns were cleared (new generation starting) — reset
+      wasPollingRef.current = false;
+    }
+  }, [isPolling, trackers.length]);
 
   // Overlay timeout: safety net — give up after 90s even if library count never catches up
   const [overlayTimedOut, setOverlayTimedOut] = useState(false);
