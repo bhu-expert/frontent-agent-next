@@ -416,10 +416,9 @@ function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated
           >
             <Star
               size={16}
-              color={!loaded && isRated ? "#F59E0B" : (hoverRating || rating) >= star ? "#F59E0B" : "#D1D5DB"}
-              fill={!loaded && isRated ? "#F59E0B" : (hoverRating || rating) >= star ? "#F59E0B" : "none"}
+              color={(hoverRating || rating) >= star ? "#F59E0B" : "#D1D5DB"}
+              fill={(hoverRating || rating) >= star ? "#F59E0B" : "none"}
               strokeWidth={2}
-              opacity={!loaded && isRated ? 0.5 : 1}
             />
           </Box>
         ))}
