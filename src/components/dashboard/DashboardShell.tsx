@@ -1692,6 +1692,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 setHasPendingBatch(hasPending);
                 setAssetCounts({ total, rated });
               }}
+              onNavigateToContent={() => navigateTo("content")}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />

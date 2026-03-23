@@ -21,6 +21,7 @@ interface AssetsTabProps {
   progress: number;
   isPolling: boolean;
   onRatingGateChange?: (hasPending: boolean, totalAssets: number, ratedAssets: number) => void;
+  onNavigateToContent?: () => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -521,7 +522,7 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated }: {
 const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
-export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, onRatingGateChange }: AssetsTabProps) {
+export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, onRatingGateChange, onNavigateToContent }: AssetsTabProps) {
   const [igConnected,    setIgConnected]    = useState(false);
   const [libraryFiles,   setLibraryFiles]   = useState<LibraryFile[]>([]);
   const [loadingLib,     setLoadingLib]     = useState(true);
@@ -704,7 +705,18 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         </Flex>
         <Text fontSize="xl" fontWeight="700" color="#111" mb={2}>No Assets Yet</Text>
         <Text fontSize="15px" color="#6B7280" maxW="400px">
-          Go to the Content tab, select your contexts and templates, then hit Generate. Your ads will appear here in real-time.
+          Go to the{" "}
+          <Text
+            as="span"
+            color="#4F46E5"
+            fontWeight="600"
+            cursor="pointer"
+            textDecoration="underline"
+            onClick={onNavigateToContent}
+          >
+            Content tab
+          </Text>
+          , select your contexts and templates, then hit Generate. Your ads will appear here in real-time.
         </Text>
       </Flex>
     );
