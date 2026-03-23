@@ -467,10 +467,13 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     }
   }, [searchParams]);
 
-  // Navigate: update state AND push ?tab= into the URL so reload restores the tab
+  // Navigate: update state AND update the URL so reload restores the tab.
+  // window.history.replaceState is used instead of router.replace because
+  // Next.js App Router's router.replace silently drops same-pathname query
+  // param updates in some rendering modes.
   const navigateTo = (view: typeof activeView) => {
     setActiveView(view);
-    router.replace(`${pathname}?tab=${view}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}?tab=${view}`);
   };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
