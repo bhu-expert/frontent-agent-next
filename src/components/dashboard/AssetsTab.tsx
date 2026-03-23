@@ -617,15 +617,22 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
     setLoadingLib(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLibraryFiles([]); return; }
+      if (!user) { setLibraryFiles([]); setRatedFileIds(new Set()); return; }
 
-      const { data, error } = await supabase
-        .from("library_images")
-        .select("id, storage_path, external_url, format, label, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      // Fetch files and their ratings in parallel so both states update atomically
+      const [{ data, error }, { data: existingRatings }] = await Promise.all([
+        supabase
+          .from("library_images")
+          .select("id, storage_path, external_url, format, label, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("image_feedback")
+          .select("image_id")
+          .eq("user_id", user.id),
+      ]);
 
-      if (error || !data) { setLibraryFiles([]); return; }
+      if (error || !data) { setLibraryFiles([]); setRatedFileIds(new Set()); return; }
 
       const files: LibraryFile[] = data.map(row => ({
         id:         row.id as string,
@@ -637,24 +644,15 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
         label:      row.label as string | null,
         created_at: row.created_at as string | null,
       }));
-      setLibraryFiles(files);
 
-      // Seed which files already have ratings
-      if (files.length > 0) {
-        const { data: { user: ratingUser } } = await supabase.auth.getUser();
-        if (ratingUser) {
-          const { data: existingRatings } = await supabase
-            .from("image_feedback")
-            .select("image_id")
-            .in("image_id", files.map(f => f.id))
-            .eq("user_id", ratingUser.id);
-          if (existingRatings) {
-            setRatedFileIds(new Set((existingRatings as { image_id: string }[]).map(r => r.image_id)));
-          }
-        }
-      } else {
-        setRatedFileIds(new Set());
-      }
+      const ratedIds = new Set(
+        (existingRatings as { image_id: string }[] | null)?.map(r => r.image_id) ?? []
+      );
+
+      // Set both atomically — React 18 batches these into one render,
+      // so onRatingGateChange always sees consistent files + ratings from DB.
+      setLibraryFiles(files);
+      setRatedFileIds(ratedIds);
     } catch (err) {
       console.error("Library load error:", err);
       setLibraryFiles([]);
