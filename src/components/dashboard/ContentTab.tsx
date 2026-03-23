@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -76,6 +76,8 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
+  // Ref-based guard prevents double-submission before React re-renders the disabled button
+  const isGeneratingRef = useRef(false);
 
   const cappedCombinations = useMemo(
     () => Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS),
@@ -122,6 +124,9 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
 
   const handleGenerateContent = async () => {
     if (!brand || !token || selectedContextIds.length === 0 || selectedTemplateIds.length === 0) return;
+    // Synchronous ref guard — blocks double-clicks before React re-renders the disabled button
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
 
     setIsGenerating(true);
     setContentError(null);
@@ -143,10 +148,19 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     );
     const items = allItems.slice(0, MAX_COMBINATIONS);
 
+    // Timeout wrapper — rejects after 45s so the user is never stuck indefinitely
+    const withTimeout = <T>(promise: Promise<T>): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timed out. Please try again.")), 45_000)
+        ),
+      ]);
+
     // Retry helper with exponential backoff
     const callWithRetry = async (attempt = 0): Promise<Awaited<ReturnType<typeof generateAdVariationsBulk>>> => {
       try {
-        return await generateAdVariationsBulk(brand.id, items, token);
+        return await withTimeout(generateAdVariationsBulk(brand.id, items, token));
       } catch (err) {
         if (attempt >= 2) throw err;
         await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
@@ -180,6 +194,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       const apiError = error as { message?: string };
       setContentError(apiError.message || "Failed to generate content variations. Check your connection and try again.");
     } finally {
+      isGeneratingRef.current = false;
       setIsGenerating(false);
     }
   };
