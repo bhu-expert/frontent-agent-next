@@ -31,4 +31,5 @@ export const API_ENDPOINTS = {
   // Contact endpoints
   CONTACT_PROXY: "/api/contact",
   CONTACT: "/contact/",
+  CAROUSEL_GENERATE: "/carousel/generate",
 } as const;

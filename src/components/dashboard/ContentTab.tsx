@@ -20,7 +20,7 @@ import {
   Star,
   Tags,
 } from "lucide-react";
-import { generateAdVariationsBulk } from "@/api";
+import { generateAdVariationsBulk, generateCarousel } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
@@ -79,6 +79,9 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   // Ref-based guard prevents double-submission before React re-renders the disabled button
   const isGeneratingRef = useRef(false);
 
+  const [isGeneratingCarousel, setIsGeneratingCarousel] = useState(false);
+  const isGeneratingCarouselRef = useRef(false);
+
   const cappedCombinations = useMemo(
     () => Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS),
     [selectedContextIds, selectedTemplateIds]
@@ -131,6 +134,38 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     setSelectedTemplateIds((prev) =>
       prev.includes(templateId) ? prev.filter((id) => id !== templateId) : [...prev, templateId]
     );
+  };
+
+  const handleGenerateCarousel = async () => {
+    if (!brand || !token) return;
+    if (isGeneratingCarouselRef.current) return;
+    isGeneratingCarouselRef.current = true;
+    setIsGeneratingCarousel(true);
+    setContentError(null);
+    campaign.clearCampaigns();
+
+    try {
+      const result = await generateCarousel(
+        brand.id,
+        contentBrief.trim() || "Generate an engaging carousel",
+        token,
+      );
+      campaign.addCampaign({
+        campaignId: result.campaign_id,
+        contextIndex: 0,
+        contextTitle: "Carousel",
+        templateId: "carousel",
+        templateLabel: "Carousel",
+      });
+      onBatchGenerated([result.campaign_id]);
+      onNavigateToAssets();
+    } catch (error) {
+      const apiErr = error as { message?: string };
+      setContentError(apiErr.message || "Failed to queue carousel generation. Please try again.");
+    } finally {
+      isGeneratingCarouselRef.current = false;
+      setIsGeneratingCarousel(false);
+    }
   };
 
   const handleGenerateContent = async () => {
@@ -344,6 +379,35 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
           minH="110px" px="16px" py="14px" resize="vertical"
           {...fieldChrome}
         />
+      </Box>
+
+      {/* Step 3: Carousel */}
+      <Box bg="white" border="2px solid" borderColor="#ECECEC" borderRadius="16px" p={6}>
+        <Flex align="center" justify="space-between" mb={3}>
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111">3. Carousel</Text>
+            <Text fontSize="13px" color="#6B7280" mt={1}>
+              Generate 3 themed carousel variations (15 slides total) — Educational, Inspirational, and Product Story.
+            </Text>
+          </Box>
+          <Badge bg="#EEF2FF" color="#4338CA" px={3} py={1.5} borderRadius="999px" fontSize="12px">
+            15 images
+          </Badge>
+        </Flex>
+        <Button
+          bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
+          color="white" borderRadius="12px" h="44px" px={6}
+          fontSize="14px" fontWeight="600"
+          _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
+          disabled={!hasRatedContext || hasPendingBatch || isGeneratingCarousel}
+          onClick={handleGenerateCarousel}
+          cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+        >
+          <Flex align="center" gap={2}>
+            {(!hasRatedContext || hasPendingBatch) && <Lock size={14} />}
+            {isGeneratingCarousel ? "Queuing..." : "Generate Carousel"}
+          </Flex>
+        </Button>
       </Box>
 
       {/* Pending batch banner */}
