@@ -381,35 +381,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         />
       </Box>
 
-      {/* Step 3: Carousel */}
-      <Box bg="white" border="2px solid" borderColor="#ECECEC" borderRadius="16px" p={6}>
-        <Flex align="center" justify="space-between" mb={3}>
-          <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111">3. Carousel</Text>
-            <Text fontSize="13px" color="#6B7280" mt={1}>
-              Generate 3 themed carousel variations (15 slides total) — Educational, Inspirational, and Product Story.
-            </Text>
-          </Box>
-          <Badge bg="#EEF2FF" color="#4338CA" px={3} py={1.5} borderRadius="999px" fontSize="12px">
-            15 images
-          </Badge>
-        </Flex>
-        <Button
-          bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
-          color="white" borderRadius="12px" h="44px" px={6}
-          fontSize="14px" fontWeight="600"
-          _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
-          disabled={!hasRatedContext || hasPendingBatch || isGeneratingCarousel}
-          onClick={handleGenerateCarousel}
-          cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
-        >
-          <Flex align="center" gap={2}>
-            {(!hasRatedContext || hasPendingBatch) && <Lock size={14} />}
-            {isGeneratingCarousel ? "Queuing..." : "Generate Carousel"}
-          </Flex>
-        </Button>
-      </Box>
-
       {/* Pending batch banner */}
       {hasRatedContext && hasPendingBatch && (
         <Flex
@@ -515,28 +486,48 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             </Box>
           </Flex>
 
-          <Button
-            bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
-            color="white" borderRadius="14px" h="52px" px={7}
-            fontSize="15px" fontWeight="600"
-            _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
-            disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
-            onClick={handleGenerateContent}
-            cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
-          >
-            <Flex align="center" gap={2}>
-              {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
-              {isGenerating
-                ? "Generating..."
-                : !hasRatedContext
-                  ? "Rate All Contexts First"
-                  : hasPendingBatch
-                    ? "Rate Assets to Unlock"
-                    : effectiveTotalPosts === 0
-                      ? "Select to Generate"
-                      : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
-            </Flex>
-          </Button>
+          <Flex gap={3} align="center">
+            <Button
+              bg={hasRatedContext && !hasPendingBatch ? "white" : "#F3F4F6"}
+              color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#9CA3AF"}
+              border="1.5px solid"
+              borderColor={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#E5E7EB"}
+              borderRadius="14px" h="52px" px={6}
+              fontSize="15px" fontWeight="600"
+              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#EEF2FF" : "#F3F4F6" }}
+              disabled={!hasRatedContext || hasPendingBatch || isGeneratingCarousel}
+              onClick={handleGenerateCarousel}
+              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+            >
+              <Flex align="center" gap={2}>
+                {(!hasRatedContext || hasPendingBatch) && <Lock size={14} />}
+                {isGeneratingCarousel ? "Queuing..." : "Carousel (15)"}
+              </Flex>
+            </Button>
+
+            <Button
+              bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
+              color="white" borderRadius="14px" h="52px" px={7}
+              fontSize="15px" fontWeight="600"
+              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
+              disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
+              onClick={handleGenerateContent}
+              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+            >
+              <Flex align="center" gap={2}>
+                {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+                {isGenerating
+                  ? "Generating..."
+                  : !hasRatedContext
+                    ? "Rate All Contexts First"
+                    : hasPendingBatch
+                      ? "Rate Assets to Unlock"
+                      : effectiveTotalPosts === 0
+                        ? "Select to Generate"
+                        : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
+              </Flex>
+            </Button>
+          </Flex>
         </Flex>
       </Box>
 
