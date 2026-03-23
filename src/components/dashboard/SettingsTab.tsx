@@ -30,7 +30,7 @@ import {
   Link2,
   Link2Off,
   Instagram,
-  Facebook,
+
   RefreshCw,
 } from "lucide-react";
 import NextLink from "next/link";
@@ -53,12 +53,12 @@ import {
   changePassword,
   type UserProfile,
   type UserStats,
-} from "@/api/settings/routes";
+} from "@/app/api/settings/routes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ConnectedAccount {
-  platform: "instagram" | "facebook";
+  platform: "instagram" 
   connected: boolean;
   username?: string | null;
   connectedAt?: string | null;
@@ -364,10 +364,7 @@ export default function SettingsTab() {
 
   const [connectedAccounts, setConnectedAccounts] = useState<
     ConnectedAccount[]
-  >([
-    { platform: "instagram", connected: false, username: null },
-    { platform: "facebook", connected: false, username: null },
-  ]);
+  >([{ platform: "instagram", connected: false, username: null }]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
   // ── Load data ─────────────────────────────────────────────────────────────
@@ -411,11 +408,7 @@ export default function SettingsTab() {
           connected: !!data?.instagram?.connected,
           username: data?.instagram?.username || null,
         },
-        {
-          platform: "facebook",
-          connected: !!data?.facebook?.connected,
-          username: data?.facebook?.username || null,
-        },
+        
       ]);
     } catch {
       // Silently fail — connections section degrades gracefully

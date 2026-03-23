@@ -48,12 +48,6 @@ export const PLATFORMS_METADATA = {
     bg: "#FFF0F5",
     icon: Instagram,
   },
-  facebook: {
-    label: "Facebook",
-    color: "#1877F2",
-    bg: "#F0F6FF",
-    icon: Facebook,
-  },
 } as const;
 
 export const DEFAULT_NOTIFICATION_SETTINGS = {
