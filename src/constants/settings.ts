@@ -1,4 +1,4 @@
-import { Instagram, Facebook } from "lucide-react";
+import { Instagram} from "lucide-react";
 
 export const CARD_STYLE = {
   bg: "white",

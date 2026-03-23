@@ -13,7 +13,7 @@ import {
   Separator,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
-import { ArrowLeft, Shield, Lock, Trash2, Mail, Globe, Cpu, Eye, Database } from "lucide-react";
+import { ArrowLeft,  Trash2, Mail} from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 

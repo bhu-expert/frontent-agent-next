@@ -16,9 +16,9 @@
 
 import { Box, Flex, Text } from "@chakra-ui/react";
 import type { TemplateProps } from "../base";
-import { AccentDot, BackgroundImage, BrandName, InstagramText, TemplateWrapper } from "../base";
+import { AccentDot, BackgroundImage, InstagramText, TemplateWrapper } from "../base";
 
-export function EngagementVariation1({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
+export function EngagementVariation1({ vd, imageUrl, primary, accent }: TemplateProps) {
   return (
     <TemplateWrapper bg={primary} overflow="hidden">
       {/* Geometric crosshatch pattern */}
@@ -197,7 +197,7 @@ export function EngagementVariation2({ vd, imageUrl, primary, secondary, accent 
  * Best for: Polls, this-or-that posts
  */
 
-export function EngagementVariation3({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
+export function EngagementVariation3({ vd, imageUrl, primary, secondary}: TemplateProps) {
   return (
     <TemplateWrapper bg="white">
       {/* Top image area */}
@@ -280,7 +280,7 @@ export function EngagementVariation3({ vd, imageUrl, primary, secondary, accent 
  * Best for: Discussion prompts, hot takes
  */
 
-export function EngagementVariation4({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
+export function EngagementVariation4({ vd, secondary, accent }: TemplateProps) {
   return (
     <TemplateWrapper bg={secondary}>
       {/* Background pattern */}
@@ -373,7 +373,7 @@ export function EngagementVariation4({ vd, imageUrl, primary, secondary, accent 
  * Best for: Fill-in-the-blank posts, completions
  */
 
-export function EngagementVariation5({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
+export function EngagementVariation5({ vd, primary, secondary, accent }: TemplateProps) {
   return (
     <TemplateWrapper bg={`linear-gradient(180deg, ${primary} 0%, ${secondary} 100%)`}>
       {/* Decorative circles */}

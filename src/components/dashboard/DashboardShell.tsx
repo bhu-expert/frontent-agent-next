@@ -173,7 +173,6 @@ function parseStreamedContextBlock(
 
 function BrandLogoUpload({
   brand,
-  token,
   onLogoUploaded,
 }: {
   brand: BrandData;
