@@ -352,7 +352,7 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
 
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
-function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (imageId: string) => void }) {
+function FeedbackPanel({ imageId, onRated, isRated }: { imageId: string; onRated?: (imageId: string) => void; isRated?: boolean }) {
   const [rating, setRating]           = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback]       = useState("");
@@ -416,9 +416,10 @@ function FeedbackPanel({ imageId, onRated }: { imageId: string; onRated?: (image
           >
             <Star
               size={16}
-              color={(hoverRating || rating) >= star ? "#F59E0B" : "#D1D5DB"}
-              fill={(hoverRating || rating) >= star ? "#F59E0B" : "none"}
+              color={!loaded && isRated ? "#F59E0B" : (hoverRating || rating) >= star ? "#F59E0B" : "#D1D5DB"}
+              fill={!loaded && isRated ? "#F59E0B" : (hoverRating || rating) >= star ? "#F59E0B" : "none"}
               strokeWidth={2}
+              opacity={!loaded && isRated ? 0.5 : 1}
             />
           </Box>
         ))}
@@ -510,7 +511,7 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated }: {
           </Text>
           <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
         </Box>
-        <FeedbackPanel imageId={file.id} onRated={onRated} />
+        <FeedbackPanel imageId={file.id} onRated={onRated} isRated={isRated} />
       </Box>
     </Box>
   );
