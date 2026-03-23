@@ -22,6 +22,9 @@ interface AssetsTabProps {
   isPolling: boolean;
   onRatingGateChange?: (hasPending: boolean, totalAssets: number, ratedAssets: number) => void;
   onNavigateToContent?: () => void;
+  brandId?: string;
+  currentGuardrails?: string | null;
+  onGuardrailUpdated?: (newGuardrails: string) => void;
 }
 
 type MediaType    = "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL" | "STORIES";
@@ -351,13 +354,96 @@ function IgPublishButton({ url, label, onPublish }: { url: string; label: string
 }
 
 
+// ─── Guardrail Prompt Modal ────────────────────────────────────────────────────
+
+function GuardrailPromptModal({
+  feedback,
+  onConfirm,
+  onDismiss,
+  isSaving,
+}: {
+  feedback: string;
+  onConfirm: () => void;
+  onDismiss: () => void;
+  isSaving: boolean;
+}) {
+  return (
+    <Box
+      position="fixed" inset={0} zIndex={2000}
+      bg="rgba(0,0,0,0.45)" backdropFilter="blur(4px)"
+      display="flex" alignItems="center" justifyContent="center"
+      onClick={onDismiss}
+    >
+      <Box
+        bg="white" borderRadius="20px" p={6} w="full" maxW="420px" mx={4}
+        boxShadow="0 24px 64px rgba(0,0,0,0.18)"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <Flex justify="space-between" align="flex-start" mb={4}>
+          <Flex align="center" gap={2.5}>
+            <Box w="36px" h="36px" borderRadius="10px" flexShrink={0}
+              bg="#FFFBEB" border="1.5px solid #FDE68A"
+              display="flex" alignItems="center" justifyContent="center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L3 7v6c0 5.25 3.75 10.14 9 11.32C17.25 23.14 21 18.25 21 13V7L12 2z"
+                  stroke="#D97706" strokeWidth="2" fill="none" strokeLinejoin="round" />
+              </svg>
+            </Box>
+            <Box>
+              <Text fontSize="15px" fontWeight="700" color="#111111">Add to Guardrails?</Text>
+              <Text fontSize="12px" color="#6B7280" mt={0.5}>Use this feedback as a content rule</Text>
+            </Box>
+          </Flex>
+          <Button variant="ghost" size="xs" onClick={onDismiss} p={1} borderRadius="8px"
+            _hover={{ bg: "#F3F4F6" }}>
+            <X size={15} color="#9CA3AF" />
+          </Button>
+        </Flex>
+
+        {/* Feedback preview */}
+        <Box bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="12px" p={3.5} mb={5}>
+          <Text fontSize="12px" fontWeight="600" color="#92400E" mb={1.5} letterSpacing="0.04em" textTransform="uppercase">
+            Feedback
+          </Text>
+          <Text fontSize="13px" color="#78350F" lineHeight="1.6" fontStyle="italic">
+            &ldquo;{feedback}&rdquo;
+          </Text>
+        </Box>
+
+        <Text fontSize="13px" color="#6B7280" mb={4} lineHeight="1.6">
+          This will be appended to your brand&apos;s guardrails so future AI-generated content follows this rule.
+        </Text>
+
+        {/* Actions */}
+        <Flex gap={2.5}>
+          <Button flex={1} h="40px" borderRadius="10px" fontSize="13px" fontWeight="600"
+            bg="#F3F4F6" color="#374151" _hover={{ bg: "#E5E7EB" }}
+            onClick={onDismiss} disabled={isSaving}>
+            Dismiss
+          </Button>
+          <Button flex={1} h="40px" borderRadius="10px" fontSize="13px" fontWeight="700"
+            color="white" loading={isSaving}
+            style={{ background: "linear-gradient(135deg, #D97706 0%, #F59E0B 100%)" }}
+            _hover={{ opacity: 0.9 }}
+            onClick={onConfirm}>
+            Add to Guardrails
+          </Button>
+        </Flex>
+      </Box>
+    </Box>
+  );
+}
+
+
 // ─── Feedback Panel ──────────────────────────────────────────────────────────
 
-function FeedbackPanel({ imageId, onRated, initialRating = 0, initialFeedback = "" }: {
+function FeedbackPanel({ imageId, onRated, initialRating = 0, initialFeedback = "", onAddToGuardrails }: {
   imageId: string;
   onRated?: (imageId: string) => void;
   initialRating?: number;
   initialFeedback?: string;
+  onAddToGuardrails?: (feedback: string) => void;
 }) {
   const [rating, setRating]               = useState(initialRating);
   const [hoverRating, setHoverRating]     = useState(0);
@@ -402,6 +488,9 @@ function FeedbackPanel({ imageId, onRated, initialRating = 0, initialFeedback = 
     try {
       await saveToDb(rating, feedback);
       setSavedFeedback(feedback);
+      if (feedback.trim()) {
+        onAddToGuardrails?.(feedback.trim());
+      }
     } catch (err) {
       console.error("Feedback save error:", err);
     } finally {
@@ -461,13 +550,14 @@ function FeedbackPanel({ imageId, onRated, initialRating = 0, initialFeedback = 
 
 // ─── Library Image Card ───────────────────────────────────────────────────────
 
-function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingData }: {
+function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingData, onAddToGuardrails }: {
   file: LibraryFile;
   igConnected: boolean;
   onPublish: (t: PublishTarget) => void;
   onRated?: (fileId: string) => void;
   isRated?: boolean;
   ratingData?: { rating: number; feedback: string };
+  onAddToGuardrails?: (feedback: string) => void;
 }) {
   const igType = FORMAT_IG_TYPE[file.format];
 
@@ -522,7 +612,7 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingDat
           </Text>
           <Text fontSize="11px" color="#9CA3AF" mt={0.5}>{FORMAT_LABELS[file.format]}</Text>
         </Box>
-        <FeedbackPanel imageId={file.id} onRated={onRated} initialRating={ratingData?.rating ?? 0} initialFeedback={ratingData?.feedback ?? ""} />
+        <FeedbackPanel imageId={file.id} onRated={onRated} initialRating={ratingData?.rating ?? 0} initialFeedback={ratingData?.feedback ?? ""} onAddToGuardrails={onAddToGuardrails} />
       </Box>
     </Box>
   );
@@ -533,7 +623,7 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingDat
 const STORAGE_BUCKET = "ad-images";
 const FORMATS: ImageFormat[] = ["stories", "feed", "feed_4_5"];
 
-export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, onRatingGateChange, onNavigateToContent }: AssetsTabProps) {
+export default function AssetsTab({ trackers, statuses, assets, progress, isPolling, onRatingGateChange, onNavigateToContent, brandId, currentGuardrails, onGuardrailUpdated }: AssetsTabProps) {
   const [igConnected,    setIgConnected]    = useState(false);
   const [libraryFiles,   setLibraryFiles]   = useState<LibraryFile[]>([]);
   const [loadingLib,     setLoadingLib]     = useState(true);
@@ -543,6 +633,8 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   const [completeBannerDismissed, setCompleteBannerDismissed] = useState(false);
   const [ratedFileIds,   setRatedFileIds]   = useState<Set<string>>(new Set());
   const [ratingDataMap,  setRatingDataMap]  = useState<Map<string, { rating: number; feedback: string }>>(new Map());
+  const [guardrailPrompt, setGuardrailPrompt] = useState<string | null>(null);
+  const [savingGuardrail, setSavingGuardrail] = useState(false);
 
   const allAssets    = trackers.flatMap(t => (assets[t.campaignId] || []));
   const totalJobs    = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
@@ -690,6 +782,32 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
     setRatedFileIds(prev => new Set([...prev, fileId]));
   }, []);
 
+  const handleAddToGuardrails = useCallback((feedback: string) => {
+    if (!brandId) return;
+    setGuardrailPrompt(feedback);
+  }, [brandId]);
+
+  const handleConfirmGuardrail = useCallback(async () => {
+    if (!guardrailPrompt || !brandId) return;
+    setSavingGuardrail(true);
+    try {
+      const newRule = `- ${guardrailPrompt}`;
+      const updated = currentGuardrails
+        ? `${currentGuardrails.trimEnd()}\n${newRule}`
+        : newRule;
+      await supabase
+        .from("brands")
+        .update({ guardrails: updated })
+        .eq("id", brandId);
+      onGuardrailUpdated?.(updated);
+      setGuardrailPrompt(null);
+    } catch (err) {
+      console.error("Guardrail update error:", err);
+    } finally {
+      setSavingGuardrail(false);
+    }
+  }, [guardrailPrompt, brandId, currentGuardrails, onGuardrailUpdated]);
+
   // ── Auto-refresh library only while generation or overlay is actively in progress ──
   useEffect(() => {
     if (!isGenerating && !isOverlaying) return;
@@ -740,6 +858,16 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
       {/* Publish modal */}
       {publishTarget && (
         <PublishModal target={publishTarget} onClose={() => setPublishTarget(null)} />
+      )}
+
+      {/* Guardrail suggestion popup */}
+      {guardrailPrompt && (
+        <GuardrailPromptModal
+          feedback={guardrailPrompt}
+          onConfirm={handleConfirmGuardrail}
+          onDismiss={() => setGuardrailPrompt(null)}
+          isSaving={savingGuardrail}
+        />
       )}
 
       <VStack align="stretch" gap={6}>
@@ -994,7 +1122,8 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                   <LibraryCard key={file.id} file={file}
                     igConnected={igConnected} onPublish={setPublishTarget}
                     onRated={handleFileRated} isRated={ratedFileIds.has(file.id)}
-                    ratingData={ratingDataMap.get(file.id)} />
+                    ratingData={ratingDataMap.get(file.id)}
+                    onAddToGuardrails={brandId ? handleAddToGuardrails : undefined} />
                 ))}
               </Box>
             );

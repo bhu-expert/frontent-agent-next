@@ -1696,6 +1696,14 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 setAssetCounts({ total, rated });
               }}
               onNavigateToContent={() => navigateTo("content")}
+              brandId={selectedBrand?.id}
+              currentGuardrails={selectedBrand?.guardrails}
+              onGuardrailUpdated={(newGuardrails) => {
+                if (!selectedBrand) return;
+                setAllBrands(prev =>
+                  prev.map(b => b.id === selectedBrand.id ? { ...b, guardrails: newGuardrails } : b)
+                );
+              }}
             />
           ) : activeView === "calendar" ? (
             <CalendarTab />
