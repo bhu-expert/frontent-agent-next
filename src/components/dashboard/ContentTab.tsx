@@ -149,7 +149,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     const items = allItems.slice(0, MAX_COMBINATIONS);
 
     // Timeout wrapper — rejects after 45s so the user is never stuck indefinitely
-    const withTimeout = <T>(promise: Promise<T>): Promise<T> =>
+    const withTimeout = <T,>(promise: Promise<T>): Promise<T> =>
       Promise.race([
         promise,
         new Promise<never>((_, reject) =>
