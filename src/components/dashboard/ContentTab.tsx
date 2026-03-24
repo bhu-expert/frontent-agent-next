@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -20,7 +20,7 @@ import {
   Star,
   Tags,
 } from "lucide-react";
-import { generateAdVariationsBulk } from "@/api";
+import { generateAdVariationsBulk, generateCarousel } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
@@ -76,6 +76,11 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
+  // Ref-based guard prevents double-submission before React re-renders the disabled button
+  const isGeneratingRef = useRef(false);
+
+  const [isGeneratingCarousel, setIsGeneratingCarousel] = useState(false);
+  const isGeneratingCarouselRef = useRef(false);
 
   const cappedCombinations = useMemo(
     () => Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS),
@@ -84,14 +89,25 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   const effectiveTotalPosts = cappedCombinations * 5;
   const isTrimmed = (selectedContextIds.length * selectedTemplateIds.length) > MAX_COMBINATIONS;
 
+  // Stable key based on actual context indices — changes only when the brand's
+  // contexts genuinely change, not on every parent re-render that produces a
+  // new array reference. This prevents wiping the user's manual selection.
+  const contextBlocksKey = useMemo(
+    () => contextBlocks.map((b) => b.context_index).join(","),
+    [contextBlocks],
+  );
+
   useEffect(() => {
     if (contextBlocks.length === 0) {
       setSelectedContextIds([]);
       return;
     }
+    // Always re-initialize when the context set changes (brand switch),
+    // but NOT on every parent re-render with the same data.
     setSelectedContextIds(contextBlocks.slice(0, 2).map((block) => block.context_index));
     setContentError(null);
-  }, [contextBlocks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextBlocksKey]);
 
   const fieldChrome = {
     bg: "white",
@@ -120,8 +136,43 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     );
   };
 
+  const handleGenerateCarousel = async () => {
+    if (!brand || !token) return;
+    if (isGeneratingCarouselRef.current) return;
+    isGeneratingCarouselRef.current = true;
+    setIsGeneratingCarousel(true);
+    setContentError(null);
+    campaign.clearCampaigns();
+
+    try {
+      const result = await generateCarousel(
+        brand.id,
+        contentBrief.trim() || "Generate an engaging carousel",
+        token,
+      );
+      campaign.addCampaign({
+        campaignId: result.campaign_id,
+        contextIndex: 0,
+        contextTitle: "Carousel",
+        templateId: "carousel",
+        templateLabel: "Carousel",
+      });
+      onBatchGenerated([result.campaign_id]);
+      onNavigateToAssets();
+    } catch (error) {
+      const apiErr = error as { message?: string };
+      setContentError(apiErr.message || "Failed to queue carousel generation. Please try again.");
+    } finally {
+      isGeneratingCarouselRef.current = false;
+      setIsGeneratingCarousel(false);
+    }
+  };
+
   const handleGenerateContent = async () => {
     if (!brand || !token || selectedContextIds.length === 0 || selectedTemplateIds.length === 0) return;
+    // Synchronous ref guard — blocks double-clicks before React re-renders the disabled button
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
 
     setIsGenerating(true);
     setContentError(null);
@@ -143,10 +194,19 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     );
     const items = allItems.slice(0, MAX_COMBINATIONS);
 
+    // Timeout wrapper — rejects after 45s so the user is never stuck indefinitely
+    const withTimeout = <T,>(promise: Promise<T>): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timed out. Please try again.")), 45_000)
+        ),
+      ]);
+
     // Retry helper with exponential backoff
     const callWithRetry = async (attempt = 0): Promise<Awaited<ReturnType<typeof generateAdVariationsBulk>>> => {
       try {
-        return await generateAdVariationsBulk(brand.id, items, token);
+        return await withTimeout(generateAdVariationsBulk(brand.id, items, token));
       } catch (err) {
         if (attempt >= 2) throw err;
         await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
@@ -180,6 +240,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       const apiError = error as { message?: string };
       setContentError(apiError.message || "Failed to generate content variations. Check your connection and try again.");
     } finally {
+      isGeneratingRef.current = false;
       setIsGenerating(false);
     }
   };
@@ -425,28 +486,48 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             </Box>
           </Flex>
 
-          <Button
-            bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
-            color="white" borderRadius="14px" h="52px" px={7}
-            fontSize="15px" fontWeight="600"
-            _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
-            disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
-            onClick={handleGenerateContent}
-            cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
-          >
-            <Flex align="center" gap={2}>
-              {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
-              {isGenerating
-                ? "Generating..."
-                : !hasRatedContext
-                  ? "Rate All Contexts First"
-                  : hasPendingBatch
-                    ? "Rate Assets to Unlock"
-                    : effectiveTotalPosts === 0
-                      ? "Select to Generate"
-                      : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
-            </Flex>
-          </Button>
+          <Flex gap={3} align="center">
+            <Button
+              bg={hasRatedContext && !hasPendingBatch ? "white" : "#F3F4F6"}
+              color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#9CA3AF"}
+              border="1.5px solid"
+              borderColor={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#E5E7EB"}
+              borderRadius="14px" h="52px" px={6}
+              fontSize="15px" fontWeight="600"
+              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#EEF2FF" : "#F3F4F6" }}
+              disabled={!hasRatedContext || hasPendingBatch || isGeneratingCarousel}
+              onClick={handleGenerateCarousel}
+              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+            >
+              <Flex align="center" gap={2}>
+                {(!hasRatedContext || hasPendingBatch) && <Lock size={14} />}
+                {isGeneratingCarousel ? "Queuing..." : "Carousel (15)"}
+              </Flex>
+            </Button>
+
+            <Button
+              bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
+              color="white" borderRadius="14px" h="52px" px={7}
+              fontSize="15px" fontWeight="600"
+              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
+              disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
+              onClick={handleGenerateContent}
+              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+            >
+              <Flex align="center" gap={2}>
+                {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+                {isGenerating
+                  ? "Generating..."
+                  : !hasRatedContext
+                    ? "Rate All Contexts First"
+                    : hasPendingBatch
+                      ? "Rate Assets to Unlock"
+                      : effectiveTotalPosts === 0
+                        ? "Select to Generate"
+                        : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
+              </Flex>
+            </Button>
+          </Flex>
         </Flex>
       </Box>
 

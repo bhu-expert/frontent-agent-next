@@ -24,7 +24,24 @@ interface QuickLinkCard {
 
 interface FaqItem {
   question: string;
-  answer: string;
+  answer: React.ReactNode;
+}
+
+// ─── Nav link helper ──────────────────────────────────────────────────────────
+
+function TabLink({ label, onClick }: { label: string; onClick?: () => void }) {
+  return (
+    <Text
+      as="span"
+      color="#4F46E5"
+      fontWeight="600"
+      cursor={onClick ? "pointer" : "default"}
+      textDecoration="underline"
+      onClick={onClick}
+    >
+      {label}
+    </Text>
+  );
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -58,33 +75,46 @@ const QUICK_LINKS: QuickLinkCard[] = [
   },
 ];
 
-const FAQ_ITEMS: FaqItem[] = [
-  {
-    question: "How do I connect my Instagram account?",
-    answer:
-      "Head to the Integrations tab, then click 'Connect' under the Instagram card. You'll be redirected to the Instagram Business OAuth flow. Make sure you're using a Business or Creator account — personal accounts are not supported.",
-  },
-  {
-    question: "Can I schedule posts in advance?",
-    answer:
-      "Yes. Once you generate post variations in the Content tab, you can schedule them to publish directly to a connected platform. Use the Calendar tab to visualise and manage your publishing schedule.",
-  },
-  {
-    question: "How does the AI brand analysis work?",
-    answer:
-      "When you add a brand, our discovery agent crawls your website using Playwright, extracts key brand signals (voice, positioning, audience), and passes them through a LangGraph pipeline that generates five narrative contexts you can approve or regenerate.",
-  },
-  {
-    question: "What platforms do you support?",
-    answer:
-      "We currently support Meta (Facebook Pages) and Instagram Business. TikTok, LinkedIn, and X/Twitter are on our roadmap and will be available soon.",
-  },
-  {
-    question: "How do I cancel my subscription?",
-    answer:
-      "You can cancel at any time from Settings → Plan & Billing. Your access continues until the end of the current billing period and you won't be charged again after that.",
-  },
-];
+function getFaqItems(nav: {
+  onNavigateToAssets?: () => void;
+  onNavigateToContent?: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToIntegrations?: () => void;
+}): FaqItem[] {
+  return [
+    {
+      question: "How do I connect my Instagram account?",
+      answer: (
+        <>
+          Head to the <TabLink label="Integrations tab" onClick={nav.onNavigateToIntegrations} />, then click &apos;Connect&apos; under the Instagram card. You&apos;ll be redirected to the Instagram Business OAuth flow. Make sure you&apos;re using a Business or Creator account — personal accounts are not supported.
+        </>
+      ),
+    },
+    {
+      question: "Can I schedule posts in advance?",
+      answer: (
+        <>
+          Yes. Once you generate post variations in the <TabLink label="Content tab" onClick={nav.onNavigateToContent} />, they appear in your <TabLink label="Assets tab" onClick={nav.onNavigateToAssets} /> for review. Use the <TabLink label="Calendar tab" onClick={nav.onNavigateToCalendar} /> to visualise and manage your publishing schedule.
+        </>
+      ),
+    },
+    {
+      question: "How does the AI brand analysis work?",
+      answer:
+        "When you add a brand, our discovery agent crawls your website using Playwright, extracts key brand signals (voice, positioning, audience), and passes them through a LangGraph pipeline that generates five narrative contexts you can approve or regenerate.",
+    },
+    {
+      question: "What platforms do you support?",
+      answer:
+        "We currently support Meta (Facebook Pages) and Instagram Business. TikTok, LinkedIn, and X/Twitter are on our roadmap and will be available soon.",
+    },
+    {
+      question: "How do I cancel my subscription?",
+      answer:
+        "You can cancel at any time from Settings → Plan & Billing. Your access continues until the end of the current billing period and you won't be charged again after that.",
+    },
+  ];
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -140,7 +170,16 @@ function FaqRow({ item }: { item: FaqItem }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function SupportTab() {
+interface SupportTabProps {
+  onNavigateToAssets?: () => void;
+  onNavigateToContent?: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToIntegrations?: () => void;
+}
+
+export default function SupportTab({ onNavigateToAssets, onNavigateToContent, onNavigateToCalendar, onNavigateToIntegrations }: SupportTabProps) {
+  const faqItems = getFaqItems({ onNavigateToAssets, onNavigateToContent, onNavigateToCalendar, onNavigateToIntegrations });
+
   return (
     <VStack align="stretch" gap={10}>
       {/* Page heading */}
@@ -215,7 +254,7 @@ export default function SupportTab() {
           Frequently Asked Questions
         </Text>
         <VStack align="stretch" gap={3}>
-          {FAQ_ITEMS.map((item) => (
+          {faqItems.map((item) => (
             <FaqRow key={item.question} item={item} />
           ))}
         </VStack>
