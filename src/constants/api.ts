@@ -31,5 +31,8 @@ export const API_ENDPOINTS = {
   // Contact endpoints
   CONTACT_PROXY: "/api/contact",
   CONTACT: "/contact/",
+  // Auth endpoints
+  FORGOT_PASSWORD: "/users/forgot-password",
+  RESET_PASSWORD: "/users/reset-password",
   CAROUSEL_GENERATE: "/agent/carousel/generate",
 } as const;

@@ -3,7 +3,7 @@
 import { Box, Flex, Grid, Heading, Text } from "@chakra-ui/react";
 import Link from "next/link";
 
-import { FOOTER_LINKS, HEADING_COLORS } from "@/constants";
+import { FOOTER_LINKS } from "@/constants";
 
 /**
  * Site-wide footer with multi-column link grid and a "last update" card.

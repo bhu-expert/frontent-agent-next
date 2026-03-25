@@ -17,7 +17,6 @@ export default function LoginRoute() {
     <AuthProvider redirectToDashboard={false}>
       <Navbar />
       <LoginPage />
-      <Footer />
     </AuthProvider>
   );
 }

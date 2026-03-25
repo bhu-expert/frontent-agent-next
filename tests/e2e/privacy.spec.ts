@@ -11,7 +11,6 @@ test.describe('Privacy Policy Page', () => {
   });
 
   test('should have a centered main container', async ({ page }) => {
-    const container = page.locator('main').locator('.chakra-container');
     // Note: If using Chakra UI v3, the selector might be different, let's try to find it by role or a unique text
     const mainContent = page.locator('text=1. Introduction').locator('..').locator('..').locator('..'); // Find the card
     

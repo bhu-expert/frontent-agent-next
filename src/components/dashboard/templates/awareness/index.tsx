@@ -95,7 +95,7 @@ export function AwarenessVariation1({ vd, imageUrl, primary, secondary, accent }
  * Best for: Quote-style posts, announcements
  */
 
-export function AwarenessVariation2({ vd, imageUrl, primary, secondary, accent }: TemplateProps) {
+export function AwarenessVariation2({ vd, imageUrl, secondary, accent }: TemplateProps) {
   return (
     <TemplateWrapper bg={secondary}>
       {/* Background image with blur */}

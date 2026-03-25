@@ -16,7 +16,6 @@ import {
 import {
   Check,
   User,
-  Mail,
   Bell,
   CreditCard,
   ShieldAlert,
@@ -29,7 +28,6 @@ import {
   EyeOff,
   Link2,
   Link2Off,
-  Instagram,
 
   RefreshCw,
 } from "lucide-react";

@@ -8,6 +8,7 @@ import type {
 
 } from "@/types/onboarding.types";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants";
+export { API_BASE_URL, API_ENDPOINTS };
 
 const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
@@ -53,6 +54,41 @@ export async function signIn(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     apiError(body.message || "Sign-in failed", res.status);
+  }
+  return res.json();
+}
+
+/**
+ * Initiates the forgot password flow
+ */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.FORGOT_PASSWORD}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.message || "Request failed", res.status);
+  }
+  return res.json();
+}
+
+/**
+ * Resets the password using a token
+ */
+export async function resetPassword(
+  token: string,
+  password: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.RESET_PASSWORD}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: password }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.message || "Password reset failed", res.status);
   }
   return res.json();
 }

@@ -6,7 +6,7 @@ import type { CampaignStatus, CampaignAsset } from "@/types/onboarding.types";
 
 const POLL_INTERVAL_MS_ACTIVE = 2000;   // fast while generating
 const POLL_INTERVAL_MS_IDLE   = 6000;   // slow once all done (shouldn't happen, but safe)
-const POLL_INTERVAL_MS = POLL_INTERVAL_MS_ACTIVE;
+
 
 export interface CampaignTracker {
   campaignId: string;

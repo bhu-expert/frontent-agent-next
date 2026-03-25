@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { Provider } from "@/components/ui/provider";
+import { AuthProvider } from "@/store/AuthProvider";
+import { Toaster } from "@/components/ui/toaster";
 import "@/styles/globals.css";
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
@@ -23,15 +25,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={spaceGrotesk.className}>
         <Provider forcedTheme="light">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              minHeight: "100vh",
-            }}
-          >
-            <main style={{ flex: 1 }}>{children}</main>
-          </div>
+          <AuthProvider>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100vh",
+              }}
+            >
+              <main style={{ flex: 1 }}>{children}</main>
+            </div>
+            <Toaster />
+          </AuthProvider>
         </Provider>
       </body>
     </html>
