@@ -618,6 +618,138 @@ function LibraryCard({ file, igConnected, onPublish, onRated, isRated, ratingDat
   );
 }
 
+// ─── Carousel Bundle Card ─────────────────────────────────────────────────────
+
+function CarouselBundleCard({ slides, igConnected, onPublish, onRated, ratedFileIds, ratingDataMap, onAddToGuardrails }: {
+  slides: LibraryFile[];
+  igConnected: boolean;
+  onPublish: (t: PublishTarget) => void;
+  onRated?: (fileId: string) => void;
+  ratedFileIds: Set<string>;
+  ratingDataMap: Map<string, { rating: number; feedback: string }>;
+  onAddToGuardrails?: (feedback: string) => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const sorted = [...slides].sort((a, b) => {
+    const aNum = parseInt(a.name.match(/-s(\d+)[_.]/)? .[1] ?? "1");
+    const bNum = parseInt(b.name.match(/-s(\d+)[_.]/)? .[1] ?? "1");
+    return aNum - bNum;
+  });
+
+  const current = sorted[currentIndex] ?? sorted[0];
+  if (!current) return null;
+
+  const allRated = sorted.every(s => ratedFileIds.has(s.id));
+
+  const prev = () => setCurrentIndex(i => (i - 1 + sorted.length) % sorted.length);
+  const next = () => setCurrentIndex(i => (i + 1) % sorted.length);
+
+  return (
+    <Box borderRadius="18px" overflow="hidden" bg="white"
+      border="1.5px solid" borderColor={allRated ? "#D1FAE5" : "#FDE68A"}
+      transition="all 0.3s ease"
+      _hover={{ boxShadow: "0 16px 48px rgba(0,0,0,0.1)", transform: "translateY(-3px)" }}>
+
+      {/* Slide viewer */}
+      <Box position="relative" overflow="hidden" style={{ aspectRatio: "1/1" }}>
+        <Image src={current.url} alt={current.label || current.name} objectFit="cover" w="full" h="full" />
+
+        {/* Top row: badge + actions */}
+        <Flex position="absolute" top={3} left={3} right={3} justify="space-between" align="center" zIndex={10}>
+          <Badge bg="rgba(0,0,0,0.50)" color="white" backdropFilter="blur(4px)"
+            borderRadius="8px" px={2.5} py={1} fontSize="10px" fontWeight="700">
+            Carousel {currentIndex + 1}/{sorted.length}
+          </Badge>
+          <Flex gap={1.5}>
+            {igConnected && (
+              <IgPublishButton url={current.url} label={current.label || current.name}
+                onPublish={t => onPublish({ ...t, defaultMediaType: "CAROUSEL" })} />
+            )}
+            <Button size="xs" bg="rgba(255,255,255,0.15)" color="white" borderRadius="8px"
+              backdropFilter="blur(4px)" _hover={{ bg: "rgba(255,255,255,0.3)" }}
+              h="28px" w="28px" p={0} minW="28px"
+              onClick={async e => {
+                e.stopPropagation();
+                try {
+                  const res = await fetch(current.url);
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = current.name;
+                  document.body.appendChild(a); a.click();
+                  document.body.removeChild(a); URL.revokeObjectURL(url);
+                } catch { window.open(current.url, "_blank"); }
+              }}>
+              <Download size={13} />
+            </Button>
+          </Flex>
+        </Flex>
+
+        {/* Prev / Next */}
+        {sorted.length > 1 && (
+          <>
+            <Button position="absolute" left={2} top="50%" transform="translateY(-50%)"
+              h="28px" w="28px" p={0} minW="28px" borderRadius="full" zIndex={10}
+              bg="rgba(255,255,255,0.88)" color="#111" fontSize="18px" lineHeight={1}
+              _hover={{ bg: "white" }} onClick={prev}>
+              ‹
+            </Button>
+            <Button position="absolute" right={2} top="50%" transform="translateY(-50%)"
+              h="28px" w="28px" p={0} minW="28px" borderRadius="full" zIndex={10}
+              bg="rgba(255,255,255,0.88)" color="#111" fontSize="18px" lineHeight={1}
+              _hover={{ bg: "white" }} onClick={next}>
+              ›
+            </Button>
+          </>
+        )}
+
+        {/* Dot indicators */}
+        <Flex position="absolute" bottom={3} left={0} right={0} justify="center" gap={1} zIndex={10}>
+          {sorted.map((_, i) => (
+            <Box key={i} w="6px" h="6px" borderRadius="full" cursor="pointer"
+              bg={i === currentIndex ? "white" : "rgba(255,255,255,0.45)"}
+              transition="background 0.2s"
+              onClick={() => setCurrentIndex(i)} />
+          ))}
+        </Flex>
+      </Box>
+
+      {/* Info + thumbnail strip + rating */}
+      <Box p={3.5}>
+        <Box mb={2}>
+          <Text fontSize="13px" fontWeight="600" color="#111111">
+            Carousel — {sorted.length} slides
+          </Text>
+          <Text fontSize="11px" color="#9CA3AF" mt={0.5}>Feed Square (1:1)</Text>
+        </Box>
+
+        {/* Thumbnail strip */}
+        <Flex gap={1.5} mb={2.5} overflowX="auto" pb={0.5}
+          css={{ "&::-webkit-scrollbar": { display: "none" } }}>
+          {sorted.map((slide, i) => (
+            <Box key={slide.id} flexShrink={0} w="36px" h="36px" borderRadius="6px" overflow="hidden"
+              border="2px solid" borderColor={i === currentIndex ? "#4F46E5" : "#E5E7EB"}
+              cursor="pointer" onClick={() => setCurrentIndex(i)}
+              transition="border-color 0.15s">
+              <Image src={slide.url} alt={`Slide ${i + 1}`} objectFit="cover" w="full" h="full" />
+            </Box>
+          ))}
+        </Flex>
+
+        <FeedbackPanel
+          imageId={current.id}
+          onRated={onRated}
+          initialRating={ratingDataMap.get(current.id)?.rating ?? 0}
+          initialFeedback={ratingDataMap.get(current.id)?.feedback ?? ""}
+          onAddToGuardrails={onAddToGuardrails}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const STORAGE_BUCKET = "ad-images";
@@ -1086,6 +1218,26 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
               );
             }
 
+            // Group carousel slides by variation key, pass regular files through
+            const carouselGroups = new Map<string, LibraryFile[]>();
+            const regularFiles: LibraryFile[] = [];
+            for (const file of filteredFiles) {
+              // Name: {campaign_id}-{brand_id}-carousel-v{N}-s{M}_overlay.webp
+              const match = file.name.match(/^(.+-carousel-v\d+)-s\d+[_.].*$/);
+              if (match) {
+                const key = match[1];
+                if (!carouselGroups.has(key)) carouselGroups.set(key, []);
+                carouselGroups.get(key)!.push(file);
+              } else if (file.label?.startsWith("Carousel ·")) {
+                // Fallback: group by label prefix when name pattern differs
+                const key = `carousel-fallback-${file.created_at?.slice(0, 10) ?? file.id.slice(0, 8)}`;
+                if (!carouselGroups.has(key)) carouselGroups.set(key, []);
+                carouselGroups.get(key)!.push(file);
+              } else {
+                regularFiles.push(file);
+              }
+            }
+
             return (
               <Box display="grid"
                 gridTemplateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)", xl: "repeat(4, 1fr)" }}
@@ -1110,8 +1262,16 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
                     </Box>
                   </Box>
                 ))}
-                {/* Real library cards */}
-                {filteredFiles.map(file => (
+                {/* Carousel bundle cards — one card per variation group */}
+                {Array.from(carouselGroups.entries()).map(([key, slides]) => (
+                  <CarouselBundleCard key={key} slides={slides}
+                    igConnected={igConnected} onPublish={setPublishTarget}
+                    onRated={handleFileRated} ratedFileIds={ratedFileIds}
+                    ratingDataMap={ratingDataMap}
+                    onAddToGuardrails={brandId ? handleAddToGuardrails : undefined} />
+                ))}
+                {/* Regular (non-carousel) library cards */}
+                {regularFiles.map(file => (
                   <LibraryCard key={file.id} file={file}
                     igConnected={igConnected} onPublish={setPublishTarget}
                     onRated={handleFileRated} isRated={ratedFileIds.has(file.id)}
