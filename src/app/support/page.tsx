@@ -174,7 +174,7 @@ export default function SupportPage() {
                   <Box>
                     <Heading as="h3" fontSize="2xl" mb={2} color="gray.900" fontWeight="700">Browse Documentation</Heading>
                     <Text color="gray.600" mb={6} fontSize="lg">Detailed guides on every feature, setting, and integration.</Text>
-                    <Link href="#" passHref style={{ textDecoration: 'none' }}>
+                    <Link href="/doc" passHref style={{ textDecoration: 'none' }}>
                       <Box 
                         as="span"
                         px={8} 

@@ -23,6 +23,8 @@ import {
   UserCircle,
   Pencil,
   X,
+  Lock,
+  BookOpen,
 } from "lucide-react";
 import { streamContextFeedback, deleteBrand } from "@/api";
 import { navItems } from "@/constants/dashboard";
@@ -1369,6 +1371,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
             const viewKey = item.label.toLowerCase() as typeof activeView;
             const isActive = activeView === viewKey;
             const hasAssetsBadge = viewKey === "assets" && campaign.isPolling;
+            const noBrands = allBrands.length === 0 && !isLoadingBrands;
+            const isLocked = noBrands && viewKey !== "brands" && viewKey !== "support" && viewKey !== "settings";
 
             return (
               <Flex
@@ -1378,24 +1382,28 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 px={4}
                 py={2.5}
                 borderRadius="12px"
-                color={isActive ? "#4F46E5" : "#6B7280"}
-                bg={isActive ? "#F0EEFF" : "transparent"}
+                color={isLocked ? "#C4C4C4" : isActive ? "#4F46E5" : "#6B7280"}
+                bg={isActive && !isLocked ? "#F0EEFF" : "transparent"}
                 fontWeight={isActive ? "600" : "500"}
-                cursor="pointer"
-                _hover={{
+                cursor={isLocked ? "not-allowed" : "pointer"}
+                opacity={isLocked ? 0.5 : 1}
+                _hover={isLocked ? {} : {
                   bg: isActive ? "#F0EEFF" : "#F8F8F6",
                   color: isActive ? "#4F46E5" : "#111111",
                 }}
                 transition="all 0.15s ease"
                 fontSize="14px"
                 onClick={() => {
+                  if (isLocked) return;
                   navigateTo(viewKey);
                   setIsMobileSidebarOpen(false);
                 }}
               >
                 <Icon size={18} />
                 <Text>{item.label}</Text>
-                {hasAssetsBadge && (
+                {isLocked ? (
+                  <Lock size={13} style={{ marginLeft: "auto", opacity: 0.6 }} />
+                ) : hasAssetsBadge ? (
                   <Box
                     w="8px"
                     h="8px"
@@ -1404,7 +1412,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                     ml="auto"
                     style={{ animation: "pulse 1.5s ease-in-out infinite" }}
                   />
-                )}
+                ) : null}
               </Flex>
             );
           })}
@@ -1579,6 +1587,37 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               </Button>
             )}
 
+            {/* Docs link */}
+            {activeView !== "support" && (
+              <a
+                href={`/doc#${activeView === "brands" ? "brands" : activeView === "content" ? "content" : activeView === "assets" ? "assets" : activeView === "calendar" ? "calendar" : activeView === "integrations" ? "integrations" : "settings"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "none" }}
+              >
+                <Flex
+                  align="center"
+                  gap={1.5}
+                  px={3}
+                  h="36px"
+                  borderRadius="10px"
+                  border="1px solid"
+                  borderColor="#E0E7FF"
+                  bg="#F5F3FF"
+                  color="#4F46E5"
+                  fontSize="13px"
+                  fontWeight="600"
+                  cursor="pointer"
+                  _hover={{ bg: "#EEF2FF", borderColor: "#C7D2FE" }}
+                  transition="all 0.15s ease"
+                  display={{ base: "none", sm: "flex" }}
+                >
+                  <BookOpen size={14} />
+                  <Text>Docs</Text>
+                </Flex>
+              </a>
+            )}
+
             {/* Profile avatar */}
             <Flex
               align="center"
@@ -1644,7 +1683,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                   <Text fontSize="sm" color="#6B7280" mb={4}>
                     Create your first brand to get started
                   </Text>
-                  <Button bg="#4F46E5" color="white" h="38px" fontSize="13px"
+                  <Button bg="#4F46E5" color="white" h="38px" px={5} fontSize="13px"
                     fontWeight="600" borderRadius="10px"
                     onClick={() => setIsCreateOpen(true)}>
                     Create Brand
@@ -1716,6 +1755,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               onNavigateToContent={() => navigateTo("content")}
               onNavigateToCalendar={() => navigateTo("calendar")}
               onNavigateToIntegrations={() => navigateTo("integrations")}
+              onNavigateToBrands={() => navigateTo("brands")}
             />
           ) : null}
         </Box>

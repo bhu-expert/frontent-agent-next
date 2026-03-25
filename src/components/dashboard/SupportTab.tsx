@@ -1,26 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Flex, SimpleGrid, Text, VStack } from "@chakra-ui/react";
-import {
-  BookOpen,
-  ChevronDown,
-  Mail,
-  MessageCircle,
-  PlayCircle,
-} from "lucide-react";
+import { Box, Flex, Text, VStack } from "@chakra-ui/react";
+import { BookOpen, ChevronDown, Mail } from "lucide-react";
 import { SUPPORT_EMAIL } from "@/constants/contact";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface QuickLinkCard {
-  key: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  linkLabel: string;
-  href: string;
-}
 
 interface FaqItem {
   question: string;
@@ -44,74 +29,84 @@ function TabLink({ label, onClick }: { label: string; onClick?: () => void }) {
   );
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const QUICK_LINKS: QuickLinkCard[] = [
-  {
-    key: "docs",
-    icon: <BookOpen size={22} strokeWidth={2} />,
-    title: "Documentation",
-    description:
-      "Step-by-step guides covering every feature in plugandplayagents.",
-    linkLabel: "View",
-    href: "#",
-  },
-  {
-    key: "videos",
-    icon: <PlayCircle size={22} strokeWidth={2} />,
-    title: "Video Tutorials",
-    description:
-      "Watch walkthroughs for brand creation, content generation, and integrations.",
-    linkLabel: "View",
-    href: "#",
-  },
-  {
-    key: "discord",
-    icon: <MessageCircle size={22} strokeWidth={2} />,
-    title: "Community Discord",
-    description: "Join our Discord to ask questions and share your campaigns.",
-    linkLabel: "View",
-    href: "#",
-  },
-];
+// ─── FAQ data ─────────────────────────────────────────────────────────────────
 
 function getFaqItems(nav: {
   onNavigateToAssets?: () => void;
   onNavigateToContent?: () => void;
   onNavigateToCalendar?: () => void;
   onNavigateToIntegrations?: () => void;
+  onNavigateToBrands?: () => void;
 }): FaqItem[] {
   return [
     {
-      question: "How do I connect my Instagram account?",
+      question: "How do I create my first brand?",
       answer: (
         <>
-          Head to the <TabLink label="Integrations tab" onClick={nav.onNavigateToIntegrations} />, then click &apos;Connect&apos; under the Instagram card. You&apos;ll be redirected to the Instagram Business OAuth flow. Make sure you&apos;re using a Business or Creator account — personal accounts are not supported.
-        </>
-      ),
-    },
-    {
-      question: "Can I schedule posts in advance?",
-      answer: (
-        <>
-          Yes. Once you generate post variations in the <TabLink label="Content tab" onClick={nav.onNavigateToContent} />, they appear in your <TabLink label="Assets tab" onClick={nav.onNavigateToAssets} /> for review. Use the <TabLink label="Calendar tab" onClick={nav.onNavigateToCalendar} /> to visualise and manage your publishing schedule.
+          Go to the <TabLink label="Brands tab" onClick={nav.onNavigateToBrands} /> and click <strong>Create Brand</strong>. Enter your website URL and brand name. Our AI agent crawls your site, extracts key brand signals (voice, positioning, audience), and generates five narrative context blocks. Review and rate each context — you need at least one rated context before generating content.
         </>
       ),
     },
     {
       question: "How does the AI brand analysis work?",
       answer:
-        "When you add a brand, our discovery agent crawls your website using Playwright, extracts key brand signals (voice, positioning, audience), and passes them through a LangGraph pipeline that generates five narrative contexts you can approve or regenerate.",
+        "When you add a brand, our discovery agent crawls your website, extracts signals such as tone of voice, positioning, and target audience, then runs them through a LangGraph pipeline that produces five distinct narrative context blocks. You can approve or regenerate any context individually. These contexts become the foundation for all your AI-generated content.",
     },
     {
-      question: "What platforms do you support?",
+      question: "How do I generate content?",
+      answer: (
+        <>
+          Head to the <TabLink label="Content tab" onClick={nav.onNavigateToContent} />. Select one or more approved context blocks, pick your content templates (Awareness, Sales / Offer, Launch, Story / Narrative, or Engagement), and optionally add a brief for extra direction. Each context + template combination produces 5 post variations, up to 30 posts per batch. Generated posts land in your <TabLink label="Assets tab" onClick={nav.onNavigateToAssets} /> once processing is complete.
+        </>
+      ),
+    },
+    {
+      question: "What content templates are available?",
+      answer: (
+        <>
+          There are five templates:
+          <br /><br />
+          <strong>Awareness</strong> — top-of-funnel concepts focused on reach and brand recall.<br />
+          <strong>Sales / Offer</strong> — direct-response angles with clear conversion intent.<br />
+          <strong>Launch</strong> — momentum creatives for new products or campaigns.<br />
+          <strong>Story / Narrative</strong> — brand story and origin-driven content.<br />
+          <strong>Engagement</strong> — interactive hooks designed to drive responses and comments.
+        </>
+      ),
+    },
+    {
+      question: "How do I review and publish my generated assets?",
+      answer: (
+        <>
+          Open the <TabLink label="Assets tab" onClick={nav.onNavigateToAssets} />. Each generated post shows its copy and image. Rate posts using the star rating — this helps the system learn your preferences and unlocks publishing. You can post immediately or schedule for later. Supported image formats are Stories (9:16), Feed Square (1:1), and Feed 4:5.
+        </>
+      ),
+    },
+    {
+      question: "How do I connect my Instagram account?",
+      answer: (
+        <>
+          Go to the <TabLink label="Integrations tab" onClick={nav.onNavigateToIntegrations} /> and click <strong>Connect</strong> under the Instagram card. You will be redirected through Meta&apos;s Business OAuth flow. You must use an Instagram Business or Creator account — personal accounts are not supported.
+        </>
+      ),
+    },
+    {
+      question: "What platforms are supported?",
       answer:
-        "We currently support Meta (Facebook Pages) and Instagram Business. TikTok, LinkedIn, and X/Twitter are on our roadmap and will be available soon.",
+        "We currently support Instagram Business via Meta OAuth. TikTok, LinkedIn, and X / Twitter are on our roadmap and will be available in a future update.",
+    },
+    {
+      question: "Can I schedule posts in advance?",
+      answer: (
+        <>
+          Yes. After rating your assets in the <TabLink label="Assets tab" onClick={nav.onNavigateToAssets} />, choose to post immediately or pick a scheduled time. Use the <TabLink label="Calendar tab" onClick={nav.onNavigateToCalendar} /> to visualise and manage your full publishing schedule.
+        </>
+      ),
     },
     {
       question: "How do I cancel my subscription?",
       answer:
-        "You can cancel at any time from Settings → Plan & Billing. Your access continues until the end of the current billing period and you won't be charged again after that.",
+        "You can cancel at any time from Settings → Plan & Billing. Your access continues until the end of the current billing period and you will not be charged again after that.",
     },
   ];
 }
@@ -175,10 +170,23 @@ interface SupportTabProps {
   onNavigateToContent?: () => void;
   onNavigateToCalendar?: () => void;
   onNavigateToIntegrations?: () => void;
+  onNavigateToBrands?: () => void;
 }
 
-export default function SupportTab({ onNavigateToAssets, onNavigateToContent, onNavigateToCalendar, onNavigateToIntegrations }: SupportTabProps) {
-  const faqItems = getFaqItems({ onNavigateToAssets, onNavigateToContent, onNavigateToCalendar, onNavigateToIntegrations });
+export default function SupportTab({
+  onNavigateToAssets,
+  onNavigateToContent,
+  onNavigateToCalendar,
+  onNavigateToIntegrations,
+  onNavigateToBrands,
+}: SupportTabProps) {
+  const faqItems = getFaqItems({
+    onNavigateToAssets,
+    onNavigateToContent,
+    onNavigateToCalendar,
+    onNavigateToIntegrations,
+    onNavigateToBrands,
+  });
 
   return (
     <VStack align="stretch" gap={10}>
@@ -194,59 +202,55 @@ export default function SupportTab({ onNavigateToAssets, onNavigateToContent, on
           Support &amp; Help
         </Text>
         <Text fontSize="15px" color="#6B7280">
-          Find answers, watch tutorials, or reach out to the team.
+          Find answers to common questions or reach out to our team directly.
         </Text>
       </Box>
 
-      {/* Quick link cards */}
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap={5}>
-        {QUICK_LINKS.map((card) => (
-          <Box
-            key={card.key}
-            bg="white"
-            border="1px solid"
-            borderColor="#ECECEC"
-            borderRadius="24px"
-            p={6}
-            boxShadow="0 12px 48px rgba(0,0,0,0.04)"
-            transition="all 0.2s ease"
-            _hover={{
-              borderColor: "#C7D2FE",
-              boxShadow: "0 16px 56px rgba(79,70,229,0.08)",
-            }}
-          >
-            <Flex
-              w="44px"
-              h="44px"
-              borderRadius="12px"
-              bg="#EEF2FF"
-              color="#4F46E5"
-              align="center"
-              justify="center"
-              mb={4}
-            >
-              {card.icon}
-            </Flex>
-            <Text fontSize="16px" fontWeight="700" color="#111111" mb={1.5}>
-              {card.title}
-            </Text>
-            <Text fontSize="13px" color="#6B7280" lineHeight="1.55" mb={4}>
-              {card.description}
-            </Text>
-            <a
-              href={card.href}
-              style={{
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#4F46E5",
-                textDecoration: "none",
-              }}
-            >
-              {card.linkLabel} →
-            </a>
-          </Box>
-        ))}
-      </SimpleGrid>
+      {/* Documentation card */}
+      <Box
+        bg="white"
+        border="1px solid"
+        borderColor="#ECECEC"
+        borderRadius="24px"
+        p={6}
+        boxShadow="0 12px 48px rgba(0,0,0,0.04)"
+        transition="all 0.2s ease"
+        _hover={{
+          borderColor: "#C7D2FE",
+          boxShadow: "0 16px 56px rgba(79,70,229,0.08)",
+        }}
+        maxW="360px"
+      >
+        <Flex
+          w="44px"
+          h="44px"
+          borderRadius="12px"
+          bg="#EEF2FF"
+          color="#4F46E5"
+          align="center"
+          justify="center"
+          mb={4}
+        >
+          <BookOpen size={22} strokeWidth={2} />
+        </Flex>
+        <Text fontSize="16px" fontWeight="700" color="#111111" mb={1.5}>
+          Documentation
+        </Text>
+        <Text fontSize="13px" color="#6B7280" lineHeight="1.55" mb={4}>
+          Step-by-step guides covering every feature in Plug and Play Agents.
+        </Text>
+        <a
+          href="/doc"
+          style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#4F46E5",
+            textDecoration: "none",
+          }}
+        >
+          View docs →
+        </a>
+      </Box>
 
       {/* FAQ section */}
       <Box>
@@ -303,18 +307,23 @@ export default function SupportTab({ onNavigateToAssets, onNavigateToContent, on
               {SUPPORT_EMAIL}
             </a>
           </Flex>
-          <Button
-            bg="#4F46E5"
-            color="white"
-            borderRadius="12px"
-            h="44px"
-            px={6}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: "#4338CA" }}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: "44px",
+              padding: "0 24px",
+              background: "#4F46E5",
+              color: "white",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
           >
             Send us a message
-          </Button>
+          </a>
         </Flex>
       </Box>
     </VStack>
