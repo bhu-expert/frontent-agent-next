@@ -641,8 +641,19 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   // isPolling is set immediately when addCampaign is called (statuses seeded at that point too)
   const isGenerating = isPolling;
   const allJobsDone  = !isPolling && totalJobs > 0 && progress === 100;
-  // Overlay phase: all generation jobs done but library hasn't fully populated yet
-  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs;
+
+  // Only show "Applying Overlays" during a live generation session, never on cold page load.
+  // wasPollingRef tracks whether isPolling went true→false in this browser session.
+  const wasPollingRef = useRef(false);
+  useEffect(() => {
+    if (isPolling) {
+      wasPollingRef.current = true;
+    } else if (trackers.length === 0) {
+      wasPollingRef.current = false; // campaigns cleared — reset for next generation
+    }
+  }, [isPolling, trackers.length]);
+
+  const isOverlaying = allJobsDone && wasPollingRef.current && libraryFiles.length < totalJobs;
   const isComplete   = allJobsDone && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────

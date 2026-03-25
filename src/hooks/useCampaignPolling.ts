@@ -275,23 +275,27 @@ export function useCampaignPolling(
         }
         setStatuses(statusMap);
 
-        // Fetch assets for completed campaigns immediately; subscribe to running ones
-        const completedIds = campaigns.filter((c) => c.status === "complete").map((c) => c.campaign_id);
-        const activeIds    = campaigns.filter((c) => c.status !== "complete").map((c) => c.campaign_id);
+        // Treat both "complete" and "failed" as terminal — never subscribe to them
+        const isTerminal = (s: string) => s === "complete" || s === "failed";
 
-        for (const cid of completedIds) {
-          fetchedRef.current.add(cid);
-          getCampaignAssets(cid, token)
-            .then((assetData) => {
-              const all = Object.values(assetData.by_context).flat();
-              setAssets((prev) => ({ ...prev, [cid]: all }));
-            })
-            .catch(() => {/* ignore — not critical on cold load */});
+        const terminalCampaigns = campaigns.filter((c) => isTerminal(c.status));
+        const activeCampaigns   = campaigns.filter((c) => !isTerminal(c.status));
+
+        for (const c of terminalCampaigns) {
+          fetchedRef.current.add(c.campaign_id);
+          if (c.status === "complete") {
+            getCampaignAssets(c.campaign_id, token)
+              .then((assetData) => {
+                const all = Object.values(assetData.by_context).flat();
+                setAssets((prev) => ({ ...prev, [c.campaign_id]: all }));
+              })
+              .catch(() => {/* not critical on cold load */});
+          }
         }
 
-        if (activeIds.length > 0) {
+        if (activeCampaigns.length > 0) {
           setIsPolling(true);
-          for (const c of campaigns.filter((c) => c.status !== "complete")) {
+          for (const c of activeCampaigns) {
             subscribe(c.campaign_id, c.total, token);
           }
         }
