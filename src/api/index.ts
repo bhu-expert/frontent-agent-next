@@ -494,7 +494,7 @@ export async function generateCarousel(
   userBrief: string,
   token: string,
 ): Promise<{ campaign_id: string; total: number; status: string; variations: number; slides_per_variation: number }> {
-  const res = await fetch(`${BASE_URL}${API_ENDPOINTS.CAROUSEL_GENERATE}`, {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.CAROUSEL_GENERATE}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ brand_id: brandId, user_brief: userBrief }),

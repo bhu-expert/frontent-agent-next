@@ -8,17 +8,146 @@
 
 ## Where We Are Today
 
-The current pipeline is linear and mostly invisible to the user:
+The current pipeline is queue-based and mostly invisible to the user:
 
 ```
-User clicks Generate
-  → LangGraph: context_aggregator → creative_director → visual_engine
-  → RunPod FLUX.1-schnell (parallel, 5 per batch)
-  → Playwright overlay render
-  → Supabase Storage upload
-  → library_images row insert
-  → Frontend Realtime push → grid appears
+── PHASE 1: LLM (synchronous, returns immediately) ────────────────────────────
+
+[API] POST /agent/ad-ideate  (standard ads)
+  → IdeationAgent.generate_ad_variations()
+      ├─ fetch_brand_manifest(brand_id)              [LRU cache, 5min TTL]
+      ├─ Read Brand/{name}/brand_identities.md       [file on disk; falls back to manifest]
+      │    → extract selected_context for context_index
+      ├─ get_palette_for_context(brand_id, context_index)   [Supabase query]
+      ├─ LLM: Gemini-2.5-Flash (temp=0.8) with structured output → AdVariationsResponse
+      │    → runs all ad_types concurrently via asyncio.gather
+      │    → 5 ad_types × 5 variations = 25 jobs per context_index
+      └─ write_jobs() → generation_jobs.insert() [25 rows, status='queued',
+                                                  batch_key='z-turbo|1024x1024']
+
+[API] POST /agent/carousel/generate  (carousel ads)
+  → CarouselAgent.generate()
+      ├─ fetch_brand_manifest(brand_id)
+      ├─ get_palette_for_context(brand_id, context_index)
+      ├─ LLM: Gemini-2.5-Flash with structured output
+      │    → 3 variations × 5 slides = 15 jobs
+      └─ write_jobs() → generation_jobs.insert() [15 rows, status='queued']
+
+Response to frontend: { status: "queued", campaign_id, total, variations_data }
+
+
+── PHASE 2: Frontend subscribes ────────────────────────────────────────────────
+
+[Frontend] useCampaignPolling.addCampaign(tracker)
+  → Open Supabase Realtime channel: jobs:{campaign_id}
+  → Subscribe to postgres_changes on generation_jobs WHERE campaign_id=...
+  → Fallback: if Realtime stalls >60s → REST poll GET /campaigns/{id}/status
+
+
+── PHASE 3: Queue dispatch (APScheduler, every 3 seconds) ──────────────────────
+
+[Scheduler] dispatch_pending_jobs()
+  → Query: generation_jobs WHERE status='queued'
+            AND (retry_after IS NULL OR retry_after <= now)
+            ORDER BY created_at ASC  LIMIT 20
+  → Group by batch_key, take first BATCH_SIZE=5 jobs from oldest batch_key
+  → UPDATE status='running', started_at=now()  [atomic mark]
+
+  → For each job: rewrite_prompt(job.prompt)
+      ├─ Fix fusion patterns (e.g. "dog in bathtub" → "dog beside a bathtub")
+      ├─ Inject separation language for multi-subject prompts
+      └─ Append realism suffix: "photorealistic, natural lighting, sharp focus..."
+
+  → generate_image_batch(jobs) → generate_image_batch_turbo(jobs)
+      └─ asyncio.gather(*[generate_one_image_turbo(...) for job in jobs])
+           └─ _call_runpod_async(payload)
+                POST https://api.runpod.ai/v2/{RUNPOD_Z_TURBO_ENDPOINT_ID}/runsync
+                Headers: Authorization: Bearer {RUNPOD_API_KEY}
+                Body:    { "input": { "prompt":                <rewritten prompt>,
+                                      "size":                  "1024*1024",
+                                      "seed":                  -1,
+                                      "output_format":         "png",
+                                      "enable_safety_checker": true } }
+
+                ├─ status=COMPLETED → return output   [{"cost": 0.005, "result": "https://image.runpod.ai/..."}]
+                └─ status=IN_PROGRESS → poll /status/{job_id} every 3s (max 90s total)
+
+           → _extract_image_url(output) → hosted PNG URL (7-day TTL)
+           → _download_and_convert_to_webp(url)   [httpx GET → Pillow PNG→WebP quality=90]
+           → _upload_to_supabase(webp_bytes, variation_id)
+                PUT {SUPABASE_URL}/storage/v1/object/ad-images/ads/{variation_id}.webp
+                Returns: public URL
+
+  On success:
+    UPDATE generation_jobs SET status='complete', image_url=<supabase_url>, finished_at=now()
+    asyncio.create_task(_render_overlay_task(client, full_job))   ← fire-and-forget
+
+  On failure (url is None):
+    attempt_count++
+    if attempt_count < 5:  UPDATE status='queued', retry_after=now+delay
+                           delay: 20s (attempts 1-2), 60s (attempt 3), 120s (attempt 4+)
+    else:                  UPDATE status='failed', finished_at=now()  [permanent]
+
+
+── PHASE 4: Overlay render (fire-and-forget, runs after each successful job) ───
+
+[_render_overlay_task]
+  → Fetch brands.logo_url for brand_id  [Supabase query]
+  → Inject logo_url into job.variation_data
+
+  → render_and_save_overlay(job)
+      If ad_type == "carousel":
+        render_carousel_slide_html(...)  viewport: 1080×1080
+      Else:
+        fmt = FORMAT_BY_VARIATION[variation_index]
+            # variation_index 1→feed_4_5, 2→feed_16_9, 3→story_9_16, 4→feed, 5→feed_4_5
+        w, h = DIMENSIONS[fmt]
+        render_ad_html(image_url, headline, subheadline, cta_text,
+                       brand_name, colors, body_text, fmt, logo_url, ...)
+
+      Playwright Chromium (--no-sandbox --disable-gpu):
+        browser.new_page(viewport={w, h})
+        page.set_content(html, wait_until="networkidle", timeout=8000ms)
+        page.wait_for_timeout(1500ms)                   ← settle fonts/images
+        page.screenshot(type="png", clip={0,0,w,h})
+        browser.close()
+
+      PIL: PNG bytes → WebP (quality=88)
+
+      PUT {SUPABASE_URL}/storage/v1/object/ad-images/ads/{campaign_id}-{variation_id}_overlay.webp
+
+  → UPDATE generation_jobs SET overlay_url=<overlay_url>
+  → INSERT library_images { user_id, storage_path, external_url, format, label }
+       format: "feed" for carousel, FORMAT_BY_VARIATION[variation_index] for others
+       label:  e.g. "Awareness · Feed 4 5" or "Carousel · Slide 3"
+
+
+── PHASE 5: Frontend completion ────────────────────────────────────────────────
+
+[Supabase Realtime] DB UPDATE on generation_jobs → postgres_changes event
+  → useCampaignPolling: update Map<variation_id → status>
+  → recalculate complete_count / total
+  → when all jobs done: finaliseCampaign()
+      → getCampaignAssets(campaign_id)  [GET /campaigns/{id}/assets]
+      → close Realtime channel
+      → render grid
 ```
+
+**Parallelism:** Scheduler max 4 concurrent instances × BATCH_SIZE 5 = up to 20 images in flight. All 5 jobs in a batch run via `asyncio.gather` (non-blocking HTTP).
+
+**Retry:** 5 attempts max. Backoff: 20s → 20s → 60s → 120s. After 5 failures: permanent `failed`.
+
+**Key files:**
+| Component | File |
+|---|---|
+| LLM + job creation | `app/agent/ideation_agent.py` |
+| Carousel agent | `app/agent/carousel_agent.py` |
+| Prompt rewriter | `app/utils/prompt_rewriter.py` |
+| RunPod Z-Image-Turbo client | `app/utils/runpod_image_client.py` |
+| Queue dispatcher | `app/services/job_queue_service.py` |
+| Scheduler (APScheduler) | `app/services/scheduler.py` |
+| Playwright overlay | `app/services/overlay_service.py` |
+| Frontend Realtime hook | `src/hooks/useCampaignPolling.ts` |
 
 It works. But every step is a black box. The user submits a brief, waits, and either gets ads or doesn't — with no way to steer, preview, or recover mid-flight.
 
@@ -126,15 +255,78 @@ The mode is passed into the RunPod payload. The UI makes the tradeoff transparen
 
 ---
 
-## Tier 3 — Longer Term, High Strategic Value
+## Tier 3 — Image Editing & Post-Generation Controls
 
-### 3.1 Style Locking Per Brand
+### 3.1 Background Removal / Replacement
+
+**The problem:** Generated images sometimes have cluttered or off-brand backgrounds that would otherwise be discarded.
+
+**The idea:** Add a one-click "Remove Background" action on each image in the library grid. Backend calls the RunPod endpoint with a `remove_background` post-processing flag (or a dedicated rembg/Photoroom worker). Then offer a "Replace Background" panel with a secondary text prompt — generate a new background and composite it back.
+
+**Backend change:** New `/images/{variation_id}/edit` endpoint. Accepts `action: "remove_bg" | "replace_bg"` + optional `bg_prompt`. Returns a new `variation_id` with the edited image, preserving the original.
+
+---
+
+### 3.2 Image-to-Image Refinement (img2img)
+
+**The problem:** Z-Image-Turbo runs text-to-image only. There's no way to use an existing result as a starting point — good composition gets thrown away on every re-run.
+
+**The idea:** Add a "Refine" button on each generated image. It opens an inline panel with a new prompt field and a `strength` slider (0.3 = subtle tweak, 0.9 = near-total replacement). The selected image is passed as `init_image` in the RunPod payload alongside the new prompt.
+
+**Note:** Z-Image-Turbo's current input schema (`prompt`, `size`, `seed`, `output_format`, `enable_safety_checker`) does not include `init_image`. This may require switching to FLUX.1-dev (img2img-capable) or a separate RunPod worker for the refine path only.
+
+---
+
+### 3.3 Inpainting — Edit a Region
+
+**The problem:** Users want to swap out one element (a background, a product area, text region) without regenerating the entire image.
+
+**The idea:** Click "Edit Region" on a library image to open a canvas overlay. User paints a mask with a brush. The mask + original image + a replacement prompt are sent to an inpainting worker (FLUX Fill or SD Inpaint). The result replaces only the masked area.
+
+**Backend change:** New `/images/{variation_id}/inpaint` endpoint. Accepts `mask_base64` and `inpaint_prompt`. Fires a separate RunPod inpainting worker, uploads result to Supabase, inserts as a new `library_images` row linked to the parent variation.
+
+---
+
+### 3.4 Text-to-Video Generation
+
+**The problem:** Reels and video ads are the highest-performing format on Instagram and TikTok, but PostGini only produces static images. Users have to leave the platform to make video.
+
+**The idea:** Add a "Generate Video" option alongside the existing ad types. Takes the same brand brief + selected style and produces a short (5–10s) video clip. Candidate APIs:
+
+| Provider | Model | Strength | Latency |
+|---|---|---|---|
+| Runway Gen-4 Turbo | text-to-video | Strong motion, brand-safe | ~30s |
+| Kling v2 | text-to-video + img2video | High quality, 10s clips | ~45s |
+| Luma Ray 2 | text-to-video | Cinematic, fast | ~20s |
+| Pika 2.1 | text-to-video + effects | Easy to steer | ~25s |
+
+**Recommended starting point:** Kling v2 via RunPod — matches the existing RunPod infrastructure, no new vendor auth.
+
+**Pipeline change:** New `video_jobs` table (mirrors `generation_jobs` but adds `duration`, `fps`, `video_url`). New `VideoAgent` that calls `visual_engine` for a video-optimised motion prompt, then dispatches to a `runpod_video_client`. Overlay rendering skips Playwright — text is composited via ffmpeg `drawtext` filter instead.
+
+**Frontend change:** New "Video" tab in ContentTab. Library grid shows video thumbnails with a play button. Export as MP4 or GIF.
+
+---
+
+### 3.5 Animate Still Images (img-to-video)
+
+**The problem:** Users already have great static ads but want to add motion for Stories/Reels without generating from scratch.
+
+**The idea:** "Animate" button on any library image. Sends it to Kling or Runway as `init_image` with a motion prompt (e.g., "gentle product rotation, light bokeh drift"). Returns a 3–5s loop. No new creative brief required — the visual is already approved.
+
+**Backend change:** `/images/{variation_id}/animate` endpoint. Accepts optional `motion_prompt`. Feeds the Supabase WebP URL as `init_image` into the video worker. Result stored in a new `video_url` column on `library_images`.
+
+---
+
+## Tier 4 — Longer Term, High Strategic Value
+
+### 4.1 Style Locking Per Brand
 
 **The idea:** Let users "lock" a template style per ad type for their brand — stored in `brands.style_preferences` JSON column. Every future generation for that brand automatically routes to the locked style, skipping the `_AD_TYPE_STYLE_MAP` defaults. Brands get visual consistency across campaigns without thinking about it.
 
 ---
 
-### 3.2 A/B Scoring Pipeline
+### 4.2 A/B Scoring Pipeline
 
 **The idea:** After rating images (the existing star-rating system), feed the ratings back into the LangGraph `creative_director` as few-shot examples: *"For this brand, Style 6 Lifestyle Card rated 5/5; Style 7 Neon Burst rated 2/5."* The director factors this into future prompt generation. Over time the system learns what works for each brand. No separate ML model needed — just retrieved context in the system prompt.
 
@@ -142,7 +334,7 @@ The mode is passed into the RunPod payload. The UI makes the tradeoff transparen
 
 ---
 
-### 3.3 Multi-Step Creative Brief Chat
+### 4.3 Multi-Step Creative Brief Chat
 
 **The idea:** Replace the single-textarea brief with a short 3-step guided chat before generation:
 
@@ -154,7 +346,7 @@ Each answer becomes a structured input to `creative_director`, giving the LLM mu
 
 ---
 
-### 3.4 Automated Post-Scheduling from Generation
+### 4.4 Automated Post-Scheduling from Generation
 
 **The idea:** At the end of a generation batch, offer a "Schedule" CTA directly in the "All Assets Ready" banner. One click opens a scheduling modal pre-populated with the generated images in a recommended posting cadence (e.g., one per day over the next week). Posts to the connected Instagram account via the existing `/api/integrations/instagram/schedule` endpoint.
 
@@ -174,19 +366,32 @@ Ties generation directly to distribution — closes the loop from brief to live 
 | 2.1 | Generation history & re-run | Medium | Medium |
 | 2.2 | Seed image upload | Medium | Medium |
 | 2.3 | Batch quality toggle | Small | Medium |
-| 3.1 | Style locking per brand | Small | High (long-term) |
-| 3.2 | A/B scoring pipeline | Large | High (long-term) |
-| 3.3 | Multi-step creative brief chat | Medium | High (long-term) |
-| 3.4 | Automated post-scheduling | Medium | High (long-term) |
+| 3.1 | Background removal / replacement | Medium | High |
+| 3.2 | Image-to-image refinement (img2img) | Medium | High |
+| 3.3 | Inpainting — edit a region | Large | High |
+| 3.4 | Text-to-video generation | Large | Very High |
+| 3.5 | Animate still images (img-to-video) | Medium | Very High |
+| 4.1 | Style locking per brand | Small | High (long-term) |
+| 4.2 | A/B scoring pipeline | Large | High (long-term) |
+| 4.3 | Multi-step creative brief chat | Medium | High (long-term) |
+| 4.4 | Automated post-scheduling | Medium | High (long-term) |
 
 ---
 
 ## Recommended First Batch
 
-If shipping one sprint, the highest return combination is:
-
-1. **1.1 Style Preview** — zero backend cost, removes the biggest UX blindspot
+**Sprint 1 — Visibility & Waste Reduction** (frontend-heavy, low risk):
+1. **1.1 Style Preview** — zero backend cost, removes the biggest UX blind spot
 2. **1.4 Per-format Selection** — cuts wasted generation in half for most users
 3. **2.4 Prompt Streaming** — makes the wait feel alive and builds trust in the AI
 
-All three are frontend-heavy with minimal backend surface area and can be shipped independently.
+**Sprint 2 — Post-Generation Editing** (new backend endpoints, moderate risk):
+1. **3.1 Background Removal** — highest utility per effort; reuses existing Supabase storage path
+2. **3.2 img2img Refinement** — dramatically reduces full-regeneration cycles
+3. **2.1 History & Re-run** — no new infrastructure, just surfacing existing `generation_jobs` data
+
+**Sprint 3 — Video** (new infrastructure, high payoff):
+1. **3.5 Animate Still Images** — lowest-effort video entry point; no new creative flow needed
+2. **3.4 Text-to-Video** — full video generation; mirrors existing queue architecture with a `video_jobs` table
+
+All items within a sprint are independent and can be shipped individually.
