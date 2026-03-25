@@ -631,9 +631,10 @@ function CarouselBundleCard({ slides, igConnected, onPublish, onRated, ratedFile
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const slideNumRe = new RegExp('-s(\\d+)[_.]');
   const sorted = [...slides].sort((a, b) => {
-    const aNum = parseInt(a.name.match(/-s(\d+)[_.]/)? .[1] ?? "1");
-    const bNum = parseInt(b.name.match(/-s(\d+)[_.]/)? .[1] ?? "1");
+    const aNum = parseInt(a.name.match(slideNumRe)?.[1] ?? "1");
+    const bNum = parseInt(b.name.match(slideNumRe)?.[1] ?? "1");
     return aNum - bNum;
   });
 
