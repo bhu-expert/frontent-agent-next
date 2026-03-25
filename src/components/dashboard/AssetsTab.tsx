@@ -638,50 +638,11 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
 
   const allAssets    = trackers.flatMap(t => (assets[t.campaignId] || []));
   const totalJobs    = Object.values(statuses).reduce((sum, s) => sum + s.total, 0);
-  const isGenerating = isPolling && totalJobs > 0;
-  // All base-image jobs done but overlay hasn't written to library_images yet
-  const allJobsDone  = progress === 100 && !isPolling && totalJobs > 0;
-
-  // Track whether isPolling was ever true in this session.
-  // Overlay state only makes sense when polling transitioned true→false (live generation).
-  // On a cold page reload where all campaigns are already complete, isPolling is never
-  // set to true, so we skip overlay entirely and go straight to isComplete.
-  const wasPollingRef = useRef(false);
-  useEffect(() => {
-    if (isPolling) {
-      wasPollingRef.current = true;
-    } else if (trackers.length === 0) {
-      // Polling stopped because campaigns were cleared (new generation starting) — reset
-      wasPollingRef.current = false;
-    }
-  }, [isPolling, trackers.length]);
-
-  // Overlay timeout: safety net — give up after 90s even if library count never catches up
-  const [overlayTimedOut, setOverlayTimedOut] = useState(false);
-  const overlayDeadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (allJobsDone && wasPollingRef.current) {
-      // Only start the timer if one isn't already running
-      if (!overlayDeadlineRef.current) {
-        overlayDeadlineRef.current = setTimeout(() => {
-          overlayDeadlineRef.current = null;
-          setOverlayTimedOut(true);
-        }, 90_000);
-      }
-    } else {
-      // Generation restarted or cold load — cancel timer and reset
-      if (overlayDeadlineRef.current) { clearTimeout(overlayDeadlineRef.current); overlayDeadlineRef.current = null; }
-      setOverlayTimedOut(false);
-    }
-    return () => {
-      if (overlayDeadlineRef.current) { clearTimeout(overlayDeadlineRef.current); overlayDeadlineRef.current = null; }
-    };
-  }, [allJobsDone]);
-
-  // Only enter overlay state during a live generation session (wasPollingRef.current),
-  // never on a cold reload where all campaigns are already complete in the DB.
-  const isOverlaying = allJobsDone && wasPollingRef.current && libraryFiles.length < totalJobs && !overlayTimedOut;
+  // isPolling is set immediately when addCampaign is called (statuses seeded at that point too)
+  const isGenerating = isPolling;
+  const allJobsDone  = !isPolling && totalJobs > 0 && progress === 100;
+  // Overlay phase: all generation jobs done but library hasn't fully populated yet
+  const isOverlaying = allJobsDone && libraryFiles.length < totalJobs;
   const isComplete   = allJobsDone && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────
@@ -808,12 +769,33 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
     }
   }, [guardrailPrompt, brandId, currentGuardrails, onGuardrailUpdated]);
 
-  // ── Auto-refresh library only while generation or overlay is actively in progress ──
+  // ── Subscribe to library_images inserts via Supabase Realtime ────────────────
+  // Whenever a new image lands in the library (for any user row), re-fetch the list.
+  // This replaces the old 5s setInterval and delivers updates within milliseconds.
   useEffect(() => {
-    if (!isGenerating && !isOverlaying) return;
-    const interval = setInterval(() => { loadLibrary(); }, 5000);
-    return () => clearInterval(interval);
-  }, [isGenerating, isOverlaying, loadLibrary]);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      channel = supabase
+        .channel("library-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "library_images",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => { loadLibrary(); },
+        )
+        .subscribe();
+    });
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [loadLibrary]);
 
   // ── Auto-dismiss "All Assets Ready" banner after 8s ─────────────────────────
   useEffect(() => {

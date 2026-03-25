@@ -156,6 +156,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         contextTitle: "Carousel",
         templateId: "carousel",
         templateLabel: "Carousel",
+        total: result.total,
       });
       onBatchGenerated([result.campaign_id]);
       onNavigateToAssets();
@@ -230,6 +231,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
           contextTitle: contextBlock?.title || `Context ${c.context_index}`,
           templateId: c.ad_type,
           templateLabel: template?.label || c.ad_type,
+          total: c.total,
         });
         newCampaignIds.push(c.campaign_id);
       }
