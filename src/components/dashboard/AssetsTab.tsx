@@ -654,7 +654,7 @@ export default function AssetsTab({ trackers, statuses, assets, progress, isPoll
   }, [isPolling, trackers.length]);
 
   const isOverlaying = allJobsDone && wasPollingRef.current && libraryFiles.length < totalJobs;
-  const isComplete   = allJobsDone && !isOverlaying;
+  const isComplete   = allJobsDone && wasPollingRef.current && !isOverlaying;
 
   // ── Load IG connection state ────────────────────────────────────────────────
   useEffect(() => {
