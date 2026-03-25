@@ -250,7 +250,17 @@ export function useCampaignPolling(
         const { campaigns } = await listCampaigns(token, brandId);
         if (campaigns.length === 0) { setLoaded(true); return; }
 
-        const restoredTrackers: CampaignTracker[] = campaigns.map((c) => ({
+        // Treat both "complete" and "failed" as terminal — never add to trackers/statuses
+        const isTerminal = (s: string) => s === "complete" || s === "failed";
+        const activeCampaigns = campaigns.filter((c) => !isTerminal(c.status));
+
+        // Only active (in-progress) campaigns go into trackers and statuses.
+        // Terminal campaigns already have their images in library_images and show
+        // via libraryFiles in AssetsTab — loading them here inflates totalJobs and
+        // corrupts the progress counter when a user has multiple past generations.
+        if (activeCampaigns.length === 0) { setLoaded(true); return; }
+
+        const restoredTrackers: CampaignTracker[] = activeCampaigns.map((c) => ({
           campaignId:     c.campaign_id,
           contextIndex:   c.context_index,
           contextTitle:   `Context ${c.context_index}`,
@@ -261,9 +271,9 @@ export function useCampaignPolling(
 
         setTrackers(restoredTrackers);
 
-        // Seed status map from DB data
+        // Seed status only for active campaigns
         const statusMap: Record<string, CampaignStatus> = {};
-        for (const c of campaigns) {
+        for (const c of activeCampaigns) {
           totalsRef.current.set(c.campaign_id, c.total);
           statusMap[c.campaign_id] = {
             campaign_id: c.campaign_id,
@@ -275,29 +285,9 @@ export function useCampaignPolling(
         }
         setStatuses(statusMap);
 
-        // Treat both "complete" and "failed" as terminal — never subscribe to them
-        const isTerminal = (s: string) => s === "complete" || s === "failed";
-
-        const terminalCampaigns = campaigns.filter((c) => isTerminal(c.status));
-        const activeCampaigns   = campaigns.filter((c) => !isTerminal(c.status));
-
-        for (const c of terminalCampaigns) {
-          fetchedRef.current.add(c.campaign_id);
-          if (c.status === "complete") {
-            getCampaignAssets(c.campaign_id, token)
-              .then((assetData) => {
-                const all = Object.values(assetData.by_context).flat();
-                setAssets((prev) => ({ ...prev, [c.campaign_id]: all }));
-              })
-              .catch(() => {/* not critical on cold load */});
-          }
-        }
-
-        if (activeCampaigns.length > 0) {
-          setIsPolling(true);
-          for (const c of activeCampaigns) {
-            subscribe(c.campaign_id, c.total, token);
-          }
+        setIsPolling(true);
+        for (const c of activeCampaigns) {
+          subscribe(c.campaign_id, c.total, token);
         }
       } catch {
         // Failed to load campaigns — not critical
