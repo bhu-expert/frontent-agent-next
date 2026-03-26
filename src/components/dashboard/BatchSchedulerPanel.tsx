@@ -72,9 +72,15 @@ function countAssetsByFormat(assets: AssetInventoryItem[]): Record<string, numbe
 }
 
 function buildScheduledAt(startDate: string, dayOffset: number, suggestedTime: string): string {
-  const base = new Date(startDate);
+  if (!startDate) return new Date().toISOString();
+  // Append T00:00:00 so the date is parsed as local midnight, not UTC midnight
+  const base = new Date(startDate + "T00:00:00");
+  if (isNaN(base.getTime())) return new Date().toISOString();
   base.setDate(base.getDate() + dayOffset);
-  const [hours, minutes] = suggestedTime.split(":").map(Number);
+  const safeTime = (suggestedTime || "09:00").replace(/[^0-9:]/g, "");
+  const parts = safeTime.split(":").map((n) => parseInt(n, 10));
+  const hours = isNaN(parts[0]) ? 9 : Math.min(parts[0], 23);
+  const minutes = isNaN(parts[1]) ? 0 : Math.min(parts[1], 59);
   base.setHours(hours, minutes, 0, 0);
   return base.toISOString();
 }
@@ -104,6 +110,7 @@ export default function BatchSchedulerPanel({
   const [cadence, setCadence] = useState<"weekly" | "biweekly">("weekly");
   const [startDate, setStartDate] = useState(todayStr);
   const [postCount, setPostCount] = useState(7);
+  const [allowMultiplePerDay, setAllowMultiplePerDay] = useState(false);
 
   // Step state
   const [step, setStep] = useState<Step>("configure");
@@ -166,6 +173,7 @@ export default function BatchSchedulerPanel({
           start_date: startDate,
           target_post_count: postCount,
           available_assets: fetchedAssets,
+          allow_multiple_per_day: allowMultiplePerDay,
         }),
       });
       const data = await res.json();
@@ -434,12 +442,38 @@ export default function BatchSchedulerPanel({
                 border="1px solid #E5E7EB"
               >
                 <Text fontSize="13px" fontWeight="600" color="#374151" mb={3}>
-                  Available Assets ({availableAssets.length} total)
+                  Available Assets ({fetchedAssets.length} total)
                 </Text>
-                {availableAssets.length === 0 ? (
-                  <Text fontSize="13px" color="#9CA3AF">
-                    No assets loaded. The AI will note inventory gaps.
-                  </Text>
+                {fetchedAssets.length === 0 ? (
+                  <Box>
+                    <Flex align="flex-start" gap={2.5} p={3} borderRadius="10px" bg="#FEF3C7" border="1px solid #FDE68A" mb={3}>
+                      <AlertCircle size={15} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
+                      <Box>
+                        <Text fontSize="13px" fontWeight="700" color="#92400E" mb={1}>
+                          No assets in your library yet
+                        </Text>
+                        <Text fontSize="12px" color="#92400E" lineHeight="1.5">
+                          The AI will propose a posting plan, but all slots will be marked as needing assets. You can generate or upload assets after reviewing the schedule.
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <VStack align="stretch" gap={2}>
+                      <Text fontSize="12px" fontWeight="600" color="#6B7280" mb={0.5}>What the AI will plan for you:</Text>
+                      {[
+                        { format: "Feed posts", desc: "Static images for product/brand awareness" },
+                        { format: "Stories", desc: "Short-form vertical content for daily engagement" },
+                        { format: "Carousels", desc: "Multi-slide educational or showcase content" },
+                      ].map((item) => (
+                        <Flex key={item.format} align="center" gap={2.5} p={2.5} borderRadius="8px" bg="white" border="1px solid #E5E7EB">
+                          <Box w="8px" h="8px" borderRadius="50%" bg="#FCD34D" flexShrink={0} />
+                          <Box>
+                            <Text fontSize="12px" fontWeight="600" color="#374151">{item.format}</Text>
+                            <Text fontSize="11px" color="#9CA3AF">{item.desc}</Text>
+                          </Box>
+                        </Flex>
+                      ))}
+                    </VStack>
+                  </Box>
                 ) : (
                   <Flex gap={2} flexWrap="wrap">
                     {Object.entries(assetsByFormat).map(([format, count]) => {
@@ -573,6 +607,52 @@ export default function BatchSchedulerPanel({
                 </Flex>
               </Box>
 
+              {/* Multiple posts per day toggle */}
+              <Flex
+                align="center"
+                justify="space-between"
+                p={3.5}
+                borderRadius="12px"
+                bg="#F9FAFB"
+                border="1px solid #E5E7EB"
+                cursor="pointer"
+                onClick={() => setAllowMultiplePerDay((v) => !v)}
+                _hover={{ bg: "#F3F4F6" }}
+                transition="background 0.1s ease"
+              >
+                <Box>
+                  <Text fontSize="13px" fontWeight="600" color="#374151">
+                    Multiple posts per day
+                  </Text>
+                  <Text fontSize="12px" color="#9CA3AF" mt={0.5}>
+                    {allowMultiplePerDay
+                      ? "Up to 2 feed posts/day with 6h gap · Stories anytime"
+                      : "One feed post per day (recommended for new accounts)"}
+                  </Text>
+                </Box>
+                <Box
+                  w="40px"
+                  h="22px"
+                  borderRadius="11px"
+                  bg={allowMultiplePerDay ? "#4F46E5" : "#D1D5DB"}
+                  position="relative"
+                  transition="background 0.2s ease"
+                  flexShrink={0}
+                >
+                  <Box
+                    position="absolute"
+                    top="3px"
+                    left={allowMultiplePerDay ? "21px" : "3px"}
+                    w="16px"
+                    h="16px"
+                    borderRadius="50%"
+                    bg="white"
+                    boxShadow="0 1px 3px rgba(0,0,0,0.2)"
+                    transition="left 0.2s ease"
+                  />
+                </Box>
+              </Flex>
+
               {/* CTA */}
               <Button
                 bg="#4F46E5"
@@ -681,30 +761,87 @@ export default function BatchSchedulerPanel({
                 </Flex>
               </Box>
 
-              {/* Inventory gaps warning */}
+              {/* Inventory gaps warning + generate plan */}
               {proposal.inventory_gaps.length > 0 && (
-                <Flex
-                  align="flex-start"
-                  gap={3}
+                <Box
                   p={4}
                   borderRadius="12px"
                   bg="#FFFBEB"
                   border="1px solid #FDE68A"
                 >
-                  <AlertCircle size={16} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <Box>
-                    <Text fontSize="13px" fontWeight="700" color="#92400E" mb={1.5}>
-                      Inventory Gaps Detected
+                  <Flex align="flex-start" gap={3} mb={3}>
+                    <AlertCircle size={16} color="#D97706" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <Box flex={1}>
+                      <Text fontSize="13px" fontWeight="700" color="#92400E" mb={1.5}>
+                        Inventory Gaps — {proposal.inventory_gaps.length} missing asset{proposal.inventory_gaps.length > 1 ? "s" : ""}
+                      </Text>
+                      <VStack align="stretch" gap={1}>
+                        {proposal.inventory_gaps.map((gap, i) => (
+                          <Text key={i} fontSize="12px" color="#92400E" lineHeight="1.5">
+                            • {gap}
+                          </Text>
+                        ))}
+                      </VStack>
+                    </Box>
+                  </Flex>
+                  <Box pt={3} borderTop="1px solid #FDE68A">
+                    <Text fontSize="12px" fontWeight="600" color="#92400E" mb={2}>
+                      Options to fill these gaps:
                     </Text>
-                    <VStack align="stretch" gap={1}>
-                      {proposal.inventory_gaps.map((gap, i) => (
-                        <Text key={i} fontSize="12px" color="#92400E" lineHeight="1.5">
-                          • {gap}
-                        </Text>
-                      ))}
-                    </VStack>
+                    <Flex gap={2} flexWrap="wrap">
+                      <Button
+                        size="sm"
+                        bg="#4F46E5"
+                        color="white"
+                        borderRadius="8px"
+                        h="32px"
+                        fontSize="12px"
+                        fontWeight="600"
+                        _hover={{ bg: "#4338CA" }}
+                        onClick={() => { onClose(); }}
+                      >
+                        <Flex align="center" gap={1.5}>
+                          <Sparkles size={13} strokeWidth={2.5} />
+                          Generate assets with AI
+                        </Flex>
+                      </Button>
+                      <Button
+                        size="sm"
+                        bg="white"
+                        color="#92400E"
+                        borderRadius="8px"
+                        h="32px"
+                        fontSize="12px"
+                        fontWeight="600"
+                        border="1px solid #FDE68A"
+                        _hover={{ bg: "#FEF9EC" }}
+                        onClick={() => { onClose(); }}
+                      >
+                        Upload assets first
+                      </Button>
+                      <Button
+                        size="sm"
+                        bg="white"
+                        color="#6B7280"
+                        borderRadius="8px"
+                        h="32px"
+                        fontSize="12px"
+                        fontWeight="600"
+                        border="1px solid #E5E7EB"
+                        _hover={{ bg: "#F9FAFB" }}
+                        onClick={() => {
+                          // Deselect all slots with no asset
+                          const noAssetIndices = proposal.slots
+                            .filter((s) => !s.asset_url)
+                            .map((s) => s.slot_index);
+                          setExcludedSlots(new Set(noAssetIndices));
+                        }}
+                      >
+                        Skip empty slots
+                      </Button>
+                    </Flex>
                   </Box>
-                </Flex>
+                </Box>
               )}
 
               {/* Timing strategy note */}
