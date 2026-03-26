@@ -62,6 +62,7 @@ interface PublishTarget {
   url: string;
   label: string;
   defaultMediaType?: MediaType;
+  carousel_urls?: string[];
 }
 
 // ─── Instagram Publish Modal ──────────────────────────────────────────────────
@@ -126,9 +127,13 @@ function PublishModal({
     try {
       const body: Record<string, unknown> = {
         media_type: mediaType,
-        media_url:  target.url,
         caption:    caption || undefined,
       };
+      if (mediaType === "CAROUSEL") {
+        body.carousel_urls = target.carousel_urls ?? [target.url];
+      } else {
+        body.media_url = target.url;
+      }
       if (mode === "schedule") {
         if (!scheduledAt) {
           alert("Please pick a date/time.");
@@ -665,7 +670,7 @@ function CarouselBundleCard({ slides, igConnected, onPublish, onRated, ratedFile
           <Flex gap={1.5}>
             {igConnected && (
               <IgPublishButton url={current.url} label={current.label || current.name}
-                onPublish={t => onPublish({ ...t, defaultMediaType: "CAROUSEL" })} />
+                onPublish={t => onPublish({ ...t, defaultMediaType: "CAROUSEL", carousel_urls: sorted.map(s => s.url) })} />
             )}
             <Button size="xs" bg="rgba(255,255,255,0.15)" color="white" borderRadius="8px"
               backdropFilter="blur(4px)" _hover={{ bg: "rgba(255,255,255,0.3)" }}

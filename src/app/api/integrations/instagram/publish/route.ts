@@ -216,10 +216,11 @@ async function createSingleContainer(
     media_type: mediaType,
   };
 
-  if (mediaType === "IMAGE") {
+  const isImageFile = /\.(webp|jpg|jpeg|png|gif)(\?|$)/i.test(mediaUrl);
+  if (mediaType === "IMAGE" || (mediaType === "STORIES" && isImageFile)) {
     body.image_url = mediaUrl;
   } else {
-    // VIDEO, REELS, STORIES (video)
+    // VIDEO, REELS (must be actual video files)
     body.video_url = mediaUrl;
   }
 
