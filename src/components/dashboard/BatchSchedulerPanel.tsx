@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, Button, Flex, Text, VStack, Badge, Image } from "@chakra-ui/react";
 import { Calendar, Sparkles, Clock, ChevronRight, CheckCircle, AlertCircle, X, Loader } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -118,7 +119,37 @@ export default function BatchSchedulerPanel({
   const [isConfirming, setIsConfirming] = useState(false);
   const [createdBatchId, setCreatedBatchId] = useState<string | null>(null);
 
-  const assetsByFormat = countAssetsByFormat(availableAssets);
+  // Self-fetched inventory from library_images
+  const [fetchedAssets, setFetchedAssets] = useState<AssetInventoryItem[]>([]);
+
+  useEffect(() => {
+    async function fetchLibraryInventory() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: rows, error } = await supabase
+        .from("library_images")
+        .select("id, storage_path, external_url, format, label")
+        .eq("user_id", user.id);
+
+      if (error || !rows) return;
+
+      const assets: AssetInventoryItem[] = rows.map(row => ({
+        asset_id: row.id,
+        asset_url: row.external_url ||
+          supabase.storage.from("ad-images").getPublicUrl(row.storage_path).data.publicUrl,
+        format: (row.format as AssetInventoryItem["format"]) || "feed",
+        ad_type: row.label || "awareness",
+        source: "library",
+      }));
+
+      setFetchedAssets(assets);
+    }
+
+    fetchLibraryInventory();
+  }, []);
+
+  const assetsByFormat = countAssetsByFormat(fetchedAssets);
 
   // ── Step 1 handlers ──────────────────────────────────────────────────────
 
@@ -134,7 +165,7 @@ export default function BatchSchedulerPanel({
           cadence,
           start_date: startDate,
           target_post_count: postCount,
-          available_assets: availableAssets,
+          available_assets: fetchedAssets,
         }),
       });
       const data = await res.json();
