@@ -149,7 +149,7 @@ export default function BatchSchedulerPanel({
         .from("image_feedback")
         .select("image_id")
         .eq("user_id", user.id)
-        .gte("rating", 5);
+        .gt("rating", 5);
 
       const ratedIds = feedbackRows?.map((f: { image_id: string }) => f.image_id) ?? [];
       if (ratedIds.length === 0) {
