@@ -492,12 +492,19 @@ export async function uploadBrandLogo(
 export async function generateCarousel(
   brandId: string,
   userBrief: string,
+  themeIds: string[],
+  contextIndex: number | null,
   token: string,
 ): Promise<{ campaign_id: string; total: number; status: string; variations: number; slides_per_variation: number }> {
   const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.CAROUSEL_GENERATE}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ brand_id: brandId, user_brief: userBrief }),
+    body: JSON.stringify({
+      brand_id: brandId,
+      user_brief: userBrief,
+      theme_ids: themeIds,
+      context_index: contextIndex,
+    }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

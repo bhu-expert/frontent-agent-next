@@ -12,9 +12,14 @@ import {
 } from "@chakra-ui/react";
 import {
   BadgeCheck,
+  BookOpen,
+  GraduationCap,
+  Layers,
+  Lightbulb,
   Loader,
   Lock,
   Megaphone,
+  Package,
   Rocket,
   Sparkles,
   Star,
@@ -28,6 +33,13 @@ import type { LucideIcon } from "lucide-react";
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
 interface TemplateOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+interface CarouselThemeOption {
   id: string;
   label: string;
   description: string;
@@ -55,7 +67,7 @@ interface ContentTabProps {
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
 
-const MAX_COMBINATIONS = 6; // 6 × 5 variations = 30 posts max per batch
+const MAX_COMBINATIONS = 6;
 
 const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "awareness", label: "Awareness", description: "Top-of-funnel concepts for reach and recall.", icon: Megaphone },
@@ -65,21 +77,115 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "engagement", label: "Engagement", description: "Interactive hooks designed to start response.", icon: Sparkles },
 ];
 
-/* ─── Helpers ────────────────────────────────────────────────────────── */
+const CAROUSEL_THEME_OPTIONS: CarouselThemeOption[] = [
+  {
+    id: "educational",
+    label: "Educational",
+    description: "Teach your audience something valuable step by step.",
+    icon: GraduationCap,
+  },
+  {
+    id: "how_to",
+    label: "How-To / Tutorial",
+    description: "Step-by-step process: Cover → Step 1 → Step 2 → Step 3 → CTA.",
+    icon: BookOpen,
+  },
+  {
+    id: "product_story",
+    label: "Product Story",
+    description: "Problem → Solution → Results → CTA. Showcase your transformation.",
+    icon: Package,
+  },
+  {
+    id: "tips",
+    label: "Tips & Tricks",
+    description: "Quick wins: Cover → Tip 1 → Tip 2 → Tip 3 → CTA.",
+    icon: Lightbulb,
+  },
+];
 
+/* ─── SelectionCard (reusable) ───────────────────────────────────────── */
+
+function SelectionCard({
+  isSelected,
+  onClick,
+  icon: Icon,
+  label,
+  description,
+  accent = "#4F46E5",
+}: {
+  isSelected: boolean;
+  onClick: () => void;
+  icon: LucideIcon;
+  label: string;
+  description: string;
+  accent?: string;
+}) {
+  return (
+    <Box
+      bg={isSelected ? "#EEF2FF" : "white"}
+      border="2px solid" borderColor={isSelected ? accent : "#ECECEC"}
+      borderRadius="14px" p={5} cursor="pointer" position="relative"
+      transition="all 0.2s ease"
+      _hover={{ borderColor: "#D1D5DB", boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}
+      onClick={onClick}
+    >
+      <Flex
+        position="absolute" top="16px" right="16px"
+        w="20px" h="20px" borderRadius="full" border="2px solid"
+        borderColor={isSelected ? accent : "#D1D5DB"}
+        bg={isSelected ? accent : "transparent"}
+        color="white" align="center" justify="center"
+      >
+        {isSelected ? <Text fontSize="10px">&#10003;</Text> : null}
+      </Flex>
+      {Icon && (
+        <Flex
+          w="40px" h="40px" bg={isSelected ? "white" : "#F8F8F6"}
+          borderRadius="12px" mb={4} align="center" justify="center"
+          color={isSelected ? accent : "#6B7280"}
+        >
+          <Icon size={18} strokeWidth={2.1} />
+        </Flex>
+      )}
+      <Text fontSize="15px" fontWeight="600" color="#111111" mb={1.5} pr={6}>{label}</Text>
+      <Text fontSize="13px" color="#6B7280" lineHeight="1.4">{description}</Text>
+    </Box>
+  );
+}
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
-export default function ContentTab({ brand, contextBlocks, token, campaign, onNavigateToAssets, hasRatedContext, onNavigateToBrands, hasPendingBatch, assetCounts, onBatchGenerated }: ContentTabProps) {
+export default function ContentTab({
+  brand,
+  contextBlocks,
+  token,
+  campaign,
+  onNavigateToAssets,
+  hasRatedContext,
+  onNavigateToBrands,
+  hasPendingBatch,
+  assetCounts,
+  onBatchGenerated,
+}: ContentTabProps) {
+
+  // ── Tab state ──────────────────────────────────────────────────────────
+  const [activeMode, setActiveMode] = useState<"ads" | "carousel">("ads");
+
+  // ── Ad Variations state ────────────────────────────────────────────────
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
-  // Ref-based guard prevents double-submission before React re-renders the disabled button
   const isGeneratingRef = useRef(false);
 
+  // ── Carousel state ─────────────────────────────────────────────────────
+  const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>(["educational", "product_story"]);
+  const [carouselContextIndex, setCarouselContextIndex] = useState<number | null>(null);
+  const [carouselBrief, setCarouselBrief] = useState("");
   const [isGeneratingCarousel, setIsGeneratingCarousel] = useState(false);
+  const [carouselError, setCarouselError] = useState<string | null>(null);
   const isGeneratingCarouselRef = useRef(false);
 
   const cappedCombinations = useMemo(
@@ -89,9 +195,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   const effectiveTotalPosts = cappedCombinations * 5;
   const isTrimmed = (selectedContextIds.length * selectedTemplateIds.length) > MAX_COMBINATIONS;
 
-  // Stable key based on actual context indices — changes only when the brand's
-  // contexts genuinely change, not on every parent re-render that produces a
-  // new array reference. This prevents wiping the user's manual selection.
   const contextBlocksKey = useMemo(
     () => contextBlocks.map((b) => b.context_index).join(","),
     [contextBlocks],
@@ -102,8 +205,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       setSelectedContextIds([]);
       return;
     }
-    // Always re-initialize when the context set changes (brand switch),
-    // but NOT on every parent re-render with the same data.
     setSelectedContextIds(contextBlocks.slice(0, 2).map((block) => block.context_index));
     setContentError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,32 +223,41 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     _focusVisible: { borderColor: "#4F46E5", boxShadow: "0 0 0 4px rgba(79, 70, 229, 0.14)" },
   } as const;
 
-  const toggleContext = (contextIndex: number) => {
+  // ── Handlers ───────────────────────────────────────────────────────────
+
+  const toggleContext = (contextIndex: number) =>
     setSelectedContextIds((prev) =>
       prev.includes(contextIndex)
         ? prev.filter((id) => id !== contextIndex)
         : [...prev, contextIndex].sort((a, b) => a - b)
     );
-  };
 
-  const toggleTemplate = (templateId: string) => {
+  const toggleTemplate = (templateId: string) =>
     setSelectedTemplateIds((prev) =>
       prev.includes(templateId) ? prev.filter((id) => id !== templateId) : [...prev, templateId]
     );
-  };
+
+  const toggleTheme = (themeId: string) =>
+    setSelectedThemeIds((prev) =>
+      prev.includes(themeId) ? prev.filter((id) => id !== themeId) : [...prev, themeId]
+    );
+
+  const toggleCarouselContext = (idx: number) =>
+    setCarouselContextIndex((prev) => (prev === idx ? null : idx));
 
   const handleGenerateCarousel = async () => {
-    if (!brand || !token) return;
+    if (!brand || !token || selectedThemeIds.length === 0) return;
     if (isGeneratingCarouselRef.current) return;
     isGeneratingCarouselRef.current = true;
     setIsGeneratingCarousel(true);
-    setContentError(null);
-    campaign.clearCampaigns();
+    setCarouselError(null);
 
     try {
       const result = await generateCarousel(
         brand.id,
-        contentBrief.trim() || "Generate an engaging carousel",
+        carouselBrief.trim() || "Generate an engaging carousel",
+        selectedThemeIds,
+        carouselContextIndex,
         token,
       );
       campaign.addCampaign({
@@ -162,7 +272,7 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       onNavigateToAssets();
     } catch (error) {
       const apiErr = error as { message?: string };
-      setContentError(apiErr.message || "Failed to queue carousel generation. Please try again.");
+      setCarouselError(apiErr.message || "Failed to queue carousel generation. Please try again.");
     } finally {
       isGeneratingCarouselRef.current = false;
       setIsGeneratingCarousel(false);
@@ -171,15 +281,12 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
 
   const handleGenerateContent = async () => {
     if (!brand || !token || selectedContextIds.length === 0 || selectedTemplateIds.length === 0) return;
-    // Synchronous ref guard — blocks double-clicks before React re-renders the disabled button
     if (isGeneratingRef.current) return;
     isGeneratingRef.current = true;
-
     setIsGenerating(true);
     setContentError(null);
     campaign.clearCampaigns();
 
-    // Build all items for a single bulk request (hard cap at MAX_COMBINATIONS)
     const allItems = selectedContextIds.flatMap((contextIndex) =>
       selectedTemplateIds.map((templateId) => {
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === templateId);
@@ -195,7 +302,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     );
     const items = allItems.slice(0, MAX_COMBINATIONS);
 
-    // Timeout wrapper — rejects after 45s so the user is never stuck indefinitely
     const withTimeout = <T,>(promise: Promise<T>): Promise<T> =>
       Promise.race([
         promise,
@@ -204,7 +310,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         ),
       ]);
 
-    // Retry helper with exponential backoff
     const callWithRetry = async (attempt = 0): Promise<Awaited<ReturnType<typeof generateAdVariationsBulk>>> => {
       try {
         return await withTimeout(generateAdVariationsBulk(brand.id, items, token));
@@ -216,15 +321,11 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
     };
 
     try {
-      console.log("[Generate] calling bulk API with items:", items);
       const result = await callWithRetry();
-      console.log("[Generate] bulk API response:", result);
-
       const newCampaignIds: string[] = [];
       for (const c of result.campaigns) {
         const contextBlock = contextBlocks.find((b) => b.context_index === c.context_index);
         const template = CONTENT_TEMPLATE_OPTIONS.find((o) => o.id === c.ad_type);
-        console.log(`[Generate] registered campaign ${c.campaign_id} — ${c.ad_type} ctx=${c.context_index}`);
         campaign.addCampaign({
           campaignId: c.campaign_id,
           contextIndex: c.context_index,
@@ -238,7 +339,6 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
       onBatchGenerated(newCampaignIds);
       onNavigateToAssets();
     } catch (error) {
-      console.error("[Generate] bulk API failed:", error);
       const apiError = error as { message?: string };
       setContentError(apiError.message || "Failed to generate content variations. Check your connection and try again.");
     } finally {
@@ -250,15 +350,14 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
   if (!brand) {
     return (
       <Box bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px" p={{ base: 6, md: 10 }} textAlign="center">
-        <Text fontSize="lg" color="#6B7280">
-          Select a brand first to use the Content tab.
-        </Text>
+        <Text fontSize="lg" color="#6B7280">Select a brand first to use the Content tab.</Text>
       </Box>
     );
   }
 
   return (
     <VStack align="stretch" gap={6}>
+
       {/* Header */}
       <Flex align={{ base: "flex-start", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
         <Box>
@@ -266,22 +365,18 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
             Content Generation
           </Text>
           <Text fontSize="15px" color="#6B7280">
-            Select your approved contexts and pair them with content formats to generate posts.
+            Generate ad variations or branded carousel posts for your brand.
           </Text>
         </Box>
         <Flex align="center" gap={2} wrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
           {assetCounts && assetCounts.total > 0 && (
             <Flex gap={1.5} align="center">
               <Box px={2} py={1} borderRadius="999px" bg="#F0FDF4" border="1px solid #BBF7D0">
-                <Text fontSize="11px" fontWeight="600" color="#166534">
-                  {assetCounts.rated} rated
-                </Text>
+                <Text fontSize="11px" fontWeight="600" color="#166534">{assetCounts.rated} rated</Text>
               </Box>
               {assetCounts.total - assetCounts.rated > 0 && (
                 <Box px={2} py={1} borderRadius="999px" bg="#FFFBEB" border="1px solid #FDE68A">
-                  <Text fontSize="11px" fontWeight="600" color="#92400E">
-                    {assetCounts.total - assetCounts.rated} unrated
-                  </Text>
+                  <Text fontSize="11px" fontWeight="600" color="#92400E">{assetCounts.total - assetCounts.rated} unrated</Text>
                 </Box>
               )}
             </Flex>
@@ -292,293 +387,363 @@ export default function ContentTab({ brand, contextBlocks, token, campaign, onNa
         </Flex>
       </Flex>
 
-      {/* Step 1: Contexts */}
-      <Box mb={10}>
-        <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>1. Select Contexts</Text>
-        <Text fontSize="15px" color="#6B7280" mb={6}>Choose the narrative angles you want to turn into posts.</Text>
-        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
-          {contextBlocks.map((block) => {
-            const isSelected = selectedContextIds.includes(block.context_index);
-            return (
-              <Box
-                key={block.context_index}
-                bg={isSelected ? "#EEF2FF" : "white"}
-                border="2px solid" borderColor={isSelected ? "#4F46E5" : "#ECECEC"}
-                borderRadius="14px" p={5} cursor="pointer" position="relative"
-                transition="all 0.2s ease"
-                _hover={{ borderColor: "#D1D5DB", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.06)" }}
-                onClick={() => toggleContext(block.context_index)}
-              >
-                <Flex
-                  position="absolute" top="16px" right="16px"
-                  w="20px" h="20px" borderRadius="full" border="2px solid"
-                  borderColor={isSelected ? "#4F46E5" : "#D1D5DB"}
-                  bg={isSelected ? "#4F46E5" : "transparent"}
-                  color="white" align="center" justify="center"
-                >
-                  {isSelected ? <Text fontSize="10px">&#10003;</Text> : null}
-                </Flex>
-                <Text fontSize="14px" fontWeight="600" color="#111111" pr={6} mb={2}>
-                  {block.title}
-                </Text>
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
-
-      {/* Step 2: Templates */}
-      <Box mb={6}>
-        <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>2. Select Templates</Text>
-        <Text fontSize="15px" color="#6B7280" mb={6}>Choose the formats to apply to your selected contexts.</Text>
-        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
-          {CONTENT_TEMPLATE_OPTIONS.map((template) => {
-            const isSelected = selectedTemplateIds.includes(template.id);
-            const TemplateIcon = template.icon;
-            return (
-              <Box
-                key={template.id}
-                bg={isSelected ? "#EEF2FF" : "white"}
-                border="2px solid" borderColor={isSelected ? "#4F46E5" : "#ECECEC"}
-                borderRadius="14px" p={5} cursor="pointer" position="relative"
-                transition="all 0.2s ease"
-                _hover={{ borderColor: "#D1D5DB", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.06)" }}
-                onClick={() => toggleTemplate(template.id)}
-              >
-                <Flex
-                  position="absolute" top="16px" right="16px"
-                  w="20px" h="20px" borderRadius="full" border="2px solid"
-                  borderColor={isSelected ? "#4F46E5" : "#D1D5DB"}
-                  bg={isSelected ? "#4F46E5" : "transparent"}
-                  color="white" align="center" justify="center"
-                >
-                  {isSelected ? <Text fontSize="10px">&#10003;</Text> : null}
-                </Flex>
-                <Flex
-                  w="40px" h="40px" bg={isSelected ? "white" : "#F8F8F6"}
-                  borderRadius="12px" mb={4} align="center" justify="center"
-                  color={isSelected ? "#4F46E5" : "#6B7280"}
-                >
-                  <TemplateIcon size={18} strokeWidth={2.1} />
-                </Flex>
-                <Text fontSize="16px" fontWeight="600" color="#111111" mb={1.5}>{template.label}</Text>
-                <Text fontSize="13px" color="#6B7280" lineHeight="1.4">{template.description}</Text>
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
-
-      {/* Brief */}
-      <Box mb={8}>
-        <Text fontSize="12px" fontWeight="600" textTransform="uppercase" color="#6B7280" letterSpacing="0.05em" mb={3}>
-          Brief
-        </Text>
-        <Textarea
-          placeholder="Optional. Add campaign instructions before generating variations."
-          value={contentBrief}
-          onChange={(event) => setContentBrief(event.target.value)}
-          minH="110px" px="16px" py="14px" resize="vertical"
-          {...fieldChrome}
-        />
-      </Box>
-
-      {/* Pending batch banner */}
-      {hasRatedContext && hasPendingBatch && (
-        <Flex
-          align="center" gap={4}
-          bg="#FFF7ED" border="1px solid" borderColor="#FED7AA"
-          borderRadius="16px" px={5} py={4}
-        >
-          <Flex
-            w="36px" h="36px" flexShrink={0} borderRadius="10px"
-            bg="#FFEDD5" align="center" justify="center"
-          >
-            <Lock size={16} color="#EA580C" />
-          </Flex>
-          <Box flex={1}>
-            <Text fontSize="14px" fontWeight="700" color="#9A3412">
-              Rate your generated assets to unlock the next batch
-            </Text>
-            <Text fontSize="13px" color="#C2410C" mt={0.5}>
-              Go to Assets and give every image a star rating before generating again.
-            </Text>
-          </Box>
-          <Button
-            size="sm" h="36px" px={4} borderRadius="10px"
-            bg="#EA580C" color="white" fontSize="13px" fontWeight="600"
-            _hover={{ bg: "#C2410C" }}
-            onClick={onNavigateToAssets}
-            flexShrink={0}
-          >
-            <Flex align="center" gap={1.5}>
-              <Star size={13} />
-              View Assets
-            </Flex>
-          </Button>
-        </Flex>
-      )}
-
-      {/* Rating gate banner */}
-      {!hasRatedContext && (
-        <Flex
-          align="center" gap={4}
-          bg="#FFFBEB" border="1px solid" borderColor="#FDE68A"
-          borderRadius="16px" px={5} py={4}
-        >
-          <Flex
-            w="36px" h="36px" flexShrink={0} borderRadius="10px"
-            bg="#FEF3C7" align="center" justify="center"
-          >
-            <Lock size={16} color="#D97706" />
-          </Flex>
-          <Box flex={1}>
-            <Text fontSize="14px" fontWeight="700" color="#92400E">
-              Rate all contexts to unlock generation
-            </Text>
-            <Text fontSize="13px" color="#B45309" mt={0.5}>
-              Go to the Brands tab and give every context a star rating before generating.
-            </Text>
-          </Box>
-          <Button
-            size="sm" h="36px" px={4} borderRadius="10px"
-            bg="#D97706" color="white" fontSize="13px" fontWeight="600"
-            _hover={{ bg: "#B45309" }}
-            onClick={onNavigateToBrands}
-            flexShrink={0}
-          >
-            <Flex align="center" gap={1.5}>
-              <Star size={13} />
-              Rate Now
-            </Flex>
-          </Button>
-        </Flex>
-      )}
-
-      {/* Sticky Generate Bar */}
-      <Box
-        position="sticky" bottom={{ base: 2, md: 4 }}
-        bg="rgba(255, 255, 255, 0.9)" backdropFilter="blur(12px)"
-        border="1px solid" borderColor={hasRatedContext ? "#ECECEC" : "#FDE68A"}
-        borderRadius="20px"
-        px={{ base: 4, md: 6 }} py={4}
+      {/* ── Tab Switcher ─────────────────────────────────────────────────── */}
+      <Flex
+        bg="#F3F4F6" borderRadius="16px" p={1} gap={1}
+        w="fit-content"
       >
-        <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
-          <Flex align="center" gap={4} bg="#F8F8F6" border="1px solid" borderColor="#ECECEC" borderRadius="20px" px={5} py={3} wrap="wrap">
-            <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color="#111111">{selectedContextIds.length}</Text>
-              <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Contexts</Text>
-            </Box>
-            <Text color="#9CA3AF">&times;</Text>
-            <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color="#111111">{selectedTemplateIds.length}</Text>
-              <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Templates</Text>
-            </Box>
-            <Text color="#9CA3AF">&times;</Text>
-            <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color="#111111">5</Text>
-              <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Variations</Text>
-            </Box>
-            <Text color="#9CA3AF">=</Text>
-            <Box textAlign="center">
-              <Text fontSize="18px" fontWeight="700" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"}>{effectiveTotalPosts}</Text>
-              <Text fontSize="12px" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"} textTransform="uppercase">
-                {isTrimmed ? "Posts (capped)" : "Total Posts"}
-              </Text>
-            </Box>
-          </Flex>
-
-          <Flex gap={3} align="center">
-            <Button
-              bg={hasRatedContext && !hasPendingBatch ? "white" : "#F3F4F6"}
-              color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#9CA3AF"}
-              border="1.5px solid"
-              borderColor={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#E5E7EB"}
-              borderRadius="14px" h="52px" px={6}
-              fontSize="15px" fontWeight="600"
-              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#EEF2FF" : "#F3F4F6" }}
-              disabled={!hasRatedContext || hasPendingBatch || isGeneratingCarousel}
-              onClick={handleGenerateCarousel}
-              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
-            >
-              <Flex align="center" gap={2}>
-                {(!hasRatedContext || hasPendingBatch) && <Lock size={14} />}
-                {isGeneratingCarousel ? "Queuing..." : "Carousel (15)"}
-              </Flex>
-            </Button>
-
-            <Button
-              bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
-              color="white" borderRadius="14px" h="52px" px={7}
-              fontSize="15px" fontWeight="600"
-              _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
-              disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
-              onClick={handleGenerateContent}
-              cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
-            >
-              <Flex align="center" gap={2}>
-                {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
-                {isGenerating
-                  ? "Generating..."
-                  : !hasRatedContext
-                    ? "Rate All Contexts First"
-                    : hasPendingBatch
-                      ? "Rate Assets to Unlock"
-                      : effectiveTotalPosts === 0
-                        ? "Select to Generate"
-                        : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
-              </Flex>
-            </Button>
-          </Flex>
-        </Flex>
-      </Box>
-
-      {/* Error */}
-      {contentError && (
-        <Box mt={4} bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
-          {contentError}
-        </Box>
-      )}
-
-      {/* Generating Modal Overlay */}
-      {isGenerating && (
-        <Flex
-          position="fixed" inset={0} zIndex={1000}
-          bg="rgba(0, 0, 0, 0.5)" backdropFilter="blur(6px)"
-          align="center" justify="center"
-        >
-          <Box
-            bg="white" borderRadius="24px" p={{ base: 8, md: 10 }}
-            textAlign="center" maxW="420px" w="90%"
-            boxShadow="0 24px 64px rgba(0, 0, 0, 0.2)"
-            style={{ animation: "fadeInUp 0.3s ease-out" }}
+        {(["ads", "carousel"] as const).map((mode) => (
+          <Button
+            key={mode}
+            h="40px" px={6} borderRadius="12px" fontSize="14px" fontWeight="600"
+            bg={activeMode === mode ? "white" : "transparent"}
+            color={activeMode === mode ? "#111111" : "#6B7280"}
+            boxShadow={activeMode === mode ? "0 1px 4px rgba(0,0,0,0.10)" : "none"}
+            _hover={{ bg: activeMode === mode ? "white" : "#E5E7EB" }}
+            onClick={() => setActiveMode(mode)}
           >
-            <Flex
-              w="64px" h="64px" borderRadius="16px"
-              bg="#EEF2FF" align="center" justify="center"
-              mx="auto" mb={5}
-            >
-              <Loader size={28} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />
-            </Flex>
-            <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>
-              Queuing {effectiveTotalPosts} Ads
-            </Text>
-            <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
-              Setting up {effectiveTotalPosts} ad variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
-            </Text>
-            <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
-              Go grab a coffee — everything generates in the background, even if you close this tab.
-            </Text>
-            <Flex justify="center" gap={1.5}>
-              {[0, 1, 2].map((i) => (
-                <Box
-                  key={i} w="8px" h="8px" borderRadius="full" bg="#4F46E5"
-                  style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+            {mode === "ads" ? (
+              <Flex align="center" gap={2}>
+                <Layers size={15} />
+                Ad Variations
+              </Flex>
+            ) : (
+              <Flex align="center" gap={2}>
+                <Sparkles size={15} />
+                Carousel
+              </Flex>
+            )}
+          </Button>
+        ))}
+      </Flex>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* AD VARIATIONS TAB                                                  */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "ads" && (
+        <>
+          {/* Step 1: Contexts */}
+          <Box mb={10}>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>1. Select Contexts</Text>
+            <Text fontSize="15px" color="#6B7280" mb={6}>Choose the narrative angles you want to turn into posts.</Text>
+            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+              {contextBlocks.map((block) => (
+                <SelectionCard
+                  key={block.context_index}
+                  isSelected={selectedContextIds.includes(block.context_index)}
+                  onClick={() => toggleContext(block.context_index)}
+                  icon={BadgeCheck}
+                  label={block.title}
+                  description=""
                 />
               ))}
+            </Box>
+          </Box>
+
+          {/* Step 2: Templates */}
+          <Box mb={6}>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>2. Select Templates</Text>
+            <Text fontSize="15px" color="#6B7280" mb={6}>Choose the formats to apply to your selected contexts.</Text>
+            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+              {CONTENT_TEMPLATE_OPTIONS.map((template) => (
+                <SelectionCard
+                  key={template.id}
+                  isSelected={selectedTemplateIds.includes(template.id)}
+                  onClick={() => toggleTemplate(template.id)}
+                  icon={template.icon}
+                  label={template.label}
+                  description={template.description}
+                />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Brief */}
+          <Box mb={8}>
+            <Text fontSize="12px" fontWeight="600" textTransform="uppercase" color="#6B7280" letterSpacing="0.05em" mb={3}>
+              Brief
+            </Text>
+            <Textarea
+              placeholder="Optional. Add campaign instructions before generating variations."
+              value={contentBrief}
+              onChange={(e) => setContentBrief(e.target.value)}
+              minH="110px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Pending batch banner */}
+          {hasRatedContext && hasPendingBatch && (
+            <Flex align="center" gap={4} bg="#FFF7ED" border="1px solid" borderColor="#FED7AA" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FFEDD5" align="center" justify="center">
+                <Lock size={16} color="#EA580C" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#9A3412">Rate your generated assets to unlock the next batch</Text>
+                <Text fontSize="13px" color="#C2410C" mt={0.5}>Go to Assets and give every image a star rating before generating again.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#EA580C" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#C2410C" }} onClick={onNavigateToAssets} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />View Assets</Flex>
+              </Button>
+            </Flex>
+          )}
+
+          {/* Rating gate banner */}
+          {!hasRatedContext && (
+            <Flex align="center" gap={4} bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FEF3C7" align="center" justify="center">
+                <Lock size={16} color="#D97706" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#92400E">Rate all contexts to unlock generation</Text>
+                <Text fontSize="13px" color="#B45309" mt={0.5}>Go to the Brands tab and give every context a star rating before generating.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#D97706" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#B45309" }} onClick={onNavigateToBrands} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />Rate Now</Flex>
+              </Button>
+            </Flex>
+          )}
+
+          {/* Sticky Generate Bar */}
+          <Box
+            position="sticky" bottom={{ base: 2, md: 4 }}
+            bg="rgba(255,255,255,0.9)" backdropFilter="blur(12px)"
+            border="1px solid" borderColor={hasRatedContext ? "#ECECEC" : "#FDE68A"}
+            borderRadius="20px" px={{ base: 4, md: 6 }} py={4}
+          >
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              <Flex align="center" gap={4} bg="#F8F8F6" border="1px solid" borderColor="#ECECEC" borderRadius="20px" px={5} py={3} wrap="wrap">
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">{selectedContextIds.length}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Contexts</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">{selectedTemplateIds.length}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Templates</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">5</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Variations</Text>
+                </Box>
+                <Text color="#9CA3AF">=</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"}>{effectiveTotalPosts}</Text>
+                  <Text fontSize="12px" color={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D97706"} textTransform="uppercase">
+                    {isTrimmed ? "Posts (capped)" : "Total Posts"}
+                  </Text>
+                </Box>
+              </Flex>
+              <Button
+                bg={hasRatedContext && !hasPendingBatch ? "#4F46E5" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: hasRatedContext && !hasPendingBatch ? "#4338CA" : "#D1D5DB" }}
+                disabled={!hasRatedContext || hasPendingBatch || selectedContextIds.length === 0 || selectedTemplateIds.length === 0 || isGenerating}
+                onClick={handleGenerateContent}
+                cursor={hasRatedContext && !hasPendingBatch ? "pointer" : "not-allowed"}
+              >
+                <Flex align="center" gap={2}>
+                  {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+                  {isGenerating
+                    ? "Generating..."
+                    : !hasRatedContext
+                      ? "Rate All Contexts First"
+                      : hasPendingBatch
+                        ? "Rate Assets to Unlock"
+                        : effectiveTotalPosts === 0
+                          ? "Select to Generate"
+                          : `Generate ${effectiveTotalPosts} Posts${isTrimmed ? " (capped at 30)" : ""}`}
+                </Flex>
+              </Button>
             </Flex>
           </Box>
-        </Flex>
+
+          {contentError && (
+            <Box mt={4} bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {contentError}
+            </Box>
+          )}
+
+          {/* Generating modal */}
+          {isGenerating && (
+            <Flex position="fixed" inset={0} zIndex={1000} bg="rgba(0,0,0,0.5)" backdropFilter="blur(6px)" align="center" justify="center">
+              <Box bg="white" borderRadius="24px" p={{ base: 8, md: 10 }} textAlign="center" maxW="420px" w="90%" boxShadow="0 24px 64px rgba(0,0,0,0.2)" style={{ animation: "fadeInUp 0.3s ease-out" }}>
+                <Flex w="64px" h="64px" borderRadius="16px" bg="#EEF2FF" align="center" justify="center" mx="auto" mb={5}>
+                  <Loader size={28} color="#4F46E5" style={{ animation: "spin 1.5s linear infinite" }} />
+                </Flex>
+                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {effectiveTotalPosts} Ads</Text>
+                <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
+                  Setting up {effectiveTotalPosts} ad variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
+                </Text>
+                <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
+                  Go grab a coffee — everything generates in the background, even if you close this tab.
+                </Text>
+                <Flex justify="center" gap={1.5}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} w="8px" h="8px" borderRadius="full" bg="#4F46E5" style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                  ))}
+                </Flex>
+              </Box>
+            </Flex>
+          )}
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* CAROUSEL TAB                                                        */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "carousel" && (
+        <VStack align="stretch" gap={8}>
+
+          {/* Theme picker */}
+          <Box>
+            <Flex align="baseline" gap={3} mb={2}>
+              <Text fontSize="20px" fontWeight="600" color="#111111">1. Choose Carousel Themes</Text>
+              <Text fontSize="13px" color="#6B7280">Select one or more — each generates 1 variation of 5 slides.</Text>
+            </Flex>
+            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4} mt={5}>
+              {CAROUSEL_THEME_OPTIONS.map((theme) => (
+                <SelectionCard
+                  key={theme.id}
+                  isSelected={selectedThemeIds.includes(theme.id)}
+                  onClick={() => toggleTheme(theme.id)}
+                  icon={theme.icon}
+                  label={theme.label}
+                  description={theme.description}
+                  accent="#7C3AED"
+                />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Context selector (optional) */}
+          {contextBlocks.length > 0 && (
+            <Box>
+              <Flex align="baseline" gap={3} mb={2}>
+                <Text fontSize="20px" fontWeight="600" color="#111111">2. Ground in a Context</Text>
+                <Text fontSize="13px" color="#6B7280">Optional — anchors carousel copy in a specific brand narrative.</Text>
+              </Flex>
+              <Flex gap={3} mt={4} wrap="wrap">
+                {contextBlocks.map((block) => {
+                  const isActive = carouselContextIndex === block.context_index;
+                  return (
+                    <Box
+                      key={block.context_index}
+                      px={4} py={2.5} borderRadius="12px" cursor="pointer"
+                      border="2px solid" borderColor={isActive ? "#7C3AED" : "#E5E7EB"}
+                      bg={isActive ? "#F5F3FF" : "white"}
+                      color={isActive ? "#7C3AED" : "#374151"}
+                      fontSize="14px" fontWeight={isActive ? "600" : "500"}
+                      transition="all 0.15s ease"
+                      _hover={{ borderColor: "#7C3AED", bg: "#F5F3FF" }}
+                      onClick={() => toggleCarouselContext(block.context_index)}
+                    >
+                      {block.title}
+                    </Box>
+                  );
+                })}
+              </Flex>
+              {carouselContextIndex !== null && (
+                <Text fontSize="12px" color="#7C3AED" mt={2} fontWeight="500">
+                  ✓ Carousel copy will be grounded in &ldquo;{contextBlocks.find(b => b.context_index === carouselContextIndex)?.title}&rdquo;
+                </Text>
+              )}
+            </Box>
+          )}
+
+          {/* Brief */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>
+              {contextBlocks.length > 0 ? "3." : "2."} Add a Brief
+            </Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>Optional — describe the angle, campaign goal, or target audience.</Text>
+            <Textarea
+              placeholder="e.g. Focus on onboarding new users to our dashboard feature. Tone: friendly and approachable."
+              value={carouselBrief}
+              onChange={(e) => setCarouselBrief(e.target.value)}
+              minH="110px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Error */}
+          {carouselError && (
+            <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {carouselError}
+            </Box>
+          )}
+
+          {/* Generate button + summary */}
+          <Box
+            bg="white" border="1px solid" borderColor="#E5E7EB"
+            borderRadius="20px" px={6} py={5}
+          >
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              {/* Summary pill */}
+              <Flex align="center" gap={4} bg="#F5F3FF" border="1px solid" borderColor="#DDD6FE" borderRadius="16px" px={5} py={3} wrap="wrap">
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#7C3AED">{selectedThemeIds.length}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Themes</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#7C3AED">5</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Slides</Text>
+                </Box>
+                <Text color="#9CA3AF">=</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#7C3AED">{selectedThemeIds.length * 5}</Text>
+                  <Text fontSize="12px" color="#7C3AED" textTransform="uppercase">Total Slides</Text>
+                </Box>
+              </Flex>
+
+              {/* Generate button */}
+              <Button
+                bg={selectedThemeIds.length > 0 ? "#7C3AED" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: selectedThemeIds.length > 0 ? "#6D28D9" : "#D1D5DB" }}
+                disabled={selectedThemeIds.length === 0 || isGeneratingCarousel}
+                onClick={handleGenerateCarousel}
+              >
+                <Flex align="center" gap={2}>
+                  {isGeneratingCarousel
+                    ? <><Loader size={16} style={{ animation: "spin 1.5s linear infinite" }} /> Queuing...</>
+                    : selectedThemeIds.length === 0
+                      ? "Select a Theme First"
+                      : `Generate Carousel \u2192 ${selectedThemeIds.length}\u00d75 slides`}
+                </Flex>
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Generating modal for carousel */}
+          {isGeneratingCarousel && (
+            <Flex position="fixed" inset={0} zIndex={1000} bg="rgba(0,0,0,0.5)" backdropFilter="blur(6px)" align="center" justify="center">
+              <Box bg="white" borderRadius="24px" p={{ base: 8, md: 10 }} textAlign="center" maxW="420px" w="90%" boxShadow="0 24px 64px rgba(0,0,0,0.2)" style={{ animation: "fadeInUp 0.3s ease-out" }}>
+                <Flex w="64px" h="64px" borderRadius="16px" bg="#F5F3FF" align="center" justify="center" mx="auto" mb={5}>
+                  <Loader size={28} color="#7C3AED" style={{ animation: "spin 1.5s linear infinite" }} />
+                </Flex>
+                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>
+                  Queuing Carousel — {selectedThemeIds.length * 5} Slides
+                </Text>
+                <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
+                  {selectedThemeIds.length} variation{selectedThemeIds.length !== 1 ? "s" : ""} × 5 slides each. Images generate in the background.
+                </Text>
+                <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
+                  Head over to Assets when ready — slides will appear as a bundled carousel card.
+                </Text>
+                <Flex justify="center" gap={1.5}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} w="8px" h="8px" borderRadius="full" bg="#7C3AED" style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                  ))}
+                </Flex>
+              </Box>
+            </Flex>
+          )}
+        </VStack>
       )}
 
       <style>{`
