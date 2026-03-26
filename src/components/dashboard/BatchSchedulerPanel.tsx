@@ -118,12 +118,14 @@ export default function BatchSchedulerPanel({
   const [proposeError, setProposeError] = useState<string | null>(null);
   const [proposal, setProposal] = useState<BatchProposal | null>(null);
 
-  // Streaming state
-  const [streamPhase, setStreamPhase] = useState<"brand" | "inventory" | "thinking" | "building" | "done">("brand");
+  // Streaming state (no thinking text — removed)
+  const [streamPhase, setStreamPhase] = useState<"brand" | "inventory" | "building" | "done">("brand");
   const [streamBrand, setStreamBrand] = useState<{ name: string; industry: string } | null>(null);
   const [streamInventory, setStreamInventory] = useState<{ format_counts: Record<string, number>; total: number } | null>(null);
-  const [thinkingText, setThinkingText] = useState("");
   const [streamStatus, setStreamStatus] = useState("Initialising…");
+
+  // Step 3 — per-slot manual asset selection
+  const [slotAssets, setSlotAssets] = useState<Record<number, AssetInventoryItem>>({});
 
   // Step 3 — Review: excluded slot indices
   const [excludedSlots, setExcludedSlots] = useState<Set<number>>(new Set());
@@ -142,21 +144,52 @@ export default function BatchSchedulerPanel({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // 1. Get image_ids that have rating >= 5
+      const { data: feedbackRows } = await supabase
+        .from("image_feedback")
+        .select("image_id")
+        .eq("user_id", user.id)
+        .gte("rating", 5);
+
+      const ratedIds = feedbackRows?.map((f: { image_id: string }) => f.image_id) ?? [];
+      if (ratedIds.length === 0) {
+        setFetchedAssets([]);
+        return;
+      }
+
+      // 2. Get already-published asset URLs so we can exclude them
+      const { data: publishedRows } = await supabase
+        .from("scheduled_instagram_posts")
+        .select("media_url")
+        .eq("user_id", user.id)
+        .eq("status", "published");
+
+      const publishedUrls = new Set(
+        (publishedRows ?? []).map((p: { media_url: string | null }) => p.media_url).filter(Boolean)
+      );
+
+      // 3. Fetch library_images filtered to rated IDs only
       const { data: rows, error } = await supabase
         .from("library_images")
         .select("id, storage_path, external_url, format, label")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .in("id", ratedIds);
 
       if (error || !rows) return;
 
-      const assets: AssetInventoryItem[] = rows.map(row => ({
-        asset_id: row.id,
-        asset_url: row.external_url ||
-          supabase.storage.from("ad-images").getPublicUrl(row.storage_path).data.publicUrl,
-        format: (row.format as AssetInventoryItem["format"]) || "feed",
-        ad_type: row.label || "awareness",
-        source: "library",
-      }));
+      const assets: AssetInventoryItem[] = rows
+        .map((row: { id: string; storage_path: string; external_url: string | null; format: string | null; label: string | null }) => {
+          const url = row.external_url ||
+            supabase.storage.from("ad-images").getPublicUrl(row.storage_path).data.publicUrl;
+          return {
+            asset_id: row.id,
+            asset_url: url,
+            format: (row.format as AssetInventoryItem["format"]) || "feed",
+            ad_type: row.label || "awareness",
+            source: "library" as const,
+          };
+        })
+        .filter((a: AssetInventoryItem) => !publishedUrls.has(a.asset_url));
 
       setFetchedAssets(assets);
     }
@@ -170,11 +203,11 @@ export default function BatchSchedulerPanel({
 
   const handleGenerate = async () => {
     setProposeError(null);
-    setThinkingText("");
     setStreamBrand(null);
     setStreamInventory(null);
     setStreamPhase("brand");
     setStreamStatus("Initialising…");
+    setSlotAssets({});
     setStep("generating");
 
     try {
@@ -223,10 +256,10 @@ export default function BatchSchedulerPanel({
                 break;
               case "inventory":
                 setStreamInventory({ format_counts: event.format_counts, total: event.total });
-                setStreamPhase("thinking");
+                setStreamPhase("building");
                 break;
               case "thinking":
-                setThinkingText((prev) => prev + event.text);
+                // intentionally suppressed
                 break;
               case "building":
                 setStreamPhase("building");
@@ -284,33 +317,38 @@ export default function BatchSchedulerPanel({
   const confirmedSlotsList = proposal
     ? proposal.slots.filter(s => !excludedSlots.has(s.slot_index))
     : [];
+  // Only slots that have an asset picked can be confirmed
+  const readySlots = confirmedSlotsList.filter(s => !!slotAssets[s.slot_index]);
 
   // ── Step 4 handlers ──────────────────────────────────────────────────────
 
   const handleConfirmBatch = async () => {
-    if (!proposal || confirmedSlotsList.length === 0) return;
+    if (!proposal || readySlots.length === 0) return;
     setConfirmError(null);
     setIsConfirming(true);
 
     try {
-      const slotsWithScheduledAt = confirmedSlotsList.map(slot => ({
-        slot_index: slot.slot_index,
-        day_offset: slot.day_offset,
-        day_label: slot.day_label,
-        scheduled_at: buildScheduledAt(startDate, slot.day_offset, slot.suggested_time),
-        post_format: slot.post_format,
-        media_type: slot.media_type,
-        ad_type: slot.ad_type,
-        asset_url: slot.asset_url || "",
-        slide_asset_urls: slot.slide_asset_urls ?? [],
-        caption: undefined,
-      }));
+      const slotsWithScheduledAt = readySlots.map(slot => {
+        const picked = slotAssets[slot.slot_index];
+        return {
+          slot_index: slot.slot_index,
+          day_offset: slot.day_offset,
+          day_label: slot.day_label,
+          scheduled_at: buildScheduledAt(startDate, slot.day_offset, slot.suggested_time),
+          post_format: slot.post_format,
+          media_type: slot.media_type,
+          ad_type: slot.ad_type,
+          asset_url: picked?.asset_url || "",
+          slide_asset_urls: picked?.format === "carousel" ? (slot.slide_asset_urls ?? [picked.asset_url]) : [],
+          caption: undefined,
+        };
+      });
 
       // Calculate ends_at from last slot
-      const maxOffset = Math.max(...confirmedSlotsList.map(s => s.day_offset));
-      const lastSlot = confirmedSlotsList.find(s => s.day_offset === maxOffset)!;
+      const maxOffset = Math.max(...readySlots.map(s => s.day_offset));
+      const lastSlot = readySlots.find(s => s.day_offset === maxOffset)!;
       const endsAt = buildScheduledAt(startDate, lastSlot.day_offset, lastSlot.suggested_time);
-      const startsAt = buildScheduledAt(startDate, 0, confirmedSlotsList[0].suggested_time);
+      const startsAt = buildScheduledAt(startDate, 0, readySlots[0].suggested_time);
 
       const res = await fetch("/api/batches", {
         method: "POST",
@@ -742,64 +780,57 @@ export default function BatchSchedulerPanel({
 
           {/* ── Step 2: Generating (streaming) ──────────────────────────── */}
           {step === "generating" && (
-            <VStack gap={4} align="stretch" pt={3}>
+            <Flex direction="column" align="center" justify="center" py={12} gap={6}>
               {/* Phase strip */}
-              <Flex gap={2} align="center" flexWrap="wrap">
+              <Flex gap={2} align="center">
                 {([
                   { key: "brand", label: "Brand", icon: "🏷" },
                   { key: "inventory", label: "Inventory", icon: "📦" },
-                  { key: "thinking", label: "Strategy", icon: "🧠" },
                   { key: "building", label: "Schedule", icon: "📅" },
                 ] as { key: typeof streamPhase; label: string; icon: string }[]).map((phase, i) => {
-                  const phaseOrder = ["brand", "inventory", "thinking", "building", "done"];
+                  const phaseOrder = ["brand", "inventory", "building", "done"];
                   const currentIdx = phaseOrder.indexOf(streamPhase);
                   const phaseIdx = phaseOrder.indexOf(phase.key);
                   const isDone = currentIdx > phaseIdx;
                   const isActive = currentIdx === phaseIdx;
                   return (
                     <Flex key={phase.key} align="center" gap={1.5}>
-                      {i > 0 && <Box w="16px" h="1px" bg={isDone ? "#10B981" : "#E5E7EB"} />}
+                      {i > 0 && <Box w="20px" h="1px" bg={isDone ? "#10B981" : "#E5E7EB"} />}
                       <Flex
                         align="center"
                         gap={1.5}
                         px={2.5}
-                        py={1}
+                        py={1.5}
                         borderRadius="20px"
                         bg={isDone ? "#D1FAE5" : isActive ? "#EEF2FF" : "#F3F4F6"}
                         border="1px solid"
                         borderColor={isDone ? "#6EE7B7" : isActive ? "#C7D2FE" : "#E5E7EB"}
                         transition="all 0.3s ease"
                       >
-                        <Text fontSize="12px">{phase.icon}</Text>
-                        <Text
-                          fontSize="11px"
-                          fontWeight="700"
-                          color={isDone ? "#065F46" : isActive ? "#4F46E5" : "#9CA3AF"}
-                        >
+                        <Text fontSize="13px">{phase.icon}</Text>
+                        <Text fontSize="12px" fontWeight="700" color={isDone ? "#065F46" : isActive ? "#4F46E5" : "#9CA3AF"}>
                           {phase.label}
                         </Text>
-                        {isActive && (
-                          <Loader size={10} strokeWidth={2.5} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite" }} />
-                        )}
-                        {isDone && <Text fontSize="10px" color="#059669">✓</Text>}
+                        {isActive && <Loader size={11} strokeWidth={2.5} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite" }} />}
+                        {isDone && <Text fontSize="11px" color="#059669">✓</Text>}
                       </Flex>
                     </Flex>
                   );
                 })}
               </Flex>
 
-              {/* Brand + inventory chips */}
+              {/* Brand + inventory info */}
               {(streamBrand || streamInventory) && (
-                <Flex gap={2} flexWrap="wrap">
+                <Flex gap={2} flexWrap="wrap" justify="center">
                   {streamBrand && (
-                    <Badge bg="#EEF2FF" color="#4F46E5" px={2.5} py={1} borderRadius="8px" fontSize="12px" fontWeight="600">
+                    <Badge bg="#EEF2FF" color="#4F46E5" px={3} py={1.5} borderRadius="8px" fontSize="12px" fontWeight="600">
                       {streamBrand.name} · {streamBrand.industry}
                     </Badge>
                   )}
                   {streamInventory && Object.entries(streamInventory.format_counts).map(([fmt, cnt]) => {
                     const colors = formatBadgeColors(fmt);
                     return (
-                      <Badge key={fmt} bg={colors.bg} color={colors.color} px={2.5} py={1} borderRadius="8px" fontSize="12px" fontWeight="600" textTransform="capitalize">
+                      <Badge key={fmt} bg={colors.bg} color={colors.color} px={2.5} py={1.5} borderRadius="8px" fontSize="12px" fontWeight="600" textTransform="capitalize">
                         {fmt.replace("_", " ")}: {cnt}
                       </Badge>
                     );
@@ -807,54 +838,14 @@ export default function BatchSchedulerPanel({
                 </Flex>
               )}
 
-              {/* Streaming thinking box */}
-              {thinkingText && (
-                <Box
-                  bg="#0F172A"
-                  borderRadius="14px"
-                  p={4}
-                  border="1px solid #1E293B"
-                  minH="100px"
-                >
-                  <Flex align="center" gap={2} mb={2.5}>
-                    <Box w="8px" h="8px" borderRadius="50%" bg="#10B981" style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
-                    <Text fontSize="11px" fontWeight="700" color="#6EE7B7" letterSpacing="0.05em">
-                      AI REASONING
-                    </Text>
-                  </Flex>
-                  <Text
-                    fontSize="13px"
-                    color="#CBD5E1"
-                    lineHeight="1.75"
-                    fontFamily="'SF Mono', 'Fira Code', monospace"
-                  >
-                    {thinkingText}
-                    {streamPhase === "thinking" && (
-                      <Box
-                        as="span"
-                        display="inline-block"
-                        w="2px"
-                        h="14px"
-                        bg="#6EE7B7"
-                        ml={0.5}
-                        verticalAlign="middle"
-                        style={{ animation: "blink 1s step-end infinite" }}
-                      />
-                    )}
-                  </Text>
-                </Box>
-              )}
-
-              {/* Status line */}
-              <Flex align="center" gap={2} px={1}>
+              {/* Status */}
+              <Flex align="center" gap={2}>
                 {streamPhase !== "done" && (
-                  <Loader size={13} strokeWidth={2.5} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite", flexShrink: 0 }} />
+                  <Loader size={14} strokeWidth={2} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite" }} />
                 )}
-                <Text fontSize="13px" color="#6B7280" fontWeight="500">
-                  {streamStatus}
-                </Text>
+                <Text fontSize="14px" color="#6B7280" fontWeight="500">{streamStatus}</Text>
               </Flex>
-            </VStack>
+            </Flex>
           )}
 
           {/* ── Step 3: Review ──────────────────────────────────────────── */}
@@ -1045,32 +1036,6 @@ export default function BatchSchedulerPanel({
                         )}
                       </Box>
 
-                      {/* Thumbnail */}
-                      <Box
-                        w="56px"
-                        h="56px"
-                        borderRadius="10px"
-                        overflow="hidden"
-                        flexShrink={0}
-                        bg="#F3F4F6"
-                        border="1px solid #E5E7EB"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        {slot.asset_url ? (
-                          <Image
-                            src={slot.asset_url}
-                            alt="Asset"
-                            w="100%"
-                            h="100%"
-                            objectFit="cover"
-                          />
-                        ) : (
-                          <AlertCircle size={22} color="#D1D5DB" />
-                        )}
-                      </Box>
-
                       {/* Info */}
                       <Box flex={1} minW={0}>
                         <Flex align="center" gap={2} flexWrap="wrap" mb={1.5}>
@@ -1080,83 +1045,86 @@ export default function BatchSchedulerPanel({
                             </Text>
                             <Flex align="center" gap={1} color="#6B7280">
                               <Clock size={12} />
-                              <Text fontSize="12px" fontWeight="500">
-                                {slot.suggested_time}
-                              </Text>
+                              <Text fontSize="12px" fontWeight="500">{slot.suggested_time}</Text>
                             </Flex>
                           </Flex>
-                          <Badge
-                            bg={formatColors.bg}
-                            color={formatColors.color}
-                            px={2}
-                            py={0.5}
-                            borderRadius="6px"
-                            fontSize="11px"
-                            fontWeight="700"
-                            textTransform="uppercase"
-                          >
+                          <Badge bg={formatColors.bg} color={formatColors.color} px={2} py={0.5} borderRadius="6px" fontSize="11px" fontWeight="700" textTransform="uppercase">
                             {slot.post_format.replace("_", " ")}
                           </Badge>
-                          <Badge
-                            bg="#F3F4F6"
-                            color="#6B7280"
-                            px={2}
-                            py={0.5}
-                            borderRadius="6px"
-                            fontSize="11px"
-                            fontWeight="600"
-                          >
+                          <Badge bg="#F3F4F6" color="#6B7280" px={2} py={0.5} borderRadius="6px" fontSize="11px" fontWeight="600">
                             {slot.ad_type.replace(/_/g, " ")}
                           </Badge>
-                          {hasNoAsset && (
-                            <Badge
-                              bg="#FEF3C7"
-                              color="#92400E"
-                              px={2}
-                              py={0.5}
-                              borderRadius="6px"
-                              fontSize="11px"
-                              fontWeight="700"
-                            >
-                              No asset — skip or assign
-                            </Badge>
-                          )}
                         </Flex>
 
                         {/* Reasoning */}
-                        <Box>
-                          <Text
-                            fontSize="12px"
-                            color="#4B5563"
-                            lineHeight="1.55"
-                            display={isReasoningExpanded ? "block" : "-webkit-box"}
-                            style={
-                              !isReasoningExpanded
-                                ? {
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical",
-                                    overflow: "hidden",
-                                  }
-                                : {}
-                            }
-                          >
-                            {slot.reasoning}
+                        <Text
+                          fontSize="12px"
+                          color="#4B5563"
+                          lineHeight="1.55"
+                          display={isReasoningExpanded ? "block" : "-webkit-box"}
+                          style={!isReasoningExpanded ? { WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" } : {}}
+                          mb={2}
+                        >
+                          {slot.reasoning}
+                        </Text>
+                        {slot.reasoning.length > 80 && (
+                          <Text fontSize="11px" fontWeight="600" color="#4F46E5" cursor="pointer" mb={2} onClick={() => toggleReasoning(slot.slot_index)} display="inline-block">
+                            {isReasoningExpanded ? "Less" : "More"}
                           </Text>
-                          {slot.reasoning.length > 100 && (
-                            <Text
-                              fontSize="11px"
-                              fontWeight="600"
-                              color="#4F46E5"
-                              cursor="pointer"
-                              mt={0.5}
-                              onClick={() => toggleReasoning(slot.slot_index)}
-                              _hover={{ textDecoration: "underline" }}
-                              display="inline-block"
-                            >
-                              {isReasoningExpanded ? "Show less" : "Show more"}
-                            </Text>
-                          )}
-                        </Box>
+                        )}
+
+                        {/* Asset picker */}
+                        {(() => {
+                          const formatAssets = fetchedAssets.filter(a => a.format === slot.post_format);
+                          const picked = slotAssets[slot.slot_index];
+                          return (
+                            <Box>
+                              {picked ? (
+                                <Flex align="center" gap={2}>
+                                  <Box w="40px" h="40px" borderRadius="8px" overflow="hidden" border="2px solid #4F46E5" flexShrink={0}>
+                                    <Image src={picked.asset_url} alt="Selected" w="100%" h="100%" objectFit="cover" />
+                                  </Box>
+                                  <Text fontSize="11px" color="#4F46E5" fontWeight="600" flex={1} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">Asset selected</Text>
+                                  <Text
+                                    fontSize="11px"
+                                    color="#6B7280"
+                                    cursor="pointer"
+                                    _hover={{ color: "#DC2626" }}
+                                    onClick={() => setSlotAssets(prev => { const next = { ...prev }; delete next[slot.slot_index]; return next; })}
+                                  >
+                                    ✕ Remove
+                                  </Text>
+                                </Flex>
+                              ) : formatAssets.length === 0 ? (
+                                <Text fontSize="11px" color="#9CA3AF">No {slot.post_format.replace("_", " ")} assets available</Text>
+                              ) : (
+                                <Box>
+                                  <Text fontSize="11px" color="#6B7280" fontWeight="600" mb={1.5}>Pick an asset:</Text>
+                                  <Flex gap={1.5} overflowX="auto" pb={1} style={{ scrollbarWidth: "none" }}>
+                                    {formatAssets.map(asset => (
+                                      <Box
+                                        key={asset.asset_id}
+                                        w="44px"
+                                        h="44px"
+                                        borderRadius="8px"
+                                        overflow="hidden"
+                                        border="2px solid"
+                                        borderColor="transparent"
+                                        flexShrink={0}
+                                        cursor="pointer"
+                                        transition="border-color 0.1s ease"
+                                        _hover={{ borderColor: "#4F46E5" }}
+                                        onClick={() => setSlotAssets(prev => ({ ...prev, [slot.slot_index]: asset }))}
+                                      >
+                                        <Image src={asset.asset_url} alt="Asset" w="100%" h="100%" objectFit="cover" />
+                                      </Box>
+                                    ))}
+                                  </Flex>
+                                </Box>
+                              )}
+                            </Box>
+                          );
+                        })()}
                       </Box>
                     </Flex>
                   );
@@ -1180,25 +1148,21 @@ export default function BatchSchedulerPanel({
                 </Button>
                 <Button
                   flex={2}
-                  bg={confirmedSlotsList.length === 0 ? "#E5E7EB" : "#4F46E5"}
-                  color={confirmedSlotsList.length === 0 ? "#9CA3AF" : "white"}
+                  bg={readySlots.length === 0 ? "#E5E7EB" : "#4F46E5"}
+                  color={readySlots.length === 0 ? "#9CA3AF" : "white"}
                   borderRadius="12px"
                   h="44px"
                   fontSize="14px"
                   fontWeight="700"
-                  shadow={confirmedSlotsList.length === 0 ? "none" : "sm"}
-                  _hover={
-                    confirmedSlotsList.length === 0
-                      ? {}
-                      : { bg: "#4338CA", shadow: "md" }
-                  }
-                  disabled={confirmedSlotsList.length === 0 || isConfirming}
+                  shadow={readySlots.length === 0 ? "none" : "sm"}
+                  _hover={readySlots.length === 0 ? {} : { bg: "#4338CA", shadow: "md" }}
+                  disabled={readySlots.length === 0 || isConfirming}
                   loading={isConfirming}
                   onClick={handleConfirmBatch}
                 >
                   <Flex align="center" gap={2}>
                     <CheckCircle size={16} strokeWidth={2.5} />
-                    Confirm Batch ({confirmedSlotsList.length} posts)
+                    Schedule {readySlots.length} Post{readySlots.length !== 1 ? "s" : ""}
                   </Flex>
                 </Button>
               </Flex>
@@ -1241,7 +1205,7 @@ export default function BatchSchedulerPanel({
                     Batch Scheduled!
                   </Text>
                   <Text fontSize="14px" color="#6B7280" maxW="340px" lineHeight="1.6">
-                    {confirmedSlotsList.length} posts have been queued for publishing. The scheduler will handle the rest.
+                    {readySlots.length} posts have been queued for publishing. The scheduler will handle the rest.
                   </Text>
                 </VStack>
               </Flex>
@@ -1274,7 +1238,7 @@ export default function BatchSchedulerPanel({
                       fontSize="12px"
                       fontWeight="700"
                     >
-                      {confirmedSlotsList.length}
+                      {readySlots.length}
                     </Badge>
                   </Flex>
                   <Flex justify="space-between" align="center">
