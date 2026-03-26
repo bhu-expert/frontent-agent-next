@@ -761,8 +761,8 @@ export default function BatchSchedulerPanel({
                 </Flex>
               </Box>
 
-              {/* Inventory gaps warning + generate plan */}
-              {proposal.inventory_gaps.length > 0 && (
+              {/* Inventory gaps warning + generate plan — only shown when no assets at all */}
+              {fetchedAssets.length === 0 && proposal.inventory_gaps.length > 0 && (
                 <Box
                   p={4}
                   borderRadius="12px"
