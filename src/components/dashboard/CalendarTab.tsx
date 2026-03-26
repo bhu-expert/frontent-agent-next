@@ -2,10 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { Box, Button, Flex, SimpleGrid, Text, VStack, Image, Badge, IconButton, Dialog, Portal, Input } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Calendar, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Calendar, Clock, Sparkles } from "lucide-react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Textarea } from "@chakra-ui/react";
+import BatchSchedulerPanel from "./BatchSchedulerPanel";
+
+// ── Shared types ──────────────────────────────────────────────────────────────
+
+interface AssetInventoryItem {
+  asset_id: string;
+  asset_url: string;
+  format: "feed" | "stories" | "feed_4_5" | "carousel";
+  ad_type: string;
+  source: "campaign" | "library";
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -103,7 +114,13 @@ function isSameDay(date1: Date, date2: Date): boolean {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function CalendarTab() {
+interface CalendarTabProps {
+  brandId?: string;
+  brandName?: string;
+  availableAssets?: AssetInventoryItem[];
+}
+
+export default function CalendarTab({ brandId = "", brandName = "", availableAssets = [] }: CalendarTabProps) {
   const now = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -113,6 +130,7 @@ export default function CalendarTab() {
   const [editCaption, setEditCaption] = useState("");
   const [editScheduledAt, setEditScheduledAt] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showBatchPanel, setShowBatchPanel] = useState(false);
 
   const displayDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const displayYear = displayDate.getFullYear();
@@ -404,23 +422,41 @@ export default function CalendarTab() {
               {MONTH_NAMES[displayMonth]} {displayYear}
             </Text>
           </Box>
-          <Button
-            bg="#4F46E5"
-            color="white"
-            borderRadius="12px"
-            h="40px"
-            px={4}
-            fontSize="14px"
-            fontWeight="600"
-            shadow="sm"
-            _hover={{ bg: "#4338CA", shadow: "md" }}
-            onClick={() => toaster.create({ title: "Navigate to Integrations", description: "Use the Integrations tab to schedule new posts", type: "info", duration: 3000 })}
-          >
-            <Flex align="center" gap={2}>
-              <Plus size={16} strokeWidth={2.5} />
-              Schedule Post
-            </Flex>
-          </Button>
+          <Flex gap={2}>
+            <Button
+              bg="#F3F4F6"
+              color="#374151"
+              borderRadius="12px"
+              h="40px"
+              px={4}
+              fontSize="14px"
+              fontWeight="600"
+              _hover={{ bg: "#E5E7EB" }}
+              onClick={() => toaster.create({ title: "Navigate to Integrations", description: "Use the Integrations tab to schedule new posts", type: "info", duration: 3000 })}
+            >
+              <Flex align="center" gap={2}>
+                <Plus size={16} strokeWidth={2.5} />
+                Schedule Post
+              </Flex>
+            </Button>
+            <Button
+              bg="#4F46E5"
+              color="white"
+              borderRadius="12px"
+              h="40px"
+              px={4}
+              fontSize="14px"
+              fontWeight="600"
+              shadow="sm"
+              _hover={{ bg: "#4338CA", shadow: "md" }}
+              onClick={() => setShowBatchPanel(true)}
+            >
+              <Flex align="center" gap={2}>
+                <Sparkles size={16} strokeWidth={2.5} />
+                AI Batch
+              </Flex>
+            </Button>
+          </Flex>
         </Flex>
 
         {/* Loading state */}
@@ -744,6 +780,19 @@ export default function CalendarTab() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
+
+      {showBatchPanel && (
+        <BatchSchedulerPanel
+          brandId={brandId}
+          brandName={brandName}
+          availableAssets={availableAssets}
+          onClose={() => setShowBatchPanel(false)}
+          onBatchCreated={() => {
+            setShowBatchPanel(false);
+            fetchScheduledPosts();
+          }}
+        />
+      )}
     </VStack>
   );
 }
