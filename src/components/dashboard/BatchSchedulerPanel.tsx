@@ -133,7 +133,7 @@ export default function BatchSchedulerPanel({
           brand_id: brandId,
           cadence,
           start_date: startDate,
-          post_count: postCount,
+          target_post_count: postCount,
           available_assets: availableAssets,
         }),
       });

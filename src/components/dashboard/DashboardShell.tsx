@@ -1744,7 +1744,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               }}
             />
           ) : activeView === "calendar" ? (
-            <CalendarTab />
+            <CalendarTab
+              brandId={selectedBrandId ?? ""}
+              brandName={selectedBrand?.name ?? ""}
+            />
           ) : activeView === "integrations" ? (
             <IntegrationsTab />
           ) : activeView === "settings" ? (
