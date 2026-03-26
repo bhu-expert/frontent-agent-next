@@ -118,6 +118,13 @@ export default function BatchSchedulerPanel({
   const [proposeError, setProposeError] = useState<string | null>(null);
   const [proposal, setProposal] = useState<BatchProposal | null>(null);
 
+  // Streaming state
+  const [streamPhase, setStreamPhase] = useState<"brand" | "inventory" | "thinking" | "building" | "done">("brand");
+  const [streamBrand, setStreamBrand] = useState<{ name: string; industry: string } | null>(null);
+  const [streamInventory, setStreamInventory] = useState<{ format_counts: Record<string, number>; total: number } | null>(null);
+  const [thinkingText, setThinkingText] = useState("");
+  const [streamStatus, setStreamStatus] = useState("Initialising…");
+
   // Step 3 — Review: excluded slot indices
   const [excludedSlots, setExcludedSlots] = useState<Set<number>>(new Set());
   const [expandedReasonings, setExpandedReasonings] = useState<Set<number>>(new Set());
@@ -163,7 +170,13 @@ export default function BatchSchedulerPanel({
 
   const handleGenerate = async () => {
     setProposeError(null);
+    setThinkingText("");
+    setStreamBrand(null);
+    setStreamInventory(null);
+    setStreamPhase("brand");
+    setStreamStatus("Initialising…");
     setStep("generating");
+
     try {
       const res = await fetch("/api/batches/propose", {
         method: "POST",
@@ -177,14 +190,64 @@ export default function BatchSchedulerPanel({
           allow_multiple_per_day: allowMultiplePerDay,
         }),
       });
-      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error(data.error || "Failed to generate proposal");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as Record<string, string>).error || "Failed to generate proposal");
       }
-      setProposal(data as BatchProposal);
-      setExcludedSlots(new Set());
-      setExpandedReasonings(new Set());
-      setStep("review");
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse complete SSE lines
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            switch (event.type) {
+              case "status":
+                setStreamStatus(event.message);
+                break;
+              case "brand_loaded":
+                setStreamBrand({ name: event.brand_name, industry: event.industry });
+                setStreamPhase("inventory");
+                break;
+              case "inventory":
+                setStreamInventory({ format_counts: event.format_counts, total: event.total });
+                setStreamPhase("thinking");
+                break;
+              case "thinking":
+                setThinkingText((prev) => prev + event.text);
+                break;
+              case "building":
+                setStreamPhase("building");
+                setStreamStatus(event.message || "Building your schedule…");
+                break;
+              case "done":
+                setProposal(event.proposal as BatchProposal);
+                setExcludedSlots(new Set());
+                setExpandedReasonings(new Set());
+                setStreamPhase("done");
+                setStep("review");
+                break;
+              case "error":
+                throw new Error(event.message);
+            }
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) continue; // incomplete chunk
+            throw parseErr;
+          }
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Proposal failed";
       setProposeError(message);
@@ -677,49 +740,121 @@ export default function BatchSchedulerPanel({
             </VStack>
           )}
 
-          {/* ── Step 2: Generating ──────────────────────────────────────── */}
+          {/* ── Step 2: Generating (streaming) ──────────────────────────── */}
           {step === "generating" && (
-            <Flex
-              direction="column"
-              align="center"
-              justify="center"
-              py={16}
-              gap={5}
-            >
-              <Flex
-                w="72px"
-                h="72px"
-                borderRadius="20px"
-                bg="#EEF2FF"
-                align="center"
-                justify="center"
-                color="#4F46E5"
-                style={{ animation: "pulse 2s ease-in-out infinite" }}
-              >
-                <Loader size={32} strokeWidth={2} style={{ animation: "spin 1.4s linear infinite" }} />
+            <VStack gap={4} align="stretch" pt={3}>
+              {/* Phase strip */}
+              <Flex gap={2} align="center" flexWrap="wrap">
+                {([
+                  { key: "brand", label: "Brand", icon: "🏷" },
+                  { key: "inventory", label: "Inventory", icon: "📦" },
+                  { key: "thinking", label: "Strategy", icon: "🧠" },
+                  { key: "building", label: "Schedule", icon: "📅" },
+                ] as { key: typeof streamPhase; label: string; icon: string }[]).map((phase, i) => {
+                  const phaseOrder = ["brand", "inventory", "thinking", "building", "done"];
+                  const currentIdx = phaseOrder.indexOf(streamPhase);
+                  const phaseIdx = phaseOrder.indexOf(phase.key);
+                  const isDone = currentIdx > phaseIdx;
+                  const isActive = currentIdx === phaseIdx;
+                  return (
+                    <Flex key={phase.key} align="center" gap={1.5}>
+                      {i > 0 && <Box w="16px" h="1px" bg={isDone ? "#10B981" : "#E5E7EB"} />}
+                      <Flex
+                        align="center"
+                        gap={1.5}
+                        px={2.5}
+                        py={1}
+                        borderRadius="20px"
+                        bg={isDone ? "#D1FAE5" : isActive ? "#EEF2FF" : "#F3F4F6"}
+                        border="1px solid"
+                        borderColor={isDone ? "#6EE7B7" : isActive ? "#C7D2FE" : "#E5E7EB"}
+                        transition="all 0.3s ease"
+                      >
+                        <Text fontSize="12px">{phase.icon}</Text>
+                        <Text
+                          fontSize="11px"
+                          fontWeight="700"
+                          color={isDone ? "#065F46" : isActive ? "#4F46E5" : "#9CA3AF"}
+                        >
+                          {phase.label}
+                        </Text>
+                        {isActive && (
+                          <Loader size={10} strokeWidth={2.5} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite" }} />
+                        )}
+                        {isDone && <Text fontSize="10px" color="#059669">✓</Text>}
+                      </Flex>
+                    </Flex>
+                  );
+                })}
               </Flex>
-              <VStack gap={2} textAlign="center">
-                <Text fontSize="17px" fontWeight="700" color="#1F2937">
-                  Analysing your content strategy…
+
+              {/* Brand + inventory chips */}
+              {(streamBrand || streamInventory) && (
+                <Flex gap={2} flexWrap="wrap">
+                  {streamBrand && (
+                    <Badge bg="#EEF2FF" color="#4F46E5" px={2.5} py={1} borderRadius="8px" fontSize="12px" fontWeight="600">
+                      {streamBrand.name} · {streamBrand.industry}
+                    </Badge>
+                  )}
+                  {streamInventory && Object.entries(streamInventory.format_counts).map(([fmt, cnt]) => {
+                    const colors = formatBadgeColors(fmt);
+                    return (
+                      <Badge key={fmt} bg={colors.bg} color={colors.color} px={2.5} py={1} borderRadius="8px" fontSize="12px" fontWeight="600" textTransform="capitalize">
+                        {fmt.replace("_", " ")}: {cnt}
+                      </Badge>
+                    );
+                  })}
+                </Flex>
+              )}
+
+              {/* Streaming thinking box */}
+              {thinkingText && (
+                <Box
+                  bg="#0F172A"
+                  borderRadius="14px"
+                  p={4}
+                  border="1px solid #1E293B"
+                  minH="100px"
+                >
+                  <Flex align="center" gap={2} mb={2.5}>
+                    <Box w="8px" h="8px" borderRadius="50%" bg="#10B981" style={{ animation: "pulse 1.5s ease-in-out infinite" }} />
+                    <Text fontSize="11px" fontWeight="700" color="#6EE7B7" letterSpacing="0.05em">
+                      AI REASONING
+                    </Text>
+                  </Flex>
+                  <Text
+                    fontSize="13px"
+                    color="#CBD5E1"
+                    lineHeight="1.75"
+                    fontFamily="'SF Mono', 'Fira Code', monospace"
+                  >
+                    {thinkingText}
+                    {streamPhase === "thinking" && (
+                      <Box
+                        as="span"
+                        display="inline-block"
+                        w="2px"
+                        h="14px"
+                        bg="#6EE7B7"
+                        ml={0.5}
+                        verticalAlign="middle"
+                        style={{ animation: "blink 1s step-end infinite" }}
+                      />
+                    )}
+                  </Text>
+                </Box>
+              )}
+
+              {/* Status line */}
+              <Flex align="center" gap={2} px={1}>
+                {streamPhase !== "done" && (
+                  <Loader size={13} strokeWidth={2.5} color="#4F46E5" style={{ animation: "spin 1.2s linear infinite", flexShrink: 0 }} />
+                )}
+                <Text fontSize="13px" color="#6B7280" fontWeight="500">
+                  {streamStatus}
                 </Text>
-                <Text fontSize="14px" color="#6B7280" maxW="340px" lineHeight="1.6">
-                  The AI is reviewing your asset inventory, brand cadence, and audience timing to build an optimal posting schedule.
-                </Text>
-              </VStack>
-              <Flex gap={1.5} mt={2}>
-                {[0, 1, 2].map((i) => (
-                  <Box
-                    key={i}
-                    w="8px"
-                    h="8px"
-                    borderRadius="50%"
-                    bg="#4F46E5"
-                    opacity={0.3 + i * 0.3}
-                    style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
-                  />
-                ))}
               </Flex>
-            </Flex>
+            </VStack>
           )}
 
           {/* ── Step 3: Review ──────────────────────────────────────────── */}
@@ -1193,7 +1328,11 @@ export default function BatchSchedulerPanel({
           }
           @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            50% { opacity: 0.5; }
+          }
+          @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
           }
         `}</style>
       </Box>

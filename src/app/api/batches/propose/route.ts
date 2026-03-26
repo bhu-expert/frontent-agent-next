@@ -78,10 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { token } = authResult;
-
     const body = await request.json();
 
-    const fastapiResponse = await fetch(`${API_BASE_URL}/agent/batch/propose`, {
+    const fastapiResponse = await fetch(`${API_BASE_URL}/agent/batch/propose/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -90,16 +89,23 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const responseData = await fastapiResponse.json();
-
     if (!fastapiResponse.ok) {
+      const err = await fastapiResponse.json().catch(() => ({}));
       return NextResponse.json(
-        { error: responseData.detail || responseData.error || "Proposal failed" },
+        { error: (err as Record<string,string>).detail || "Proposal failed" },
         { status: fastapiResponse.status }
       );
     }
 
-    return NextResponse.json(responseData, { status: 200 });
+    // Pass the SSE stream straight through to the browser
+    return new Response(fastapiResponse.body, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Batch propose failed";
     console.error("Batch propose error:", err);
