@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+// NEXT_PUBLIC_API_URL points to the /data router (e.g. .../api/v1/data).
+// Batch endpoints live under /agent, so strip the trailing /data segment.
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_BASE_URL = rawApiUrl.replace(/\/data\/?$/, "");
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
