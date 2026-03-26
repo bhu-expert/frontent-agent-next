@@ -25,6 +25,7 @@ interface BatchSlot {
   ad_type: string;
   asset_id?: string;
   asset_url?: string;
+  slide_asset_urls?: string[];  // all slide URLs for carousel posts
   reasoning: string;
 }
 
@@ -238,6 +239,7 @@ export default function BatchSchedulerPanel({
         media_type: slot.media_type,
         ad_type: slot.ad_type,
         asset_url: slot.asset_url || "",
+        slide_asset_urls: slot.slide_asset_urls ?? [],
         caption: undefined,
       }));
 

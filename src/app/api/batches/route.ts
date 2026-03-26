@@ -98,6 +98,7 @@ interface ConfirmedSlot {
   media_type: string;
   ad_type: string;
   asset_url: string;
+  slide_asset_urls?: string[];  // all slide URLs for carousel posts
   caption?: string;
 }
 
@@ -182,7 +183,9 @@ export async function POST(request: NextRequest) {
       slot_index: slot.slot_index,
       media_type: slot.media_type,
       media_url: slot.media_type !== "CAROUSEL" ? slot.asset_url : null,
-      carousel_urls: slot.media_type === "CAROUSEL" ? [slot.asset_url] : null,
+      carousel_urls: slot.media_type === "CAROUSEL"
+        ? (slot.slide_asset_urls?.length ? slot.slide_asset_urls : [slot.asset_url])
+        : null,
       caption: slot.caption || null,
       scheduled_at: slot.scheduled_at,
       status: "scheduled",
