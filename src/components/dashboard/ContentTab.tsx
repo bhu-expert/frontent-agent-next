@@ -175,7 +175,6 @@ function TemplatePreviewCard({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const Layout = getTemplateComponent(template.id, 1);
   const accent = "#4F46E5";
 
   return (
@@ -210,18 +209,6 @@ function TemplatePreviewCard({
       >
         {isSelected && <Text fontSize="10px" lineHeight={1}>&#10003;</Text>}
       </Flex>
-
-      {/* Live layout preview — pointer-events off so clicks pass through */}
-      <Box w="100%" style={{ aspectRatio: "4/5" }} pointerEvents="none" overflow="hidden">
-        <Layout
-          vd={PREVIEW_VD}
-          imageUrl={null}
-          primary="#1A1A2E"
-          secondary="#4F46E5"
-          accent="#F59E0B"
-          format="feed_4_5"
-        />
-      </Box>
 
       {/* Label row */}
       <Box
