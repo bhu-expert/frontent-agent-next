@@ -525,6 +525,7 @@ export async function generateSocialAd(
   cta: string,
   contextIndices: number[] | null,
   token: string,
+  commentKeyword?: string | null,
 ): Promise<{
   campaigns: Array<{
     campaign_id: string;
@@ -542,6 +543,7 @@ export async function generateSocialAd(
       topic,
       cta,
       context_indices: contextIndices && contextIndices.length > 0 ? contextIndices : null,
+      comment_keyword: commentKeyword || null,
     }),
   });
   if (!res.ok) {
@@ -608,27 +610,48 @@ export interface ReelScriptResponse {
   scripts: ReelScriptIdea[];
 }
 
+export interface BeatImage {
+  beat_number: number;
+  duration_seconds: number;
+  image_url: string;
+  prompt_used: string;
+  generation_success: boolean;
+}
+
+export interface ReelOutput {
+  reel_id: string;
+  brand_id: string;
+  reel_url: string;
+  thumbnail_url: string;
+  voiceover_url: string;
+  duration_seconds: number;
+  beat_count: number;
+  beat_images: BeatImage[];
+  script: ReelScriptIdea;
+  created_at: string;
+}
+
 /**
- * Generates Reel scripts synchronously using brand context + skill knowledge.
+ * Full reel production — returns a real MP4.
+ * Expected response time: 60–180 seconds.
  */
-export async function generateReelScripts(
+export async function createReel(
   brandId: string,
   context: string,
-  numIdeas: number,
   token: string,
-): Promise<ReelScriptResponse> {
-  const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.REEL_SCRIPT_IDEATE}`, {
+): Promise<ReelOutput> {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1/agent/reel/create`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       brand_id: brandId,
       context: context || null,
-      num_ideas: numIdeas,
+      num_ideas: 1,
     }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    apiError(body.detail || body.message || "Failed to generate Reel scripts", res.status);
+    apiError(body.detail || body.message || "Failed to create Reel", res.status);
   }
   return res.json();
 }

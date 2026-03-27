@@ -30,8 +30,8 @@ import {
   Tags,
   Zap,
 } from "lucide-react";
-import { generateAdVariationsBulk, generateCarousel, generateReelScripts, generateSocialAd } from "@/api";
-import type { ReelScriptResponse, ReelScriptIdea } from "@/api";
+import { generateAdVariationsBulk, generateCarousel, createReel, generateSocialAd } from "@/api";
+import type { ReelOutput, ReelScriptIdea } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
@@ -343,18 +343,19 @@ export default function ContentTab({
 
   // ── Reels state ────────────────────────────────────────────────────────
   const [reelsBrief, setReelsBrief] = useState("");
-  const [reelsNumIdeas, setReelsNumIdeas] = useState(3);
   const [reelsContextIndex, setReelsContextIndex] = useState<number | null>(null);
   const [isGeneratingReels, setIsGeneratingReels] = useState(false);
   const [reelsError, setReelsError] = useState<string | null>(null);
-  const [reelsResult, setReelsResult] = useState<ReelScriptResponse | null>(null);
-  const [expandedScripts, setExpandedScripts] = useState<Set<number>>(new Set());
+  const [reelsResult, setReelsResult] = useState<ReelOutput | null>(null);
+  const [reelsProgressStep, setReelsProgressStep] = useState(0);
+  const [scriptExpanded, setScriptExpanded] = useState(false);
 
   // ── Social Ads state ───────────────────────────────────────────────────
   const [selectedSocialFormats, setSelectedSocialFormats] = useState<string[]>(["comment_free_agent"]);
   const [selectedSocialContextIds, setSelectedSocialContextIds] = useState<number[]>([]);
   const [socialTopic, setSocialTopic] = useState("");
   const [socialCta, setSocialCta] = useState("");
+  const [socialCommentKeyword, setSocialCommentKeyword] = useState("");
   const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
   const [socialError, setSocialError] = useState<string | null>(null);
   const isGeneratingSocialRef = useRef(false);
@@ -463,6 +464,7 @@ export default function ContentTab({
         socialCta.trim(),
         selectedSocialContextIds.length > 0 ? selectedSocialContextIds.slice(0, MAX_COMBINATIONS) : null,
         token,
+        socialCommentKeyword.trim() || null,
       );
       const newCampaignIds: string[] = [];
       for (const c of result.campaigns) {
@@ -1475,10 +1477,41 @@ export default function ContentTab({
             />
           </Box>
 
-          {/* Step 4 — CTA */}
+          {/* Comment Keyword — only shown when Comment Free Agent is selected */}
+          {selectedSocialFormats.includes("comment_free_agent") && (
+            <Box>
+              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+                {contextBlocks.length > 0 ? "4." : "3."} What should people comment?
+              </Text>
+              <Text fontSize="15px" color="#6B7280" mb={3}>
+                The exact word or phrase your audience must comment to claim the offer.
+              </Text>
+              <Textarea
+                placeholder='e.g. FREE, FREEBIE, YES, I WANT THIS, SEND IT — short and all-caps works best'
+                value={socialCommentKeyword}
+                onChange={(e) => setSocialCommentKeyword(e.target.value)}
+                minH="64px" px="16px" py="14px" resize="vertical"
+                {...fieldChrome}
+                _focusVisible={{ borderColor: "#7C3AED", boxShadow: "0 0 0 4px rgba(124,58,237,0.14)" }}
+              />
+              {socialCommentKeyword.trim() && (
+                <Flex align="center" gap={1.5} mt={2}>
+                  <Box w="6px" h="6px" borderRadius="full" bg="#7C3AED" />
+                  <Text fontSize="12px" color="#7C3AED" fontWeight="600">
+                    Keyword locked in: &ldquo;{socialCommentKeyword.trim().toUpperCase()}&rdquo;
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+          )}
+
+          {/* Step 4/5 — CTA */}
           <Box>
             <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-              {contextBlocks.length > 0 ? "4." : "3."} Call to Action
+              {contextBlocks.length > 0
+                ? selectedSocialFormats.includes("comment_free_agent") ? "5." : "4."
+                : selectedSocialFormats.includes("comment_free_agent") ? "4." : "3."
+              } Call to Action
             </Text>
             <Text fontSize="15px" color="#6B7280" mb={3}>What should people do after seeing this ad?</Text>
             {/* Preset chips */}
