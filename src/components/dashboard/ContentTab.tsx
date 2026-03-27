@@ -31,7 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import { generateAdVariationsBulk, generateCarousel, createReel, generateSocialAd } from "@/api";
-import type { ReelOutput, ReelScriptIdea } from "@/api";
+import type { ReelOutput } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
@@ -490,28 +490,42 @@ export default function ContentTab({
     }
   };
 
-  const toggleScriptExpand = (idx: number) =>
-    setExpandedScripts((prev) => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
+  const REEL_PROGRESS_STEPS = [
+    "Writing director's script…",
+    "Generating beat images…",
+    "Recording voiceover…",
+    "Composing reel…",
+    "Uploading to storage…",
+  ];
 
   const handleGenerateReels = async () => {
     if (!brand || !token || reelsContextIndex === null) return;
     setIsGeneratingReels(true);
     setReelsError(null);
     setReelsResult(null);
-    setExpandedScripts(new Set());
+    setReelsProgressStep(0);
     try {
       const contextBlock = contextBlocks.find(b => b.context_index === reelsContextIndex);
       const contextPrefix = contextBlock ? `Context: ${contextBlock.title}.\n` : "";
       const fullBrief = (contextPrefix + reelsBrief.trim()).trim();
-      const result = await generateReelScripts(brand.id, fullBrief, reelsNumIdeas, token);
-      setReelsResult(result);
+
+      // Advance progress indicator while API call is in flight
+      let step = 0;
+      const interval = setInterval(() => {
+        step = Math.min(step + 1, REEL_PROGRESS_STEPS.length - 1);
+        setReelsProgressStep(step);
+      }, 18_000); // ~18s per stage
+
+      try {
+        const result = await createReel(brand.id, fullBrief, token);
+        setReelsResult(result);
+      } finally {
+        clearInterval(interval);
+        setReelsProgressStep(REEL_PROGRESS_STEPS.length - 1);
+      }
     } catch (err) {
       const e = err as { message?: string };
-      setReelsError(e.message || "Failed to generate Reel scripts. Please try again.");
+      setReelsError(e.message || "Failed to generate reel. Please try again.");
     } finally {
       setIsGeneratingReels(false);
     }
@@ -1072,30 +1086,6 @@ export default function ContentTab({
             />
           </Box>
 
-          {/* Num ideas */}
-          <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>3. Number of Scripts</Text>
-            <Text fontSize="15px" color="#6B7280" mb={4}>How many distinct Reel concepts to generate.</Text>
-            <Flex gap={3}>
-              {[1, 2, 3, 5].map((n) => (
-                <Box
-                  key={n}
-                  w="56px" h="56px" borderRadius="14px" cursor="pointer"
-                  border="2px solid" borderColor={reelsNumIdeas === n ? "#E11D48" : "#E5E7EB"}
-                  bg={reelsNumIdeas === n ? "#FFF1F2" : "white"}
-                  color={reelsNumIdeas === n ? "#E11D48" : "#374151"}
-                  fontSize="20px" fontWeight="700"
-                  display="flex" alignItems="center" justifyContent="center"
-                  transition="all 0.15s ease"
-                  _hover={{ borderColor: "#E11D48", bg: "#FFF1F2" }}
-                  onClick={() => setReelsNumIdeas(n)}
-                >
-                  {n}
-                </Box>
-              ))}
-            </Flex>
-          </Box>
-
           {/* Error */}
           {reelsError && (
             <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
@@ -1108,13 +1098,8 @@ export default function ContentTab({
             <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
               <Flex align="center" gap={4} bg="#FFF1F2" border="1px solid" borderColor="#FECDD3" borderRadius="16px" px={5} py={3}>
                 <Box textAlign="center">
-                  <Text fontSize="18px" fontWeight="700" color="#E11D48">{reelsNumIdeas}</Text>
-                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Scripts</Text>
-                </Box>
-                <Text color="#9CA3AF">&middot;</Text>
-                <Box textAlign="center">
-                  <Text fontSize="13px" fontWeight="600" color="#E11D48">Hook A/B/C + Beats + CTA</Text>
-                  <Text fontSize="11px" color="#6B7280">per script</Text>
+                  <Text fontSize="13px" fontWeight="700" color="#E11D48">Script → Images → Voice</Text>
+                  <Text fontSize="11px" color="#6B7280">Full reel · ~90 seconds</Text>
                 </Box>
               </Flex>
               <Button
@@ -1130,287 +1115,177 @@ export default function ContentTab({
                     ? <><Loader size={16} style={{ animation: "spin 1.5s linear infinite" }} /> Generating...</>
                     : reelsContextIndex === null
                       ? "Select a Context First"
-                      : <><Clapperboard size={16} /> Generate {reelsNumIdeas} Reel Script{reelsNumIdeas !== 1 ? "s" : ""}</>}
+                      : <><Clapperboard size={16} /> Create Reel</>}
                 </Flex>
               </Button>
             </Flex>
           </Box>
 
-          {/* Results */}
-          {reelsResult && reelsResult.scripts.length > 0 && (
-            <VStack align="stretch" gap={5}>
-              <Text fontSize="20px" fontWeight="700" color="#111111">
-                {reelsResult.scripts.length} Script{reelsResult.scripts.length !== 1 ? "s" : ""} Generated
-              </Text>
-              {reelsResult.scripts.map((script, idx) => {
-                const isExpanded = expandedScripts.has(idx);
-                return (
-                  <Box key={idx} bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" overflow="hidden">
-                    {/* Card header */}
+          {/* Progress indicator while generating */}
+          {isGeneratingReels && (
+            <Box bg="white" border="1px solid" borderColor="#FECDD3" borderRadius="20px" px={6} py={6}>
+              <Text fontSize="14px" fontWeight="600" color="#E11D48" mb={4}>Building your reel…</Text>
+              <VStack align="stretch" gap={2}>
+                {REEL_PROGRESS_STEPS.map((label, i) => (
+                  <Flex key={i} align="center" gap={3}>
                     <Flex
-                      px={6} py={4} align="center" justify="space-between" cursor="pointer"
-                      bg={isExpanded ? "#FFF1F2" : "white"}
-                      borderBottom={isExpanded ? "1px solid" : "none"}
-                      borderColor="#FECDD3"
-                      onClick={() => toggleScriptExpand(idx)}
-                      transition="background 0.15s"
+                      w="24px" h="24px" borderRadius="full" flexShrink={0}
+                      align="center" justify="center"
+                      bg={i < reelsProgressStep ? "#E11D48" : i === reelsProgressStep ? "#FFF1F2" : "#F3F4F6"}
+                      border="2px solid"
+                      borderColor={i < reelsProgressStep ? "#E11D48" : i === reelsProgressStep ? "#E11D48" : "#E5E7EB"}
                     >
-                      <Box>
-                        <Flex align="center" gap={3} mb={1}>
-                          <Box px={2.5} py={0.5} borderRadius="999px" bg="#FFF1F2" border="1px solid #FECDD3">
-                            <Text fontSize="11px" fontWeight="700" color="#E11D48">Script {idx + 1}</Text>
-                          </Box>
-                          {script.format_name && (
-                            <Box px={2.5} py={0.5} borderRadius="999px" bg="#F0F9FF" border="1px solid #BAE6FD">
-                              <Text fontSize="11px" fontWeight="600" color="#0369A1">{script.format_name}</Text>
-                            </Box>
-                          )}
-                          {script.duration_seconds && (
-                            <Text fontSize="12px" color="#9CA3AF">{script.duration_seconds}s</Text>
-                          )}
-                        </Flex>
-                        <Text fontSize="17px" fontWeight="700" color="#111111">{script.title}</Text>
-                        {script.goal && <Text fontSize="13px" color="#6B7280" mt={0.5}>Goal: {script.goal}</Text>}
-                      </Box>
-                      <Flex color="#9CA3AF" flexShrink={0} ml={4}>
-                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </Flex>
+                      {i < reelsProgressStep
+                        ? <Text fontSize="11px" color="white" fontWeight="800">✓</Text>
+                        : i === reelsProgressStep
+                          ? <Loader size={10} color="#E11D48" style={{ animation: "spin 1.5s linear infinite" }} />
+                          : null}
                     </Flex>
+                    <Text
+                      fontSize="14px"
+                      color={i <= reelsProgressStep ? "#111111" : "#9CA3AF"}
+                      fontWeight={i === reelsProgressStep ? "600" : "400"}
+                    >
+                      {label}
+                    </Text>
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
+          )}
 
-                    {/* Expanded content */}
-                    {isExpanded && (
-                      <VStack align="stretch" gap={0}>
+          {/* Reel result — video player */}
+          {reelsResult && (
+            <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" overflow="hidden">
 
-                        {/* ── Hook Options ── */}
-                        {script.hook_options && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Hook Options — pick one</SectionLabel>
-                            <VStack align="stretch" gap={2}>
-                              {[
-                                { label: "A — Curiosity / Pain", text: script.hook_options.hook_a },
-                                { label: "B — Desire / Pattern-break", text: script.hook_options.hook_b },
-                                { label: "C — Hot Take", text: script.hook_options.hook_c },
-                              ].map(({ label, text }) => (
-                                <Box key={label} px={4} py={3} borderRadius="12px" bg="#F9FAFB" border="1px solid #E5E7EB">
-                                  <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>{label}</Text>
-                                  <Text fontSize="14px" color="#111111" fontWeight="500">&ldquo;{text}&rdquo;</Text>
-                                </Box>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
+              {/* Video player */}
+              <Box bg="#000" borderRadius="20px 20px 0 0" overflow="hidden">
+                <video
+                  src={reelsResult.reel_url}
+                  poster={reelsResult.thumbnail_url}
+                  controls
+                  playsInline
+                  style={{ width: "100%", maxHeight: "540px", display: "block", margin: "0 auto" }}
+                />
+              </Box>
 
-                        {/* ── Visual Brief ── */}
-                        <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                          <SectionLabel>Visual Brief</SectionLabel>
-                          <VStack align="stretch" gap={3}>
-                            {script.scene_description && (
-                              <MetaBlock label="Scene" value={script.scene_description} />
-                            )}
-                            {script.opening_frame && (
-                              <MetaBlock label="Opening Frame" value={script.opening_frame} highlight />
-                            )}
-                            <Flex gap={4} wrap="wrap">
-                              {script.location_set && <MetaBlock label="Location / Set" value={script.location_set} />}
-                              {script.color_grade && <MetaBlock label="Color Grade" value={script.color_grade} />}
-                            </Flex>
-                          </VStack>
-                        </Box>
-
-                        {/* ── Talent & Performance ── */}
-                        {(script.talent_notes || script.wardrobe_props) && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Talent & Performance</SectionLabel>
-                            <VStack align="stretch" gap={3}>
-                              {script.talent_notes && <MetaBlock label="Performance Direction" value={script.talent_notes} />}
-                              {script.wardrobe_props && <MetaBlock label="Wardrobe & Props" value={script.wardrobe_props} />}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── Shooting Script (Beats) ── */}
-                        {script.script_beats && script.script_beats.length > 0 && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Shooting Script — {script.script_beats.length} Beats</SectionLabel>
-                            <VStack align="stretch" gap={4} mt={1}>
-                              {script.script_beats.map((beat, bi) => (
-                                <Box key={bi} borderRadius="16px" border="1px solid #E5E7EB" overflow="hidden">
-                                  {/* Beat header */}
-                                  <Flex
-                                    px={4} py={2.5} bg="#F9FAFB" align="center" gap={3}
-                                    borderBottom="1px solid #E5E7EB"
-                                  >
-                                    <Flex
-                                      w="28px" h="28px" borderRadius="full" bg="#E11D48"
-                                      align="center" justify="center" flexShrink={0}
-                                    >
-                                      <Text fontSize="12px" fontWeight="800" color="white">
-                                        {beat.beat_number ?? bi + 1}
-                                      </Text>
-                                    </Flex>
-                                    <Flex gap={2} wrap="wrap" flex={1}>
-                                      <Chip color="purple">{beat.shot_type}</Chip>
-                                      <Chip color="blue">{beat.camera_movement}</Chip>
-                                      {beat.duration_seconds && (
-                                        <Chip color="gray">{beat.duration_seconds}s</Chip>
-                                      )}
-                                      {beat.transition_out && beat.transition_out !== "END" && (
-                                        <Chip color="orange">→ {beat.transition_out}</Chip>
-                                      )}
-                                    </Flex>
-                                  </Flex>
-
-                                  {/* Beat body */}
-                                  <Box px={4} py={4}>
-                                    <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
-                                      {beat.framing_notes && (
-                                        <BeatField icon="🎬" label="Framing" value={beat.framing_notes} />
-                                      )}
-                                      {beat.lighting && (
-                                        <BeatField icon="💡" label="Lighting" value={beat.lighting} />
-                                      )}
-                                      {beat.talent_action && (
-                                        <BeatField icon="🎭" label="Talent Action" value={beat.talent_action} />
-                                      )}
-                                      {beat.sound_note && (
-                                        <BeatField icon="🎵" label="Sound" value={beat.sound_note} />
-                                      )}
-                                    </Box>
-
-                                    {/* Voice line */}
-                                    {beat.voice_text && (
-                                      <Box mt={3} px={4} py={3} borderRadius="10px" bg="#FFF1F2" border="1px solid #FECDD3">
-                                        <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>VO / ON-CAMERA LINE</Text>
-                                        <Text fontSize="15px" fontWeight="600" color="#111111" fontStyle="italic">
-                                          &ldquo;{beat.voice_text}&rdquo;
-                                        </Text>
-                                      </Box>
-                                    )}
-
-                                    {/* On-screen text */}
-                                    {beat.on_screen_text && (
-                                      <Box mt={2} px={4} py={2.5} borderRadius="10px" bg="#F0F9FF" border="1px solid #BAE6FD">
-                                        <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={0.5}>TEXT OVERLAY</Text>
-                                        <Text fontSize="14px" fontWeight="600" color="#0369A1">{beat.on_screen_text}</Text>
-                                      </Box>
-                                    )}
-                                  </Box>
-                                </Box>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── CTA + Caption ── */}
-                        <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                          <SectionLabel>CTA & Caption</SectionLabel>
-                          <Flex gap={4} wrap="wrap">
-                            <Box flex={1} minW="220px">
-                              <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Call to Action</Text>
-                              <Box px={4} py={3} borderRadius="12px" bg="#F0FDF4" border="1px solid #BBF7D0">
-                                <Text fontSize="14px" fontWeight="600" color="#166534">{script.cta}</Text>
-                              </Box>
-                            </Box>
-                            {script.caption_hook && (
-                              <Box flex={1} minW="220px">
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Caption Hook</Text>
-                                <Box px={4} py={3} borderRadius="12px" bg="#F5F3FF" border="1px solid #DDD6FE">
-                                  <Text fontSize="14px" fontWeight="600" color="#7C3AED">{script.caption_hook}</Text>
-                                </Box>
-                              </Box>
-                            )}
-                            {script.text_overlay && (
-                              <Box flex={1} minW="220px">
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Primary Text Overlay</Text>
-                                <Box px={4} py={3} borderRadius="12px" bg="#F0F9FF" border="1px solid #BAE6FD">
-                                  <Text fontSize="14px" fontWeight="600" color="#0369A1">{script.text_overlay}</Text>
-                                </Box>
-                              </Box>
-                            )}
-                          </Flex>
-                        </Box>
-
-                        {/* ── Sound Design ── */}
-                        {(script.sound_design || script.audio_suggestion) && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Sound Design</SectionLabel>
-                            <VStack align="stretch" gap={3}>
-                              {script.audio_suggestion && <MetaBlock label="Music Mood" value={script.audio_suggestion} />}
-                              {script.sound_design && <MetaBlock label="Full Sound Arc" value={script.sound_design} />}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── Post-Production ── */}
-                        {(script.thumbnail_moment || script.loop_trick) && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Post-Production</SectionLabel>
-                            <VStack align="stretch" gap={3}>
-                              {script.thumbnail_moment && <MetaBlock label="Thumbnail Moment" value={script.thumbnail_moment} highlight />}
-                              {script.loop_trick && <MetaBlock label="Loop Trick" value={script.loop_trick} />}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── B-Roll List ── */}
-                        {script.b_roll_list && script.b_roll_list.length > 0 && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>B-Roll Shot List</SectionLabel>
-                            <VStack align="stretch" gap={1.5}>
-                              {script.b_roll_list.map((shot, si) => (
-                                <Flex key={si} gap={2} align="flex-start">
-                                  <Text color="#7C3AED" flexShrink={0} mt="2px" fontWeight="700">↳</Text>
-                                  <Text fontSize="14px" color="#374151">{shot}</Text>
-                                </Flex>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── Director's Notes ── */}
-                        {script.directors_notes && script.directors_notes.length > 0 && (
-                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <SectionLabel>Director's Notes</SectionLabel>
-                            <VStack align="stretch" gap={1.5}>
-                              {script.directors_notes.map((note, ni) => (
-                                <Flex key={ni} gap={2} align="flex-start">
-                                  <Text color="#E11D48" flexShrink={0} mt="2px">•</Text>
-                                  <Text fontSize="14px" color="#374151">{note}</Text>
-                                </Flex>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {/* ── Full VO + Hashtags ── */}
-                        <Box px={6} py={5} bg="#FAFAFA">
-                          <Flex gap={6} wrap="wrap" align="flex-start">
-                            {script.voiceover_dialogue && (
-                              <Box flex={2} minW="280px">
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Full Voiceover Script</Text>
-                                <Text fontSize="13px" color="#374151" lineHeight="1.7" fontStyle="italic">
-                                  {script.voiceover_dialogue}
-                                </Text>
-                              </Box>
-                            )}
-                            <Box flex={1} minW="160px">
-                              {script.hashtags && script.hashtags.length > 0 && (
-                                <>
-                                  <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Hashtags</Text>
-                                  <Text fontSize="13px" color="#7C3AED" fontWeight="500">
-                                    {script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}
-                                  </Text>
-                                </>
-                              )}
-                            </Box>
-                          </Flex>
-                        </Box>
-                      </VStack>
-                    )}
+              {/* Meta row */}
+              <Flex px={6} py={4} align="center" justify="space-between" wrap="wrap" gap={3} borderBottom="1px solid #F3F4F6">
+                <Flex align="center" gap={3} wrap="wrap">
+                  <Box px={2.5} py={0.5} borderRadius="999px" bg="#FFF1F2" border="1px solid #FECDD3">
+                    <Text fontSize="11px" fontWeight="700" color="#E11D48">{Math.round(reelsResult.duration_seconds)}s</Text>
                   </Box>
-                );
-              })}
-            </VStack>
+                  {reelsResult.script.format_name && (
+                    <Box px={2.5} py={0.5} borderRadius="999px" bg="#F0F9FF" border="1px solid #BAE6FD">
+                      <Text fontSize="11px" fontWeight="600" color="#0369A1">{reelsResult.script.format_name}</Text>
+                    </Box>
+                  )}
+                  <Text fontSize="16px" fontWeight="700" color="#111111">{reelsResult.script.title}</Text>
+                </Flex>
+                <a
+                  href={reelsResult.reel_url}
+                  download={`reel-${reelsResult.reel_id}.mp4`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Button
+                    size="sm" bg="#E11D48" color="white" borderRadius="10px"
+                    _hover={{ bg: "#BE123C" }}
+                    fontSize="13px" fontWeight="600" px={4} h="36px"
+                  >
+                    Download MP4
+                  </Button>
+                </a>
+              </Flex>
+
+              {/* Caption hook + hashtags */}
+              {(reelsResult.script.caption_hook || (reelsResult.script.hashtags && reelsResult.script.hashtags.length > 0)) && (
+                <Box px={6} py={4} borderBottom="1px solid #F3F4F6">
+                  {reelsResult.script.caption_hook && (
+                    <Text fontSize="14px" color="#374151" fontWeight="500" mb={2}>
+                      {reelsResult.script.caption_hook}
+                    </Text>
+                  )}
+                  {reelsResult.script.hashtags && reelsResult.script.hashtags.length > 0 && (
+                    <Text fontSize="13px" color="#7C3AED" fontWeight="500">
+                      {reelsResult.script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}
+                    </Text>
+                  )}
+                </Box>
+              )}
+
+              {/* Collapsible script */}
+              <Box>
+                <Flex
+                  px={6} py={4} align="center" justify="space-between" cursor="pointer"
+                  onClick={() => setScriptExpanded(v => !v)}
+                  _hover={{ bg: "#FAFAFA" }}
+                  transition="background 0.15s"
+                >
+                  <Text fontSize="14px" fontWeight="600" color="#374151">View Script & Director Notes</Text>
+                  <Flex color="#9CA3AF">
+                    {scriptExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </Flex>
+                </Flex>
+
+                {scriptExpanded && (
+                  <VStack align="stretch" gap={0} borderTop="1px solid #F3F4F6">
+
+                    {/* Beat list */}
+                    {reelsResult.script.script_beats && reelsResult.script.script_beats.length > 0 && (
+                      <Box px={6} py={5} borderBottom="1px solid #F3F4F6">
+                        <SectionLabel>Shooting Script — {reelsResult.script.script_beats.length} Beats</SectionLabel>
+                        <VStack align="stretch" gap={4} mt={1}>
+                          {reelsResult.script.script_beats.map((beat, bi) => (
+                            <Box key={bi} borderRadius="14px" border="1px solid #E5E7EB" overflow="hidden">
+                              <Flex px={4} py={2.5} bg="#F9FAFB" align="center" gap={3} borderBottom="1px solid #E5E7EB">
+                                <Flex w="26px" h="26px" borderRadius="full" bg="#E11D48" align="center" justify="center" flexShrink={0}>
+                                  <Text fontSize="11px" fontWeight="800" color="white">{beat.beat_number ?? bi + 1}</Text>
+                                </Flex>
+                                <Flex gap={2} wrap="wrap" flex={1}>
+                                  <Chip color="purple">{beat.shot_type}</Chip>
+                                  <Chip color="blue">{beat.camera_movement}</Chip>
+                                  {beat.duration_seconds && <Chip color="gray">{beat.duration_seconds}s</Chip>}
+                                </Flex>
+                              </Flex>
+                              <Box px={4} py={4}>
+                                <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
+                                  {beat.framing_notes && <BeatField icon="🎬" label="Framing" value={beat.framing_notes} />}
+                                  {beat.lighting && <BeatField icon="💡" label="Lighting" value={beat.lighting} />}
+                                  {beat.talent_action && <BeatField icon="🎭" label="Talent" value={beat.talent_action} />}
+                                  {beat.sound_note && <BeatField icon="🎵" label="Sound" value={beat.sound_note} />}
+                                </Box>
+                                {beat.voice_text && (
+                                  <Box mt={3} px={4} py={3} borderRadius="10px" bg="#FFF1F2" border="1px solid #FECDD3">
+                                    <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>VO LINE</Text>
+                                    <Text fontSize="14px" fontWeight="600" color="#111111" fontStyle="italic">&ldquo;{beat.voice_text}&rdquo;</Text>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+
+                    {/* Director notes */}
+                    {reelsResult.script.directors_notes && reelsResult.script.directors_notes.length > 0 && (
+                      <Box px={6} py={5}>
+                        <SectionLabel>Director&apos;s Notes</SectionLabel>
+                        <VStack align="stretch" gap={1.5}>
+                          {reelsResult.script.directors_notes.map((note, ni) => (
+                            <Flex key={ni} gap={2} align="flex-start">
+                              <Text color="#E11D48" flexShrink={0} mt="2px">•</Text>
+                              <Text fontSize="14px" color="#374151">{note}</Text>
+                            </Flex>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+                  </VStack>
+                )}
+              </Box>
+
+            </Box>
           )}
 
         </VStack>
