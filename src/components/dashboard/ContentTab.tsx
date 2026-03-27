@@ -163,7 +163,7 @@ const PREVIEW_VD: Record<string, string> = {
   cta_text: "Shop Now",
   brand_name: "Brand",
   subheadline: "Supporting message goes here",
-  body_text: "Short body copy for the ad layout preview.",
+  body_text: "Short body copy for the post layout preview.",
 };
 
 function TemplatePreviewCard({
@@ -262,7 +262,7 @@ export default function ContentTab({
   // ── Tab state ──────────────────────────────────────────────────────────
   const [activeMode, setActiveMode] = useState<"ads" | "carousel">("ads");
 
-  // ── Ad Variations state ────────────────────────────────────────────────
+  // ── Post Variations state ────────────────────────────────────────────────
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
@@ -455,7 +455,7 @@ export default function ContentTab({
             Content Generation
           </Text>
           <Text fontSize="15px" color="#6B7280">
-            Generate ad variations or branded carousel posts for your brand.
+            Generate Post variations or branded carousel posts for your brand.
           </Text>
         </Box>
         <Flex align="center" gap={2} wrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
@@ -495,7 +495,7 @@ export default function ContentTab({
             {mode === "ads" ? (
               <Flex align="center" gap={2}>
                 <Layers size={15} />
-                Ad Variations
+                Post Variations
               </Flex>
             ) : (
               <Flex align="center" gap={2}>
@@ -508,7 +508,7 @@ export default function ContentTab({
       </Flex>
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* AD VARIATIONS TAB                                                  */}
+      {/* POST VARIATIONS TAB                                                  */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeMode === "ads" && (
         <>
@@ -663,7 +663,7 @@ export default function ContentTab({
                 </Flex>
                 <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {effectiveTotalPosts} Ads</Text>
                 <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
-                  Setting up {effectiveTotalPosts} ad variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
+                  Setting up {effectiveTotalPosts} Post variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
                 </Text>
                 <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
                   Go grab a coffee — everything generates in the background, even if you close this tab.
