@@ -35,4 +35,5 @@ export const API_ENDPOINTS = {
   FORGOT_PASSWORD: "/users/forgot-password",
   RESET_PASSWORD: "/users/reset-password",
   CAROUSEL_GENERATE: "/agent/carousel/generate",
+  REEL_SCRIPT_IDEATE: "/agent/reel-script/ideate",
 } as const;

@@ -13,6 +13,9 @@ import {
 import {
   BadgeCheck,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Clapperboard,
   GraduationCap,
   Layers,
   Lightbulb,
@@ -25,7 +28,8 @@ import {
   Star,
   Tags,
 } from "lucide-react";
-import { generateAdVariationsBulk, generateCarousel } from "@/api";
+import { generateAdVariationsBulk, generateCarousel, generateReelScripts } from "@/api";
+import type { ReelScriptResponse, ReelScriptIdea } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
@@ -247,7 +251,7 @@ export default function ContentTab({
 }: ContentTabProps) {
 
   // ── Tab state ──────────────────────────────────────────────────────────
-  const [activeMode, setActiveMode] = useState<"ads" | "carousel">("ads");
+  const [activeMode, setActiveMode] = useState<"ads" | "carousel" | "reels">("ads");
 
   // ── Post Variations state ────────────────────────────────────────────────
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
@@ -256,6 +260,14 @@ export default function ContentTab({
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const isGeneratingRef = useRef(false);
+
+  // ── Reels state ────────────────────────────────────────────────────────
+  const [reelsBrief, setReelsBrief] = useState("");
+  const [reelsNumIdeas, setReelsNumIdeas] = useState(3);
+  const [isGeneratingReels, setIsGeneratingReels] = useState(false);
+  const [reelsError, setReelsError] = useState<string | null>(null);
+  const [reelsResult, setReelsResult] = useState<ReelScriptResponse | null>(null);
+  const [expandedScripts, setExpandedScripts] = useState<Set<number>>(new Set());
 
   // ── Carousel state ─────────────────────────────────────────────────────
   const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>(["educational", "product_story"]);
@@ -321,6 +333,30 @@ export default function ContentTab({
 
   const toggleCarouselContext = (idx: number) =>
     setCarouselContextIndex((prev) => (prev === idx ? null : idx));
+
+  const toggleScriptExpand = (idx: number) =>
+    setExpandedScripts((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+
+  const handleGenerateReels = async () => {
+    if (!brand || !token) return;
+    setIsGeneratingReels(true);
+    setReelsError(null);
+    setReelsResult(null);
+    setExpandedScripts(new Set());
+    try {
+      const result = await generateReelScripts(brand.id, reelsBrief.trim(), reelsNumIdeas, token);
+      setReelsResult(result);
+    } catch (err) {
+      const e = err as { message?: string };
+      setReelsError(e.message || "Failed to generate Reel scripts. Please try again.");
+    } finally {
+      setIsGeneratingReels(false);
+    }
+  };
 
   const handleGenerateCarousel = async () => {
     if (!brand || !token || selectedThemeIds.length === 0) return;
@@ -469,7 +505,7 @@ export default function ContentTab({
         bg="#F3F4F6" borderRadius="16px" p={1} gap={1}
         w="fit-content"
       >
-        {(["ads", "carousel"] as const).map((mode) => (
+        {(["ads", "carousel", "reels"] as const).map((mode) => (
           <Button
             key={mode}
             h="40px" px={6} borderRadius="12px" fontSize="14px" fontWeight="600"
@@ -480,15 +516,11 @@ export default function ContentTab({
             onClick={() => setActiveMode(mode)}
           >
             {mode === "ads" ? (
-              <Flex align="center" gap={2}>
-                <Layers size={15} />
-                Post Variations
-              </Flex>
+              <Flex align="center" gap={2}><Layers size={15} />Post Variations</Flex>
+            ) : mode === "carousel" ? (
+              <Flex align="center" gap={2}><Sparkles size={15} />Carousel</Flex>
             ) : (
-              <Flex align="center" gap={2}>
-                <Sparkles size={15} />
-                Carousel
-              </Flex>
+              <Flex align="center" gap={2}><Clapperboard size={15} />Reels</Flex>
             )}
           </Button>
         ))}
@@ -818,6 +850,255 @@ export default function ContentTab({
               </Box>
             </Flex>
           )}
+        </VStack>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* REELS TAB                                                           */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "reels" && (
+        <VStack align="stretch" gap={8}>
+
+          {/* Brief */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Campaign Brief</Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>Describe the angle, launch, or story — the agent handles the rest.</Text>
+            <Textarea
+              placeholder="e.g. Summer launch — eco-friendly packaging, tone: playful and bold."
+              value={reelsBrief}
+              onChange={(e) => setReelsBrief(e.target.value)}
+              minH="110px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Num ideas */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Number of Scripts</Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>How many distinct Reel concepts to generate.</Text>
+            <Flex gap={3}>
+              {[1, 2, 3, 5].map((n) => (
+                <Box
+                  key={n}
+                  w="56px" h="56px" borderRadius="14px" cursor="pointer"
+                  border="2px solid" borderColor={reelsNumIdeas === n ? "#E11D48" : "#E5E7EB"}
+                  bg={reelsNumIdeas === n ? "#FFF1F2" : "white"}
+                  color={reelsNumIdeas === n ? "#E11D48" : "#374151"}
+                  fontSize="20px" fontWeight="700"
+                  display="flex" alignItems="center" justifyContent="center"
+                  transition="all 0.15s ease"
+                  _hover={{ borderColor: "#E11D48", bg: "#FFF1F2" }}
+                  onClick={() => setReelsNumIdeas(n)}
+                >
+                  {n}
+                </Box>
+              ))}
+            </Flex>
+          </Box>
+
+          {/* Error */}
+          {reelsError && (
+            <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {reelsError}
+            </Box>
+          )}
+
+          {/* Generate button */}
+          <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" px={6} py={5}>
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              <Flex align="center" gap={4} bg="#FFF1F2" border="1px solid" borderColor="#FECDD3" borderRadius="16px" px={5} py={3}>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#E11D48">{reelsNumIdeas}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Scripts</Text>
+                </Box>
+                <Text color="#9CA3AF">&middot;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="13px" fontWeight="600" color="#E11D48">Hook A/B/C + Beats + CTA</Text>
+                  <Text fontSize="11px" color="#6B7280">per script</Text>
+                </Box>
+              </Flex>
+              <Button
+                bg={!isGeneratingReels ? "#E11D48" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: !isGeneratingReels ? "#BE123C" : "#D1D5DB" }}
+                disabled={isGeneratingReels}
+                onClick={handleGenerateReels}
+              >
+                <Flex align="center" gap={2}>
+                  {isGeneratingReels
+                    ? <><Loader size={16} style={{ animation: "spin 1.5s linear infinite" }} /> Generating...</>
+                    : <><Clapperboard size={16} /> Generate {reelsNumIdeas} Reel Script{reelsNumIdeas !== 1 ? "s" : ""}</>}
+                </Flex>
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Results */}
+          {reelsResult && reelsResult.scripts.length > 0 && (
+            <VStack align="stretch" gap={5}>
+              <Text fontSize="20px" fontWeight="700" color="#111111">
+                {reelsResult.scripts.length} Script{reelsResult.scripts.length !== 1 ? "s" : ""} Generated
+              </Text>
+              {reelsResult.scripts.map((script, idx) => {
+                const isExpanded = expandedScripts.has(idx);
+                return (
+                  <Box key={idx} bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" overflow="hidden">
+                    {/* Card header */}
+                    <Flex
+                      px={6} py={4} align="center" justify="space-between" cursor="pointer"
+                      bg={isExpanded ? "#FFF1F2" : "white"}
+                      borderBottom={isExpanded ? "1px solid" : "none"}
+                      borderColor="#FECDD3"
+                      onClick={() => toggleScriptExpand(idx)}
+                      transition="background 0.15s"
+                    >
+                      <Box>
+                        <Flex align="center" gap={3} mb={1}>
+                          <Box px={2.5} py={0.5} borderRadius="999px" bg="#FFF1F2" border="1px solid #FECDD3">
+                            <Text fontSize="11px" fontWeight="700" color="#E11D48">Script {idx + 1}</Text>
+                          </Box>
+                          {script.format_name && (
+                            <Box px={2.5} py={0.5} borderRadius="999px" bg="#F0F9FF" border="1px solid #BAE6FD">
+                              <Text fontSize="11px" fontWeight="600" color="#0369A1">{script.format_name}</Text>
+                            </Box>
+                          )}
+                          {script.duration_seconds && (
+                            <Text fontSize="12px" color="#9CA3AF">{script.duration_seconds}s</Text>
+                          )}
+                        </Flex>
+                        <Text fontSize="17px" fontWeight="700" color="#111111">{script.title}</Text>
+                        {script.goal && <Text fontSize="13px" color="#6B7280" mt={0.5}>Goal: {script.goal}</Text>}
+                      </Box>
+                      <Flex color="#9CA3AF" flexShrink={0} ml={4}>
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </Flex>
+                    </Flex>
+
+                    {/* Expanded content */}
+                    {isExpanded && (
+                      <VStack align="stretch" gap={0} divideX={undefined}>
+
+                        {/* Hook options */}
+                        {script.hook_options && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
+                              Hook Options — pick one
+                            </Text>
+                            <VStack align="stretch" gap={2}>
+                              {[
+                                { label: "A — Curiosity / Pain", text: script.hook_options.hook_a },
+                                { label: "B — Desire / Pattern-break", text: script.hook_options.hook_b },
+                                { label: "C — Hot Take", text: script.hook_options.hook_c },
+                              ].map(({ label, text }) => (
+                                <Box key={label} px={4} py={3} borderRadius="12px" bg="#F9FAFB" border="1px solid #E5E7EB">
+                                  <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>{label}</Text>
+                                  <Text fontSize="14px" color="#111111" fontWeight="500">&ldquo;{text}&rdquo;</Text>
+                                </Box>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* Script beats */}
+                        {script.script_beats && script.script_beats.length > 0 && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
+                              Script Beats
+                            </Text>
+                            <VStack align="stretch" gap={3}>
+                              {script.script_beats.map((beat, bi) => (
+                                <Flex key={bi} gap={3} align="flex-start">
+                                  <Box
+                                    w="24px" h="24px" borderRadius="full" bg="#FFF1F2" border="1px solid #FECDD3"
+                                    flexShrink={0} display="flex" alignItems="center" justifyContent="center"
+                                  >
+                                    <Text fontSize="11px" fontWeight="700" color="#E11D48">{bi + 1}</Text>
+                                  </Box>
+                                  <Box flex={1}>
+                                    <Text fontSize="12px" color="#7C3AED" fontWeight="600" mb={0.5}>{beat.visual}</Text>
+                                    <Text fontSize="14px" color="#111111">{beat.voice_text}</Text>
+                                  </Box>
+                                </Flex>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* CTA + production notes */}
+                        <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                          <Flex gap={6} wrap="wrap">
+                            <Box flex={1} minW="200px">
+                              <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={2}>CTA</Text>
+                              <Box px={4} py={3} borderRadius="12px" bg="#F0FDF4" border="1px solid #BBF7D0">
+                                <Text fontSize="14px" fontWeight="600" color="#166534">{script.cta}</Text>
+                              </Box>
+                            </Box>
+                            {script.text_overlay && (
+                              <Box flex={1} minW="200px">
+                                <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={2}>Text Overlay</Text>
+                                <Box px={4} py={3} borderRadius="12px" bg="#F0F9FF" border="1px solid #BAE6FD">
+                                  <Text fontSize="14px" fontWeight="600" color="#0369A1">{script.text_overlay}</Text>
+                                </Box>
+                              </Box>
+                            )}
+                          </Flex>
+                        </Box>
+
+                        {/* Director's notes */}
+                        {script.directors_notes && script.directors_notes.length > 0 && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
+                              Director's Notes
+                            </Text>
+                            <VStack align="stretch" gap={1.5}>
+                              {script.directors_notes.map((note, ni) => (
+                                <Flex key={ni} gap={2} align="flex-start">
+                                  <Text color="#E11D48" flexShrink={0} mt="2px">•</Text>
+                                  <Text fontSize="14px" color="#374151">{note}</Text>
+                                </Flex>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* Meta row */}
+                        <Box px={6} py={4} bg="#FAFAFA">
+                          <Flex gap={6} wrap="wrap" align="flex-start">
+                            {script.audio_suggestion && (
+                              <Box>
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Audio</Text>
+                                <Text fontSize="13px" color="#374151">{script.audio_suggestion}</Text>
+                              </Box>
+                            )}
+                            {script.pacing && (
+                              <Box>
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Pacing</Text>
+                                <Text fontSize="13px" color="#374151">{script.pacing}</Text>
+                              </Box>
+                            )}
+                            {script.camera_angle && (
+                              <Box>
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Camera</Text>
+                                <Text fontSize="13px" color="#374151">{script.camera_angle}</Text>
+                              </Box>
+                            )}
+                            {script.hashtags && script.hashtags.length > 0 && (
+                              <Box>
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Hashtags</Text>
+                                <Text fontSize="13px" color="#374151">{script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}</Text>
+                              </Box>
+                            )}
+                          </Flex>
+                        </Box>
+                      </VStack>
+                    )}
+                  </Box>
+                );
+              })}
+            </VStack>
+          )}
+
         </VStack>
       )}
 

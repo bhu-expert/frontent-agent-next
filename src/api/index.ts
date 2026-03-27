@@ -513,6 +513,67 @@ export async function generateCarousel(
   return res.json();
 }
 
+export interface HookOptions {
+  hook_a: string;
+  hook_b: string;
+  hook_c: string;
+}
+
+export interface ScriptBeat {
+  visual: string;
+  voice_text: string;
+}
+
+export interface ReelScriptIdea {
+  title: string;
+  hook: string;
+  scene_description: string;
+  voiceover_dialogue: string;
+  duration_seconds: number;
+  cta: string;
+  audio_suggestion: string;
+  hashtags: string[];
+  camera_angle: string;
+  pacing: string;
+  text_overlay: string;
+  transitions: string;
+  format_name: string;
+  tone: string;
+  goal: string;
+  hook_options: HookOptions | null;
+  script_beats: ScriptBeat[] | null;
+  directors_notes: string[] | null;
+}
+
+export interface ReelScriptResponse {
+  scripts: ReelScriptIdea[];
+}
+
+/**
+ * Generates Reel scripts synchronously using brand context + skill knowledge.
+ */
+export async function generateReelScripts(
+  brandId: string,
+  context: string,
+  numIdeas: number,
+  token: string,
+): Promise<ReelScriptResponse> {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.REEL_SCRIPT_IDEATE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      brand_id: brandId,
+      context: context || null,
+      num_ideas: numIdeas,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to generate Reel scripts", res.status);
+  }
+  return res.json();
+}
+
 export async function saveAssetOverlay(
   campaignId: string,
   variationId: string,
