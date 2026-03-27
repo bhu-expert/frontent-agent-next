@@ -264,6 +264,7 @@ export default function ContentTab({
   // ── Reels state ────────────────────────────────────────────────────────
   const [reelsBrief, setReelsBrief] = useState("");
   const [reelsNumIdeas, setReelsNumIdeas] = useState(3);
+  const [reelsContextIndex, setReelsContextIndex] = useState<number | null>(null);
   const [isGeneratingReels, setIsGeneratingReels] = useState(false);
   const [reelsError, setReelsError] = useState<string | null>(null);
   const [reelsResult, setReelsResult] = useState<ReelScriptResponse | null>(null);
@@ -348,7 +349,10 @@ export default function ContentTab({
     setReelsResult(null);
     setExpandedScripts(new Set());
     try {
-      const result = await generateReelScripts(brand.id, reelsBrief.trim(), reelsNumIdeas, token);
+      const contextBlock = contextBlocks.find(b => b.context_index === reelsContextIndex);
+      const contextPrefix = contextBlock ? `Context: ${contextBlock.title}.\n` : "";
+      const fullBrief = (contextPrefix + reelsBrief.trim()).trim();
+      const result = await generateReelScripts(brand.id, fullBrief, reelsNumIdeas, token);
       setReelsResult(result);
     } catch (err) {
       const e = err as { message?: string };
@@ -859,9 +863,46 @@ export default function ContentTab({
       {activeMode === "reels" && (
         <VStack align="stretch" gap={8}>
 
+          {/* Context selector (optional) */}
+          {contextBlocks.length > 0 && (
+            <Box>
+              <Flex align="baseline" gap={3} mb={2}>
+                <Text fontSize="20px" fontWeight="600" color="#111111">1. Ground in a Context</Text>
+                <Text fontSize="13px" color="#6B7280">Optional — anchors script copy in a specific brand narrative.</Text>
+              </Flex>
+              <Flex gap={3} mt={4} wrap="wrap">
+                {contextBlocks.map((block) => {
+                  const isActive = reelsContextIndex === block.context_index;
+                  return (
+                    <Box
+                      key={block.context_index}
+                      px={4} py={2.5} borderRadius="12px" cursor="pointer"
+                      border="2px solid" borderColor={isActive ? "#E11D48" : "#E5E7EB"}
+                      bg={isActive ? "#FFF1F2" : "white"}
+                      color={isActive ? "#E11D48" : "#374151"}
+                      fontSize="14px" fontWeight={isActive ? "600" : "500"}
+                      transition="all 0.15s ease"
+                      _hover={{ borderColor: "#E11D48", bg: "#FFF1F2" }}
+                      onClick={() => setReelsContextIndex((prev) => prev === block.context_index ? null : block.context_index)}
+                    >
+                      {block.title}
+                    </Box>
+                  );
+                })}
+              </Flex>
+              {reelsContextIndex !== null && (
+                <Text fontSize="12px" color="#E11D48" mt={2} fontWeight="500">
+                  ✓ Scripts will be grounded in &ldquo;{contextBlocks.find(b => b.context_index === reelsContextIndex)?.title}&rdquo;
+                </Text>
+              )}
+            </Box>
+          )}
+
           {/* Brief */}
           <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Campaign Brief</Text>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "2." : "1."} Campaign Brief
+            </Text>
             <Text fontSize="15px" color="#6B7280" mb={4}>Describe the angle, launch, or story — the agent handles the rest.</Text>
             <Textarea
               placeholder="e.g. Summer launch — eco-friendly packaging, tone: playful and bold."
@@ -874,7 +915,9 @@ export default function ContentTab({
 
           {/* Num ideas */}
           <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Number of Scripts</Text>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "3." : "2."} Number of Scripts
+            </Text>
             <Text fontSize="15px" color="#6B7280" mb={4}>How many distinct Reel concepts to generate.</Text>
             <Flex gap={3}>
               {[1, 2, 3, 5].map((n) => (
