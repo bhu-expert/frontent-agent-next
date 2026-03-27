@@ -127,6 +127,9 @@ export default function BatchSchedulerPanel({
   // Step 3 — per-slot manual asset selection
   const [slotAssets, setSlotAssets] = useState<Record<number, AssetInventoryItem>>({});
 
+  // Step 3 — full-image preview lightbox
+  const [previewAsset, setPreviewAsset] = useState<{ asset: AssetInventoryItem; slotIndex: number } | null>(null);
+
   // Step 3 — Review: excluded slot indices
   const [excludedSlots, setExcludedSlots] = useState<Set<number>>(new Set());
   const [expandedReasonings, setExpandedReasonings] = useState<Set<number>>(new Set());
@@ -1080,43 +1083,87 @@ export default function BatchSchedulerPanel({
                           return (
                             <Box>
                               {picked ? (
-                                <Flex align="center" gap={2}>
-                                  <Box w="40px" h="40px" borderRadius="8px" overflow="hidden" border="2px solid #4F46E5" flexShrink={0}>
-                                    <Image src={picked.asset_url} alt="Selected" w="100%" h="100%" objectFit="cover" />
-                                  </Box>
-                                  <Text fontSize="11px" color="#4F46E5" fontWeight="600" flex={1} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">Asset selected</Text>
-                                  <Text
-                                    fontSize="11px"
-                                    color="#6B7280"
+                                <Flex align="center" gap={3}>
+                                  <Box
+                                    w="72px"
+                                    h="72px"
+                                    borderRadius="10px"
+                                    overflow="hidden"
+                                    border="2px solid #4F46E5"
+                                    flexShrink={0}
                                     cursor="pointer"
-                                    _hover={{ color: "#DC2626" }}
-                                    onClick={() => setSlotAssets(prev => { const next = { ...prev }; delete next[slot.slot_index]; return next; })}
+                                    onClick={() => setPreviewAsset({ asset: picked, slotIndex: slot.slot_index })}
+                                    position="relative"
+                                    _hover={{ opacity: 0.85 }}
+                                    transition="opacity 0.15s ease"
                                   >
-                                    ✕ Remove
-                                  </Text>
+                                    <Image src={picked.asset_url} alt="Selected" w="100%" h="100%" objectFit="cover" />
+                                    <Flex
+                                      position="absolute"
+                                      inset="0"
+                                      align="center"
+                                      justify="center"
+                                      bg="rgba(0,0,0,0)"
+                                      _hover={{ bg: "rgba(0,0,0,0.3)" }}
+                                      transition="background 0.15s ease"
+                                      borderRadius="8px"
+                                    >
+                                      <Text fontSize="16px" opacity={0}>🔍</Text>
+                                    </Flex>
+                                  </Box>
+                                  <Box flex={1}>
+                                    <Text fontSize="12px" color="#4F46E5" fontWeight="700" mb={0.5}>Asset selected</Text>
+                                    <Text fontSize="11px" color="#9CA3AF" mb={1.5}>Click image to preview</Text>
+                                    <Text
+                                      fontSize="11px"
+                                      color="#6B7280"
+                                      fontWeight="600"
+                                      cursor="pointer"
+                                      display="inline-block"
+                                      _hover={{ color: "#DC2626" }}
+                                      onClick={() => setSlotAssets(prev => { const next = { ...prev }; delete next[slot.slot_index]; return next; })}
+                                    >
+                                      ✕ Remove
+                                    </Text>
+                                  </Box>
                                 </Flex>
                               ) : formatAssets.length === 0 ? (
                                 <Text fontSize="11px" color="#9CA3AF">No {slot.post_format.replace("_", " ")} assets available</Text>
                               ) : (
                                 <Box>
-                                  <Text fontSize="11px" color="#6B7280" fontWeight="600" mb={1.5}>Pick an asset:</Text>
-                                  <Flex gap={1.5} overflowX="auto" pb={1} style={{ scrollbarWidth: "none" }}>
+                                  <Text fontSize="11px" color="#6B7280" fontWeight="600" mb={2}>
+                                    Pick an asset — click to preview, then select:
+                                  </Text>
+                                  <Flex gap={2} flexWrap="wrap">
                                     {formatAssets.map(asset => (
                                       <Box
                                         key={asset.asset_id}
-                                        w="44px"
-                                        h="44px"
-                                        borderRadius="8px"
+                                        w="80px"
+                                        h="80px"
+                                        borderRadius="10px"
                                         overflow="hidden"
                                         border="2px solid"
                                         borderColor="transparent"
                                         flexShrink={0}
                                         cursor="pointer"
-                                        transition="border-color 0.1s ease"
-                                        _hover={{ borderColor: "#4F46E5" }}
-                                        onClick={() => setSlotAssets(prev => ({ ...prev, [slot.slot_index]: asset }))}
+                                        transition="all 0.15s ease"
+                                        _hover={{ borderColor: "#4F46E5", transform: "scale(1.04)", boxShadow: "0 4px 12px rgba(79,70,229,0.25)" }}
+                                        onClick={() => setPreviewAsset({ asset, slotIndex: slot.slot_index })}
+                                        position="relative"
                                       >
                                         <Image src={asset.asset_url} alt="Asset" w="100%" h="100%" objectFit="cover" />
+                                        {/* Zoom hint overlay */}
+                                        <Flex
+                                          position="absolute"
+                                          inset="0"
+                                          align="center"
+                                          justify="center"
+                                          bg="rgba(0,0,0,0)"
+                                          _groupHover={{ bg: "rgba(0,0,0,0.35)" }}
+                                          borderRadius="8px"
+                                        >
+                                          <Text fontSize="18px" opacity={0.85}>🔍</Text>
+                                        </Flex>
                                       </Box>
                                     ))}
                                   </Flex>
@@ -1280,6 +1327,106 @@ export default function BatchSchedulerPanel({
             </VStack>
           )}
         </Box>
+
+        {/* ── Asset preview lightbox ───────────────────────────────── */}
+        {previewAsset && (
+          <Box
+            position="fixed"
+            inset="0"
+            zIndex={2000}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            bg="rgba(0,0,0,0.82)"
+            style={{ backdropFilter: "blur(6px)" }}
+            onClick={() => setPreviewAsset(null)}
+          >
+            <Box
+              position="relative"
+              maxW="520px"
+              maxH="80vh"
+              w="90%"
+              borderRadius="20px"
+              overflow="hidden"
+              boxShadow="0 24px 80px rgba(0,0,0,0.5)"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Full image */}
+              <Image
+                src={previewAsset.asset.asset_url}
+                alt="Asset preview"
+                w="100%"
+                h="auto"
+                maxH="65vh"
+                objectFit="contain"
+                display="block"
+                bg="#111"
+              />
+
+              {/* Footer bar */}
+              <Flex
+                align="center"
+                justify="space-between"
+                px={5}
+                py={4}
+                bg="white"
+                gap={3}
+              >
+                <Box>
+                  <Badge
+                    bg={formatBadgeColors(previewAsset.asset.format).bg}
+                    color={formatBadgeColors(previewAsset.asset.format).color}
+                    px={2.5}
+                    py={1}
+                    borderRadius="8px"
+                    fontSize="12px"
+                    fontWeight="700"
+                    textTransform="capitalize"
+                  >
+                    {previewAsset.asset.format.replace("_", " ")}
+                  </Badge>
+                  <Text fontSize="11px" color="#9CA3AF" mt={1}>
+                    {previewAsset.asset.ad_type.replace(/_/g, " ")} · {previewAsset.asset.source}
+                  </Text>
+                </Box>
+                <Flex gap={2}>
+                  <Button
+                    bg="#F3F4F6"
+                    color="#374151"
+                    borderRadius="10px"
+                    h="40px"
+                    px={4}
+                    fontSize="13px"
+                    fontWeight="600"
+                    _hover={{ bg: "#E5E7EB" }}
+                    onClick={() => setPreviewAsset(null)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    bg={slotAssets[previewAsset.slotIndex]?.asset_id === previewAsset.asset.asset_id ? "#10B981" : "#4F46E5"}
+                    color="white"
+                    borderRadius="10px"
+                    h="40px"
+                    px={4}
+                    fontSize="13px"
+                    fontWeight="700"
+                    shadow="sm"
+                    _hover={{ opacity: 0.9 }}
+                    onClick={() => {
+                      setSlotAssets(prev => ({ ...prev, [previewAsset.slotIndex]: previewAsset.asset }));
+                      setPreviewAsset(null);
+                    }}
+                  >
+                    {slotAssets[previewAsset.slotIndex]?.asset_id === previewAsset.asset.asset_id
+                      ? "✓ Selected"
+                      : "Select this asset"}
+                  </Button>
+                </Flex>
+              </Flex>
+            </Box>
+          </Box>
+        )}
 
         <style>{`
           @keyframes spin {
