@@ -343,7 +343,7 @@ export default function ContentTab({
     });
 
   const handleGenerateReels = async () => {
-    if (!brand || !token) return;
+    if (!brand || !token || reelsContextIndex === null) return;
     setIsGeneratingReels(true);
     setReelsError(null);
     setReelsResult(null);
@@ -863,13 +863,17 @@ export default function ContentTab({
       {activeMode === "reels" && (
         <VStack align="stretch" gap={8}>
 
-          {/* Context selector (optional) */}
-          {contextBlocks.length > 0 && (
-            <Box>
-              <Flex align="baseline" gap={3} mb={2}>
-                <Text fontSize="20px" fontWeight="600" color="#111111">1. Ground in a Context</Text>
-                <Text fontSize="13px" color="#6B7280">Optional — anchors script copy in a specific brand narrative.</Text>
-              </Flex>
+          {/* Context selector (required) */}
+          <Box>
+            <Flex align="baseline" gap={3} mb={2}>
+              <Text fontSize="20px" fontWeight="600" color="#111111">1. Select a Context</Text>
+              <Text fontSize="13px" color="#6B7280">Required — grounds the script in a specific brand narrative.</Text>
+            </Flex>
+            {contextBlocks.length === 0 ? (
+              <Box px={4} py={3} borderRadius="12px" bg="#FFFBEB" border="1px solid #FDE68A">
+                <Text fontSize="14px" color="#92400E">No contexts found. Add brand contexts in the Brands tab first.</Text>
+              </Box>
+            ) : (
               <Flex gap={3} mt={4} wrap="wrap">
                 {contextBlocks.map((block) => {
                   const isActive = reelsContextIndex === block.context_index;
@@ -883,26 +887,24 @@ export default function ContentTab({
                       fontSize="14px" fontWeight={isActive ? "600" : "500"}
                       transition="all 0.15s ease"
                       _hover={{ borderColor: "#E11D48", bg: "#FFF1F2" }}
-                      onClick={() => setReelsContextIndex((prev) => prev === block.context_index ? null : block.context_index)}
+                      onClick={() => setReelsContextIndex(block.context_index)}
                     >
                       {block.title}
                     </Box>
                   );
                 })}
               </Flex>
-              {reelsContextIndex !== null && (
-                <Text fontSize="12px" color="#E11D48" mt={2} fontWeight="500">
-                  ✓ Scripts will be grounded in &ldquo;{contextBlocks.find(b => b.context_index === reelsContextIndex)?.title}&rdquo;
-                </Text>
-              )}
-            </Box>
-          )}
+            )}
+            {reelsContextIndex !== null && (
+              <Text fontSize="12px" color="#E11D48" mt={2} fontWeight="500">
+                ✓ Scripts will be grounded in &ldquo;{contextBlocks.find(b => b.context_index === reelsContextIndex)?.title}&rdquo;
+              </Text>
+            )}
+          </Box>
 
           {/* Brief */}
           <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-              {contextBlocks.length > 0 ? "2." : "1."} Campaign Brief
-            </Text>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Campaign Brief</Text>
             <Text fontSize="15px" color="#6B7280" mb={4}>Describe the angle, launch, or story — the agent handles the rest.</Text>
             <Textarea
               placeholder="e.g. Summer launch — eco-friendly packaging, tone: playful and bold."
@@ -915,9 +917,7 @@ export default function ContentTab({
 
           {/* Num ideas */}
           <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-              {contextBlocks.length > 0 ? "3." : "2."} Number of Scripts
-            </Text>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>3. Number of Scripts</Text>
             <Text fontSize="15px" color="#6B7280" mb={4}>How many distinct Reel concepts to generate.</Text>
             <Flex gap={3}>
               {[1, 2, 3, 5].map((n) => (
@@ -961,17 +961,19 @@ export default function ContentTab({
                 </Box>
               </Flex>
               <Button
-                bg={!isGeneratingReels ? "#E11D48" : "#D1D5DB"}
+                bg={!isGeneratingReels && reelsContextIndex !== null ? "#E11D48" : "#D1D5DB"}
                 color="white" borderRadius="14px" h="52px" px={7}
                 fontSize="15px" fontWeight="600"
-                _hover={{ bg: !isGeneratingReels ? "#BE123C" : "#D1D5DB" }}
-                disabled={isGeneratingReels}
+                _hover={{ bg: !isGeneratingReels && reelsContextIndex !== null ? "#BE123C" : "#D1D5DB" }}
+                disabled={isGeneratingReels || reelsContextIndex === null}
                 onClick={handleGenerateReels}
               >
                 <Flex align="center" gap={2}>
                   {isGeneratingReels
                     ? <><Loader size={16} style={{ animation: "spin 1.5s linear infinite" }} /> Generating...</>
-                    : <><Clapperboard size={16} /> Generate {reelsNumIdeas} Reel Script{reelsNumIdeas !== 1 ? "s" : ""}</>}
+                    : reelsContextIndex === null
+                      ? "Select a Context First"
+                      : <><Clapperboard size={16} /> Generate {reelsNumIdeas} Reel Script{reelsNumIdeas !== 1 ? "s" : ""}</>}
                 </Flex>
               </Button>
             </Flex>
