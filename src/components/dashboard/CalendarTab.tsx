@@ -6,6 +6,14 @@ import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Calendar, Clock, Sparkl
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Textarea } from "@chakra-ui/react";
+import { useAuth } from "@/store/AuthProvider";
+import {
+  getScheduledInstagramPosts,
+  cancelScheduledInstagramPost,
+  scheduleInstagramPost,
+  type ScheduledPost,
+  type SchedulePostPayload,
+} from "@/api/integrations";
 import BatchSchedulerPanel from "./BatchSchedulerPanel";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -32,18 +40,6 @@ interface CalendarDay {
   dayNumber: number;
   isCurrentMonth: boolean;
   isToday: boolean;
-}
-
-interface ScheduledPost {
-  id: string;
-  media_type: "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
-  media_url?: string;
-  carousel_urls?: string[];
-  caption?: string;
-  scheduled_at: string;
-  status: "scheduled" | "published" | "failed";
-  ig_post_id?: string;
-  error_message?: string;
 }
 
 function buildCalendarDays(year: number, month: number): CalendarDay[] {
@@ -121,6 +117,7 @@ interface CalendarTabProps {
 }
 
 export default function CalendarTab({ brandId = "", brandName = "", availableAssets = [] }: CalendarTabProps) {
+  const { session } = useAuth();
   const now = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -140,23 +137,33 @@ export default function CalendarTab({ brandId = "", brandName = "", availableAss
 
   // Fetch scheduled posts on mount and when month changes
   useEffect(() => {
-    fetchScheduledPosts();
-  }, []);
+    if (session?.access_token) {
+      fetchScheduledPosts(session.access_token);
+    }
+  }, [session?.access_token]);
 
-  const fetchScheduledPosts = async () => {
+  const fetchScheduledPosts = async (token: string) => {
     setLoadingPosts(true);
     try {
-      const res = await fetch("/api/integrations/instagram/schedule");
-      const data = await res.json();
-      setScheduledPosts(data.posts || []);
-    } catch (err) {
+      const posts = await getScheduledInstagramPosts(token);
+      setScheduledPosts(posts);
+    } catch (err: any) {
       console.error("Fetch scheduled posts error:", err);
-      toaster.create({
-        title: "Error loading posts",
-        description: "Failed to load scheduled posts",
-        type: "error",
-        duration: 3000,
-      });
+      if (err.status === 401) {
+        toaster.create({
+          title: "Authentication required",
+          description: "Please reconnect Instagram to view scheduled posts",
+          type: "warning",
+          duration: 4000,
+        });
+      } else {
+        toaster.create({
+          title: "Error loading posts",
+          description: err.message || "Failed to load scheduled posts",
+          type: "error",
+          duration: 3000,
+        });
+      }
     } finally {
       setLoadingPosts(false);
     }
@@ -176,9 +183,18 @@ export default function CalendarTab({ brandId = "", brandName = "", availableAss
 
   const handleDeleteClick = async (post: ScheduledPost) => {
     if (!confirm("Cancel this scheduled post?")) return;
+    const token = session?.access_token;
+    if (!token) {
+      toaster.create({
+        title: "Authentication required",
+        description: "Please sign in to cancel scheduled posts",
+        type: "warning",
+        duration: 4000,
+      });
+      return;
+    }
     try {
-      const res = await fetch(`/api/integrations/instagram/schedule?id=${post.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
+      await cancelScheduledInstagramPost(post.id, token);
       setScheduledPosts(prev => prev.filter(p => p.id !== post.id));
       toaster.create({ title: "Post cancelled", type: "success", duration: 3000 });
     } catch (err: any) {
@@ -193,38 +209,43 @@ export default function CalendarTab({ brandId = "", brandName = "", availableAss
       return;
     }
 
+    const token = session?.access_token;
+    if (!token) {
+      toaster.create({
+        title: "Authentication required",
+        description: "Please sign in to update scheduled posts",
+        type: "warning",
+        duration: 4000,
+      });
+      return;
+    }
+
     setIsUpdating(true);
     try {
       // Delete old and create new (simple approach)
       const newDate = new Date(editScheduledAt).toISOString();
-      
+
       // First delete the old one
-      await fetch(`/api/integrations/instagram/schedule?id=${selectedPost.id}`, { method: "DELETE" });
-      
+      await cancelScheduledInstagramPost(selectedPost.id, token);
+
       // Then create a new one with updated values
-      const body: Record<string, any> = {
+      const payload: SchedulePostPayload = {
         media_type: selectedPost.media_type,
         caption: editCaption || undefined,
         scheduled_at: newDate,
       };
-      
+
       if (selectedPost.media_type === "CAROUSEL") {
-        body.carousel_urls = selectedPost.carousel_urls;
+        payload.carousel_urls = selectedPost.carousel_urls;
       } else {
-        body.media_url = selectedPost.media_url;
+        payload.media_url = selectedPost.media_url;
       }
 
-      const res = await fetch("/api/integrations/instagram/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) throw new Error("Update failed");
+      await scheduleInstagramPost(payload, token);
 
       toaster.create({ title: "Post updated", type: "success", duration: 3000 });
       setIsEditDialogOpen(false);
-      fetchScheduledPosts();
+      fetchScheduledPosts(token);
     } catch (err: any) {
       toaster.create({ title: "Error", description: err.message, type: "error", duration: 4000 });
     } finally {
@@ -789,7 +810,9 @@ export default function CalendarTab({ brandId = "", brandName = "", availableAss
           onClose={() => setShowBatchPanel(false)}
           onBatchCreated={() => {
             setShowBatchPanel(false);
-            fetchScheduledPosts();
+            if (session?.access_token) {
+              fetchScheduledPosts(session.access_token);
+            }
           }}
         />
       )}

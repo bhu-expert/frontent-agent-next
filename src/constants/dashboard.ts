@@ -1,7 +1,8 @@
 import { LayoutGrid, FileText, ImageIcon, Calendar, Grid2X2, Settings, LifeBuoy } from "lucide-react";
 
 export const navItems = [
-  { label: "Brands", icon: LayoutGrid, active: true },
+  { label: "Overview", icon: LayoutGrid, active: true },
+  { label: "Brands", icon: LayoutGrid, active: false },
   { label: "Content", icon: FileText, active: false },
   { label: "Assets", icon: ImageIcon, active: false },
   { label: "Calendar", icon: Calendar, active: false },

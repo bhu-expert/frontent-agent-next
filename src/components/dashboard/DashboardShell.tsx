@@ -25,10 +25,18 @@ import {
   X,
   Lock,
   BookOpen,
+  MoreHorizontal,
 } from "lucide-react";
-import { streamContextFeedback, deleteBrand } from "@/api";
+import {
+  streamContextFeedback,
+  deleteBrand,
+  getDashboardHeaderData,
+} from "@/api";
+import type { HeaderData } from "@/constants/dashboard-overview";
 import { navItems } from "@/constants/dashboard";
 import { DashboardShellProps } from "@/props/DashboardShell";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import OverviewTab from "@/components/dashboard/OverviewTab";
 import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
 import ContentTab from "@/components/dashboard/ContentTab";
 import AssetsTab from "@/components/dashboard/AssetsTab";
@@ -98,7 +106,6 @@ function getPrimaryObjective(context: string | null): string {
 
   return firstSentence || "No primary objective available yet.";
 }
-
 
 function getBrandSummary(brand: BrandData) {
   const contextBlocks = brand.manifest ? splitContextMd(brand.manifest) : [];
@@ -175,15 +182,16 @@ function parseStreamedContextBlock(
 
 function BrandLogoUpload({
   brand,
+  token,
   onLogoUploaded,
 }: {
   brand: BrandData;
   token: string | undefined;
   onLogoUploaded: (brandId: string, logoUrl: string) => void;
 }) {
-  const [logoUrl, setLogoUrl]     = useState<string | null>(brand.logo_url ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(brand.logo_url ?? null);
   const [uploading, setUploading] = useState(false);
-  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,9 +210,9 @@ function BrandLogoUpload({
 
       if (uploadError) throw new Error(uploadError.message);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("brand-assets")
-        .getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("brand-assets").getPublicUrl(path);
 
       // Persist on the brand record
       const { error: dbError } = await supabase
@@ -227,8 +235,13 @@ function BrandLogoUpload({
 
   return (
     <Flex direction="column" align="flex-start" gap={2}>
-      <Text fontSize="11px" fontWeight="700" textTransform="uppercase"
-        color="#9CA3AF" letterSpacing="0.06em">
+      <Text
+        fontSize="11px"
+        fontWeight="700"
+        textTransform="uppercase"
+        color="#9CA3AF"
+        letterSpacing="0.06em"
+      >
         Brand Logo
       </Text>
 
@@ -241,18 +254,26 @@ function BrandLogoUpload({
         border="2px dashed"
         borderColor={logoUrl ? "#4F46E5" : "#E5E7EB"}
         bg={logoUrl ? undefined : "#FAFAFA"}
-        style={logoUrl ? {
-          backgroundImage: "repeating-conic-gradient(#E5E7EB 0% 25%, #ffffff 0% 50%)",
-          backgroundSize: "12px 12px",
-          backgroundPosition: "0 0",
-        } : undefined}
+        style={
+          logoUrl
+            ? {
+                backgroundImage:
+                  "repeating-conic-gradient(#E5E7EB 0% 25%, #ffffff 0% 50%)",
+                backgroundSize: "12px 12px",
+                backgroundPosition: "0 0",
+              }
+            : undefined
+        }
         overflow="hidden"
         cursor={uploading ? "not-allowed" : "pointer"}
         display="flex"
         alignItems="center"
         justifyContent="center"
         transition="all 0.18s ease"
-        _hover={{ borderColor: "#4F46E5", ...(logoUrl ? {} : { bg: "#F0EEFF" }) }}
+        _hover={{
+          borderColor: "#4F46E5",
+          ...(logoUrl ? {} : { bg: "#F0EEFF" }),
+        }}
         onClick={() => !uploading && inputRef.current?.click()}
         title="Click to upload brand logo"
       >
@@ -273,7 +294,13 @@ function BrandLogoUpload({
         ) : (
           <Flex direction="column" align="center" gap={1}>
             <Camera size={22} color="#D1D5DB" />
-            <Text fontSize="10px" color="#D1D5DB" fontWeight="600" textAlign="center" lineHeight="1.2">
+            <Text
+              fontSize="10px"
+              color="#D1D5DB"
+              fontWeight="600"
+              textAlign="center"
+              lineHeight="1.2"
+            >
               Upload Logo
             </Text>
           </Flex>
@@ -292,7 +319,11 @@ function BrandLogoUpload({
             _hover={{ bg: "rgba(0,0,0,0.35)" }}
             className="logo-hover-overlay"
           >
-            <Camera size={18} color="rgba(255,255,255,0)" style={{ transition: "color 0.18s ease" }} />
+            <Camera
+              size={18}
+              color="rgba(255,255,255,0)"
+              style={{ transition: "color 0.18s ease" }}
+            />
           </Flex>
         )}
       </Box>
@@ -306,7 +337,9 @@ function BrandLogoUpload({
         onChange={handleFileChange}
       />
 
-      <Text fontSize="11px" color="#9CA3AF">PNG, JPG or WebP</Text>
+      <Text fontSize="11px" color="#9CA3AF">
+        PNG, JPG or WebP
+      </Text>
 
       {errorMsg && (
         <Text fontSize="12px" color="#DC2626" fontWeight="500" maxW="200px">
@@ -317,7 +350,6 @@ function BrandLogoUpload({
   );
 }
 
-
 // ─── Edit Brand Slide-Over Panel ─────────────────────────────────────────────
 
 function EditBrandPanel({
@@ -327,7 +359,13 @@ function EditBrandPanel({
   onClose,
   isSaving,
 }: {
-  draft: { name: string; website_url: string; industry: string; description: string; guardrails: string };
+  draft: {
+    name: string;
+    website_url: string;
+    industry: string;
+    description: string;
+    guardrails: string;
+  };
   onChange: (field: string, value: string) => void;
   onSave: () => void;
   onClose: () => void;
@@ -336,19 +374,47 @@ function EditBrandPanel({
   return (
     <>
       {/* Backdrop */}
-      <Box position="fixed" inset={0} bg="rgba(0,0,0,0.4)" zIndex={200}
-        backdropFilter="blur(2px)" onClick={onClose} />
+      <Box
+        position="fixed"
+        inset={0}
+        bg="rgba(0,0,0,0.4)"
+        zIndex={200}
+        backdropFilter="blur(2px)"
+        onClick={onClose}
+      />
       {/* Drawer */}
-      <Box position="fixed" top={0} right={0} bottom={0}
-        w={{ base: "full", sm: "460px" }} bg="white" zIndex={201}
+      <Box
+        position="fixed"
+        top={0}
+        right={0}
+        bottom={0}
+        w={{ base: "full", sm: "460px" }}
+        bg="white"
+        zIndex={201}
         boxShadow="-8px 0 48px rgba(0,0,0,0.14)"
-        display="flex" flexDirection="column">
+        display="flex"
+        flexDirection="column"
+      >
         {/* Header */}
-        <Flex align="center" justify="space-between" px={6} py={5}
-          borderBottom="1px solid" borderColor="#F3F4F6">
-          <Text fontSize="18px" fontWeight="700" color="#111111">Edit Brand</Text>
-          <Button variant="ghost" size="xs" borderRadius="10px" p={1.5}
-            _hover={{ bg: "#F3F4F6" }} onClick={onClose}>
+        <Flex
+          align="center"
+          justify="space-between"
+          px={6}
+          py={5}
+          borderBottom="1px solid"
+          borderColor="#F3F4F6"
+        >
+          <Text fontSize="18px" fontWeight="700" color="#111111">
+            Edit Brand
+          </Text>
+          <Button
+            variant="ghost"
+            size="xs"
+            borderRadius="10px"
+            p={1.5}
+            _hover={{ bg: "#F3F4F6" }}
+            onClick={onClose}
+          >
             <X size={18} color="#6B7280" />
           </Button>
         </Flex>
@@ -356,57 +422,132 @@ function EditBrandPanel({
         <VStack align="stretch" gap={5} flex={1} overflowY="auto" px={6} py={6}>
           {/* Brand Name */}
           <Box>
-            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Brand Name</Text>
-            <Input value={draft.name} onChange={e => onChange("name", e.target.value)}
-              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
-              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>
+              Brand Name
+            </Text>
+            <Input
+              value={draft.name}
+              onChange={(e) => onChange("name", e.target.value)}
+              fontSize="14px"
+              borderRadius="10px"
+              h="40px"
+              borderColor="#E5E7EB"
+              _focus={{
+                borderColor: "#4F46E5",
+                boxShadow: "0 0 0 1px #4F46E5",
+              }}
+            />
           </Box>
           {/* Website URL */}
           <Box>
-            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Website URL</Text>
-            <Input value={draft.website_url} onChange={e => onChange("website_url", e.target.value)}
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>
+              Website URL
+            </Text>
+            <Input
+              value={draft.website_url}
+              onChange={(e) => onChange("website_url", e.target.value)}
               placeholder="https://example.com"
-              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
-              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+              fontSize="14px"
+              borderRadius="10px"
+              h="40px"
+              borderColor="#E5E7EB"
+              _focus={{
+                borderColor: "#4F46E5",
+                boxShadow: "0 0 0 1px #4F46E5",
+              }}
+            />
           </Box>
           {/* Industry */}
           <Box>
-            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Industry</Text>
-            <Input value={draft.industry} onChange={e => onChange("industry", e.target.value)}
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>
+              Industry
+            </Text>
+            <Input
+              value={draft.industry}
+              onChange={(e) => onChange("industry", e.target.value)}
               placeholder="e.g. SaaS, Healthcare, E-commerce"
-              fontSize="14px" borderRadius="10px" h="40px" borderColor="#E5E7EB"
-              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+              fontSize="14px"
+              borderRadius="10px"
+              h="40px"
+              borderColor="#E5E7EB"
+              _focus={{
+                borderColor: "#4F46E5",
+                boxShadow: "0 0 0 1px #4F46E5",
+              }}
+            />
           </Box>
           {/* Description */}
           <Box>
-            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>Description</Text>
-            <Textarea value={draft.description} onChange={e => onChange("description", e.target.value)}
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1.5}>
+              Description
+            </Text>
+            <Textarea
+              value={draft.description}
+              onChange={(e) => onChange("description", e.target.value)}
               placeholder="Brief description of what the brand does..."
-              fontSize="14px" borderRadius="10px" minH="90px" borderColor="#E5E7EB" resize="vertical"
-              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+              fontSize="14px"
+              borderRadius="10px"
+              minH="90px"
+              borderColor="#E5E7EB"
+              resize="vertical"
+              _focus={{
+                borderColor: "#4F46E5",
+                boxShadow: "0 0 0 1px #4F46E5",
+              }}
+            />
           </Box>
           {/* Guardrails */}
           <Box>
-            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1}>Guardrails</Text>
+            <Text fontSize="12px" fontWeight="700" color="#374151" mb={1}>
+              Guardrails
+            </Text>
             <Text fontSize="12px" color="#9CA3AF" mb={1.5}>
               Rules the AI must follow when generating content for this brand.
             </Text>
-            <Textarea value={draft.guardrails} onChange={e => onChange("guardrails", e.target.value)}
+            <Textarea
+              value={draft.guardrails}
+              onChange={(e) => onChange("guardrails", e.target.value)}
               placeholder="e.g. Never use aggressive language. Always mention the free trial."
-              fontSize="14px" borderRadius="10px" minH="130px" borderColor="#E5E7EB" resize="vertical"
-              _focus={{ borderColor: "#4F46E5", boxShadow: "0 0 0 1px #4F46E5" }} />
+              fontSize="14px"
+              borderRadius="10px"
+              minH="130px"
+              borderColor="#E5E7EB"
+              resize="vertical"
+              _focus={{
+                borderColor: "#4F46E5",
+                boxShadow: "0 0 0 1px #4F46E5",
+              }}
+            />
           </Box>
         </VStack>
         {/* Footer */}
         <Flex gap={3} px={6} py={5} borderTop="1px solid" borderColor="#F3F4F6">
-          <Button flex={1} h="44px" borderRadius="12px" bg="#4F46E5" color="white"
-            fontSize="14px" fontWeight="700" _hover={{ bg: "#4338CA" }}
-            loading={isSaving} onClick={onSave}>
+          <Button
+            flex={1}
+            h="44px"
+            borderRadius="12px"
+            bg="#4F46E5"
+            color="white"
+            fontSize="14px"
+            fontWeight="700"
+            _hover={{ bg: "#4338CA" }}
+            loading={isSaving}
+            onClick={onSave}
+          >
             Save Changes
           </Button>
-          <Button h="44px" px={5} borderRadius="12px" bg="#F3F4F6" color="#374151"
-            fontSize="14px" fontWeight="600" _hover={{ bg: "#E5E7EB" }}
-            disabled={isSaving} onClick={onClose}>
+          <Button
+            h="44px"
+            px={5}
+            borderRadius="12px"
+            bg="#F3F4F6"
+            color="#374151"
+            fontSize="14px"
+            fontWeight="600"
+            _hover={{ bg: "#E5E7EB" }}
+            disabled={isSaving}
+            onClick={onClose}
+          >
             Cancel
           </Button>
         </Flex>
@@ -447,6 +588,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   } as const;
   const searchParams = useSearchParams();
   const [activeView, setActiveView] = useState<
+    | "overview"
     | "brands"
     | "content"
     | "assets"
@@ -454,14 +596,20 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     | "integrations"
     | "settings"
     | "support"
-  >("brands");
+  >("overview");
 
   // Sync ?tab= query param → activeView on mount and when URL changes
   useEffect(() => {
     const tab = searchParams.get("tab");
     const valid = [
-      "brands", "content", "assets", "calendar",
-      "integrations", "settings", "support",
+      "overview",
+      "brands",
+      "content",
+      "assets",
+      "calendar",
+      "integrations",
+      "settings",
+      "support",
     ];
     if (tab && valid.includes(tab)) {
       setActiveView(tab as typeof activeView);
@@ -480,6 +628,20 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [allBrands, setAllBrands] = useState<BrandData[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+
+  const {
+    metrics,
+    campaigns,
+    dnaAxes,
+    dnaTags,
+    logs,
+    scheduledPosts,
+    header: headerData,
+    status: agentStatus,
+    statusConfig,
+    loading: isDashboardLoading,
+  } = useDashboardData(selectedBrandId, session?.access_token);
+
   const campaign = useCampaignPolling(
     session?.access_token,
     selectedBrandId ?? undefined,
@@ -487,7 +649,19 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [deletingBrandId, setDeletingBrandId] = useState<string | null>(null);
   const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ name: string; website_url: string; industry: string; description: string; guardrails: string }>({ name: "", website_url: "", industry: "", description: "", guardrails: "" });
+  const [editDraft, setEditDraft] = useState<{
+    name: string;
+    website_url: string;
+    industry: string;
+    description: string;
+    guardrails: string;
+  }>({
+    name: "",
+    website_url: "",
+    industry: "",
+    description: "",
+    guardrails: "",
+  });
   const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [createdBrandId, setCreatedBrandId] = useState<string | null>(null);
@@ -498,7 +672,18 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
 
   // ── Batch-rating gate state (driven by AssetsTab via onRatingGateChange) ─────
   const [hasPendingBatch, setHasPendingBatch] = useState(false);
-  const [assetCounts, setAssetCounts] = useState<{ total: number; rated: number }>({ total: 0, rated: 0 });
+  const [assetCounts, setAssetCounts] = useState<{
+    total: number;
+    rated: number;
+  }>({ total: 0, rated: 0 });
+
+  const handleRatingGateChange = useCallback(
+    (hasPending: boolean, total: number, rated: number) => {
+      setHasPendingBatch(hasPending);
+      setAssetCounts({ total, rated });
+    },
+    [],
+  );
 
   // Load persisted ratings from DB when brand or user changes
   useEffect(() => {
@@ -512,7 +697,8 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       if (data && data.length > 0) {
         const loaded: Record<string, number> = {};
         for (const row of data as { context_index: number; rating: number }[]) {
-          loaded[getFeedbackKey(selectedBrandId, row.context_index)] = row.rating;
+          loaded[getFeedbackKey(selectedBrandId, row.context_index)] =
+            row.rating;
         }
         setRatings((prev) => ({ ...prev, ...loaded }));
       }
@@ -614,11 +800,11 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
 
   const handleOpenEditPanel = (brand: BrandData) => {
     setEditDraft({
-      name:        brand.name,
+      name: brand.name,
       website_url: brand.website_url ?? "",
-      industry:    brand.industry ?? "",
+      industry: brand.industry ?? "",
       description: brand.description ?? "",
-      guardrails:  brand.guardrails ?? "",
+      guardrails: brand.guardrails ?? "",
     });
     setEditingBrandId(brand.id);
     setIsEditPanelOpen(true);
@@ -631,19 +817,29 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       const { error } = await supabase
         .from("brands")
         .update({
-          name:        editDraft.name.trim(),
+          name: editDraft.name.trim(),
           website_url: editDraft.website_url.trim() || null,
-          industry:    editDraft.industry.trim() || null,
+          industry: editDraft.industry.trim() || null,
           description: editDraft.description.trim() || null,
-          guardrails:  editDraft.guardrails.trim() || null,
+          guardrails: editDraft.guardrails.trim() || null,
         })
         .eq("id", editingBrandId);
       if (error) throw error;
-      setAllBrands(prev => prev.map(b =>
-        b.id === editingBrandId
-          ? { ...b, ...editDraft, name: editDraft.name.trim(), website_url: editDraft.website_url.trim() || null, industry: editDraft.industry.trim() || null, description: editDraft.description.trim() || null, guardrails: editDraft.guardrails.trim() || null }
-          : b
-      ));
+      setAllBrands((prev) =>
+        prev.map((b) =>
+          b.id === editingBrandId
+            ? {
+                ...b,
+                ...editDraft,
+                name: editDraft.name.trim(),
+                website_url: editDraft.website_url.trim() || null,
+                industry: editDraft.industry.trim() || null,
+                description: editDraft.description.trim() || null,
+                guardrails: editDraft.guardrails.trim() || null,
+              }
+            : b,
+        ),
+      );
       setIsEditPanelOpen(false);
     } catch (err) {
       console.error("Failed to save brand:", err);
@@ -856,67 +1052,118 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
 
   /* ─── View title helper ─── */
   const viewTitle =
-    activeView === "content"
-      ? "Content Agent"
-      : activeView === "calendar"
-        ? "Content Calendar"
-        : activeView === "integrations"
-          ? "Integrations"
-          : activeView === "settings"
-            ? "Settings"
-            : activeView === "support"
-              ? "Support"
-              : allBrands.length > 0
-                ? `Your Brands (${allBrands.length})`
-                : "Create Your First Brand";
+    activeView === "overview"
+      ? "Home"
+      : activeView === "content"
+        ? "Content Agent"
+        : activeView === "calendar"
+          ? "Content Calendar"
+          : activeView === "integrations"
+            ? "Integrations"
+            : activeView === "settings"
+              ? "Settings"
+              : activeView === "support"
+                ? "Support"
+                : allBrands.length > 0
+                  ? `Your Brands (${allBrands.length})`
+                  : "Create Your First Brand";
 
   /* ─── Brand tabs (pill row) ─── */
   const renderBrandTabs = () => (
-    <Flex gap={2} mb={6} overflowX="auto" pb={1} flexShrink={0}
-      css={{ scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
-
-      {allBrands.map(brand => {
+    <Flex
+      gap={2}
+      mb={6}
+      overflowX="auto"
+      pb={1}
+      flexShrink={0}
+      css={{
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": { display: "none" },
+      }}
+    >
+      {allBrands.map((brand) => {
         const isActive = brand.id === selectedBrandId;
         return (
-          <Flex key={brand.id} align="center" gap={2.5}
-            px={4} py={2.5} borderRadius="14px" cursor="pointer" flexShrink={0}
+          <Flex
+            key={brand.id}
+            align="center"
+            gap={2.5}
+            px={4}
+            py={2.5}
+            borderRadius="14px"
+            cursor="pointer"
+            flexShrink={0}
             bg={isActive ? "#4F46E5" : "white"}
-            border="1.5px solid" borderColor={isActive ? "#4F46E5" : "#E5E7EB"}
-            boxShadow={isActive ? "0 4px 14px rgba(79,70,229,0.22)" : "0 1px 4px rgba(0,0,0,0.05)"}
+            border="1.5px solid"
+            borderColor={isActive ? "#4F46E5" : "#E5E7EB"}
+            boxShadow={
+              isActive
+                ? "0 4px 14px rgba(79,70,229,0.22)"
+                : "0 1px 4px rgba(0,0,0,0.05)"
+            }
             transition="all 0.18s ease"
             _hover={{ borderColor: "#4F46E5", transform: "translateY(-1px)" }}
-            onClick={() => handleSelectActiveBrand(brand.id)}>
-
+            onClick={() => handleSelectActiveBrand(brand.id)}
+          >
             {/* Initials circle */}
-            <Flex w="26px" h="26px" borderRadius="7px" flexShrink={0}
+            <Flex
+              w="26px"
+              h="26px"
+              borderRadius="7px"
+              flexShrink={0}
               bg={isActive ? "rgba(255,255,255,0.18)" : "#E6F5EC"}
               color={isActive ? "white" : "#2F855A"}
-              align="center" justify="center" fontSize="10px" fontWeight="800">
+              align="center"
+              justify="center"
+              fontSize="10px"
+              fontWeight="800"
+            >
               {getInitials(brand.name)}
             </Flex>
 
-            <Text fontSize="13px" fontWeight="600"
-              color={isActive ? "white" : "#374151"} whiteSpace="nowrap">
+            <Text
+              fontSize="13px"
+              fontWeight="600"
+              color={isActive ? "white" : "#374151"}
+              whiteSpace="nowrap"
+            >
               {brand.name}
             </Text>
 
             {/* Active dot */}
             {isActive && (
-              <Box w="5px" h="5px" borderRadius="full" bg="rgba(255,255,255,0.65)" />
+              <Box
+                w="5px"
+                h="5px"
+                borderRadius="full"
+                bg="rgba(255,255,255,0.65)"
+              />
             )}
           </Flex>
         );
       })}
 
       {/* + New Brand pill */}
-      <Flex align="center" gap={2} px={4} py={2.5} borderRadius="14px"
-        cursor="pointer" flexShrink={0} bg="transparent"
-        border="1.5px dashed" borderColor="#D1D5DB" color="#9CA3AF"
+      <Flex
+        align="center"
+        gap={2}
+        px={4}
+        py={2.5}
+        borderRadius="14px"
+        cursor="pointer"
+        flexShrink={0}
+        bg="transparent"
+        border="1.5px dashed"
+        borderColor="#D1D5DB"
+        color="#9CA3AF"
         _hover={{ borderColor: "#4F46E5", color: "#4F46E5" }}
         transition="all 0.18s ease"
-        onClick={() => setIsCreateOpen(true)}>
+        onClick={() => setIsCreateOpen(true)}
+      >
         <Plus size={13} />
-        <Text fontSize="13px" fontWeight="600" whiteSpace="nowrap">New Brand</Text>
+        <Text fontSize="13px" fontWeight="600" whiteSpace="nowrap">
+          New Brand
+        </Text>
       </Flex>
     </Flex>
   );
@@ -927,37 +1174,70 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     return (
       <Box>
         {/* Header card */}
-        <Box bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="24px"
-          p={{ base: 5, md: 7 }} mb={5} boxShadow="0 4px 24px rgba(0,0,0,0.05)">
-          <Flex align="flex-start" justify="space-between" gap={5}
-            direction={{ base: "column", sm: "row" }}>
-
+        <Box
+          bg="white"
+          border="1px solid"
+          borderColor="#ECECEC"
+          borderRadius="24px"
+          p={{ base: 5, md: 7 }}
+          mb={5}
+          boxShadow="0 4px 24px rgba(0,0,0,0.05)"
+        >
+          <Flex
+            align="flex-start"
+            justify="space-between"
+            gap={5}
+            direction={{ base: "column", sm: "row" }}
+          >
             {/* Logo + identity */}
-            <Flex align="center" gap={5} flex={1} minW={0}
-              onClick={e => e.stopPropagation()}>
-              <BrandLogoUpload brand={selectedBrand} token={session?.access_token}
+            <Flex
+              align="center"
+              gap={5}
+              flex={1}
+              minW={0}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <BrandLogoUpload
+                brand={selectedBrand}
+                token={session?.access_token}
                 onLogoUploaded={(bId, url) =>
-                  setAllBrands(prev => prev.map(b => b.id === bId ? { ...b, logo_url: url } : b))
-                } />
+                  setAllBrands((prev) =>
+                    prev.map((b) =>
+                      b.id === bId ? { ...b, logo_url: url } : b,
+                    ),
+                  )
+                }
+              />
               <Box minW={0}>
-                <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="800"
-                  color="#111111" lineHeight="1.1" mb={1.5}>
+                <Text
+                  fontSize={{ base: "2xl", md: "3xl" }}
+                  fontWeight="800"
+                  color="#111111"
+                  lineHeight="1.1"
+                  mb={1.5}
+                >
                   {selectedBrand.name}
                 </Text>
                 <Flex align="center" gap={2.5} flexWrap="wrap">
                   {selectedBrand.website_url && (
-                    <Text fontSize="14px" color="#6B7280">{selectedBrandSummary?.hostname}</Text>
+                    <Text fontSize="14px" color="#6B7280">
+                      {selectedBrandSummary?.hostname}
+                    </Text>
                   )}
                   {selectedBrand.industry && selectedBrand.website_url && (
                     <Box w="3px" h="3px" borderRadius="full" bg="#D1D5DB" />
                   )}
                   {selectedBrand.industry && (
-                    <Text fontSize="13px" color="#6B7280">{selectedBrand.industry}</Text>
+                    <Text fontSize="13px" color="#6B7280">
+                      {selectedBrand.industry}
+                    </Text>
                   )}
                   <Box w="3px" h="3px" borderRadius="full" bg="#D1D5DB" />
                   <Flex align="center" gap={1.5}>
                     <Box w="6px" h="6px" borderRadius="full" bg="#22C55E" />
-                    <Text fontSize="12px" color="#22C55E" fontWeight="600">Active</Text>
+                    <Text fontSize="12px" color="#22C55E" fontWeight="600">
+                      Active
+                    </Text>
                   </Flex>
                 </Flex>
               </Box>
@@ -965,18 +1245,38 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
 
             {/* Actions */}
             <Flex gap={2} flexShrink={0} align="center">
-              <Button h="36px" px={4} borderRadius="10px" fontSize="13px" fontWeight="600"
-                bg="#F3F4F6" color="#374151" _hover={{ bg: "#E5E7EB" }}
-                onClick={() => handleOpenEditPanel(selectedBrand)}>
+              <Button
+                h="36px"
+                px={4}
+                borderRadius="10px"
+                fontSize="13px"
+                fontWeight="600"
+                bg="#F3F4F6"
+                color="#374151"
+                _hover={{ bg: "#E5E7EB" }}
+                onClick={() => handleOpenEditPanel(selectedBrand)}
+              >
                 <Pencil size={13} style={{ marginRight: 5 }} />
                 Edit
               </Button>
-              <IconButton aria-label="Delete brand" h="36px" w="36px" minW="36px"
-                borderRadius="10px" bg="transparent" color="#9CA3AF"
-                border="1px solid" borderColor="#E5E7EB"
-                _hover={{ bg: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }}
+              <IconButton
+                aria-label="Delete brand"
+                h="36px"
+                w="36px"
+                minW="36px"
+                borderRadius="10px"
+                bg="transparent"
+                color="#9CA3AF"
+                border="1px solid"
+                borderColor="#E5E7EB"
+                _hover={{
+                  bg: "#FEF2F2",
+                  color: "#DC2626",
+                  borderColor: "#FECACA",
+                }}
                 loading={deletingBrandId === selectedBrand.id}
-                onClick={() => handleDeleteBrand(selectedBrand.id)}>
+                onClick={() => handleDeleteBrand(selectedBrand.id)}
+              >
                 <Trash2 size={14} />
               </IconButton>
             </Flex>
@@ -984,11 +1284,29 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         </Box>
 
         {/* Description + Guardrails */}
-        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={5}>
+        <Box
+          display="grid"
+          gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }}
+          gap={4}
+          mb={5}
+        >
           {/* Description */}
-          <Box bg="white" border="1px solid" borderColor="#ECECEC" borderRadius="20px"
-            p={5} boxShadow="0 2px 12px rgba(0,0,0,0.04)" minH="100px">
-            <Text fontSize="11px" fontWeight="800" color="#9CA3AF" letterSpacing="0.08em" mb={3}>
+          <Box
+            bg="white"
+            border="1px solid"
+            borderColor="#ECECEC"
+            borderRadius="20px"
+            p={5}
+            boxShadow="0 2px 12px rgba(0,0,0,0.04)"
+            minH="100px"
+          >
+            <Text
+              fontSize="11px"
+              fontWeight="800"
+              color="#9CA3AF"
+              letterSpacing="0.08em"
+              mb={3}
+            >
               DESCRIPTION
             </Text>
             {selectedBrand.description ? (
@@ -1003,13 +1321,31 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           </Box>
 
           {/* Guardrails */}
-          <Box bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="20px"
-            p={5} boxShadow="0 2px 12px rgba(0,0,0,0.04)" minH="100px">
-            <Text fontSize="11px" fontWeight="800" color="#92400E" letterSpacing="0.08em" mb={3}>
+          <Box
+            bg="#FFFBEB"
+            border="1px solid"
+            borderColor="#FDE68A"
+            borderRadius="20px"
+            p={5}
+            boxShadow="0 2px 12px rgba(0,0,0,0.04)"
+            minH="100px"
+          >
+            <Text
+              fontSize="11px"
+              fontWeight="800"
+              color="#92400E"
+              letterSpacing="0.08em"
+              mb={3}
+            >
               GUARDRAILS
             </Text>
             {selectedBrand.guardrails ? (
-              <Text fontSize="14px" color="#78350F" lineHeight="1.7" whiteSpace="pre-wrap">
+              <Text
+                fontSize="14px"
+                color="#78350F"
+                lineHeight="1.7"
+                whiteSpace="pre-wrap"
+              >
                 {selectedBrand.guardrails}
               </Text>
             ) : (
@@ -1024,292 +1360,320 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
         {selectedBrand.manifest ? (
           <>
             <Flex align="center" gap={3} mb={5}>
-              <Text fontSize="12px" fontWeight="800" color="#9CA3AF"
-                letterSpacing="0.07em" textTransform="uppercase">Brand Context</Text>
+              <Text
+                fontSize="12px"
+                fontWeight="800"
+                color="#9CA3AF"
+                letterSpacing="0.07em"
+                textTransform="uppercase"
+              >
+                Brand Context
+              </Text>
               <Box flex={1} h="1px" bg="#ECECEC" />
             </Flex>
             <VStack align="stretch" gap={6}>
               {contextBlocks.map((block) => {
-            const feedbackKey = getFeedbackKey(
-              selectedBrand.id,
-              block.context_index,
-            );
-            const renderedBlock = streamingBlocks[feedbackKey] || block;
-            const selectedRating = ratings[feedbackKey] ?? 0;
-            const isFeedbackOpen = openFeedbackKey === feedbackKey;
-            const isSubmitting = submittingKey === feedbackKey;
-            const cardNotice = cardNotices[feedbackKey];
-            const cardDiff = cardDiffs[feedbackKey];
-            const previousContent =
-              cardDiff?.updatedSection.context_index === block.context_index
-                ? cardDiff.previousSection.content
-                : undefined;
-            const highlightedParagraphs = getHighlightedParagraphs(
-              renderedBlock.content,
-              previousContent,
-            );
-            const hasTitleChanged =
-              cardDiff?.updatedSection.context_index === block.context_index &&
-              cardDiff.previousSection.title !== renderedBlock.title;
+                const feedbackKey = getFeedbackKey(
+                  selectedBrand.id,
+                  block.context_index,
+                );
+                const renderedBlock = streamingBlocks[feedbackKey] || block;
+                const selectedRating = ratings[feedbackKey] ?? 0;
+                const isFeedbackOpen = openFeedbackKey === feedbackKey;
+                const isSubmitting = submittingKey === feedbackKey;
+                const cardNotice = cardNotices[feedbackKey];
+                const cardDiff = cardDiffs[feedbackKey];
+                const previousContent =
+                  cardDiff?.updatedSection.context_index === block.context_index
+                    ? cardDiff.previousSection.content
+                    : undefined;
+                const highlightedParagraphs = getHighlightedParagraphs(
+                  renderedBlock.content,
+                  previousContent,
+                );
+                const hasTitleChanged =
+                  cardDiff?.updatedSection.context_index ===
+                    block.context_index &&
+                  cardDiff.previousSection.title !== renderedBlock.title;
 
-            return (
-              <Box
-                key={block.context_index}
-                bg="white"
-                border="1px solid"
-                borderColor={
-                  isSubmitting
-                    ? "#4F46E5"
-                    : cardNotice?.type === "success"
-                      ? "#86EFAC"
-                      : cardNotice?.type === "error"
-                        ? "#FECACA"
-                        : "#ECECEC"
-                }
-                borderRadius="24px"
-                p={{ base: 5, md: 8 }}
-                boxShadow={
-                  isSubmitting
-                    ? "0 16px 40px rgba(79, 70, 229, 0.18)"
-                    : cardNotice?.type === "success"
-                      ? "0 14px 36px rgba(34, 197, 94, 0.12)"
-                      : "0 12px 48px rgba(0, 0, 0, 0.04)"
-                }
-                position="relative"
-                overflow="hidden"
-              >
-                {isSubmitting && (
+                return (
                   <Box
-                    position="absolute"
-                    inset={0}
-                    zIndex={2}
-                    pointerEvents="none"
-                    css={{
-                      "@keyframes regenerationSweep": {
-                        "0%": { backgroundPosition: "200% 0" },
-                        "100%": { backgroundPosition: "-200% 0" },
-                      },
-                    }}
-                  >
-                    <Box
-                      position="absolute"
-                      top={0}
-                      left={0}
-                      right={0}
-                      h="5px"
-                      bgGradient="linear(to-r, transparent, #4F46E5, #A78BFA, #4F46E5, transparent)"
-                      backgroundSize="200% 100%"
-                      animation="regenerationSweep 1.8s linear infinite"
-                    />
-                  </Box>
-                )}
-                <Text
-                  fontSize={{ base: "2xl", md: "3xl" }}
-                  fontWeight="700"
-                  color="#111111"
-                  lineHeight="1.15"
-                  mb={5}
-                  bg={
-                    hasTitleChanged
-                      ? "rgba(254, 240, 138, 0.45)"
-                      : "transparent"
-                  }
-                  display="inline"
-                  px={hasTitleChanged ? 1.5 : 0}
-                  py={hasTitleChanged ? 0.5 : 0}
-                  borderRadius={hasTitleChanged ? "8px" : "0"}
-                >
-                  {renderedBlock.title}
-                </Text>
-                <Box
-                  fontSize={{ base: "16px", md: "18px" }}
-                  color="#5B6472"
-                  lineHeight="1.65"
-                  pb={8}
-                  borderBottom="1px solid"
-                  borderColor="#ECECEC"
-                >
-                  <VStack align="stretch" gap={3}>
-                    {highlightedParagraphs.map((paragraph, paragraphIndex) => (
-                      <Text key={`${feedbackKey}-paragraph-${paragraphIndex}`}>
-                        {paragraph.length === 0
-                          ? "\u00A0"
-                          : paragraph.map((sentence, sentenceIndex) => (
-                              <Box
-                                as="span"
-                                key={`${feedbackKey}-sentence-${paragraphIndex}-${sentenceIndex}`}
-                                bg={
-                                  sentence.isChanged
-                                    ? "rgba(254, 240, 138, 0.55)"
-                                    : "transparent"
-                                }
-                                borderRadius={sentence.isChanged ? "8px" : "0"}
-                                px={sentence.isChanged ? 1 : 0}
-                                py={sentence.isChanged ? 0.5 : 0}
-                                transition="background-color 0.2s ease"
-                              >
-                                {sentence.text}{" "}
-                              </Box>
-                            ))}
-                      </Text>
-                    ))}
-                  </VStack>
-                </Box>
-
-                <Flex
-                  align={{ base: "flex-start", md: "center" }}
-                  justify="space-between"
-                  direction={{ base: "column", md: "row" }}
-                  gap={4}
-                  pt={8}
-                >
-                  <Text fontSize="16px" fontWeight="700" color="#6B7280">
-                    Rate this direction:
-                  </Text>
-                  <Flex gap={2}>
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <IconButton
-                        key={`${block.context_index}-star-${index + 1}`}
-                        onClick={() => handleRatingSelect(block, index + 1)}
-                        variant="ghost"
-                        size="md"
-                        p={0}
-                        w="auto"
-                        h="auto"
-                        color="inherit"
-                        transition="transform 0.15s ease"
-                        _hover={{ transform: "translateY(-1px)" }}
-                        _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
-                        disabled={Boolean(submittingKey)}
-                        aria-label={`Rate ${index + 1} star${index + 1 > 1 ? "s" : ""}`}
-                      >
-                        <Star
-                          size={24}
-                          color={
-                            index + 1 <= selectedRating ? "#F59E0B" : "#D1D5DB"
-                          }
-                          fill={
-                            index + 1 <= selectedRating
-                              ? "#FDE68A"
-                              : "transparent"
-                          }
-                          strokeWidth={1.8}
-                        />
-                      </IconButton>
-                    ))}
-                  </Flex>
-                </Flex>
-
-                {cardNotice && (
-                  <Box
-                    mt={5}
-                    bg={cardNotice.type === "success" ? "green.50" : "red.50"}
+                    key={block.context_index}
+                    bg="white"
                     border="1px solid"
                     borderColor={
-                      cardNotice.type === "success" ? "green.200" : "red.200"
+                      isSubmitting
+                        ? "#4F46E5"
+                        : cardNotice?.type === "success"
+                          ? "#86EFAC"
+                          : cardNotice?.type === "error"
+                            ? "#FECACA"
+                            : "#ECECEC"
                     }
-                    color={
-                      cardNotice.type === "success" ? "green.700" : "red.600"
+                    borderRadius="24px"
+                    p={{ base: 5, md: 8 }}
+                    boxShadow={
+                      isSubmitting
+                        ? "0 16px 40px rgba(79, 70, 229, 0.18)"
+                        : cardNotice?.type === "success"
+                          ? "0 14px 36px rgba(34, 197, 94, 0.12)"
+                          : "0 12px 48px rgba(0, 0, 0, 0.04)"
                     }
-                    fontSize="sm"
-                    borderRadius="14px"
-                    p={4}
+                    position="relative"
+                    overflow="hidden"
                   >
-                    {cardNotice.message}
-                  </Box>
-                )}
-
-                {isFeedbackOpen && (
-                  <Box
-                    mt={6}
-                    borderTop="1px solid"
-                    borderColor="#ECECEC"
-                    pt={6}
-                  >
+                    {isSubmitting && (
+                      <Box
+                        position="absolute"
+                        inset={0}
+                        zIndex={2}
+                        pointerEvents="none"
+                        css={{
+                          "@keyframes regenerationSweep": {
+                            "0%": { backgroundPosition: "200% 0" },
+                            "100%": { backgroundPosition: "-200% 0" },
+                          },
+                        }}
+                      >
+                        <Box
+                          position="absolute"
+                          top={0}
+                          left={0}
+                          right={0}
+                          h="5px"
+                          bgGradient="linear(to-r, transparent, #4F46E5, #A78BFA, #4F46E5, transparent)"
+                          backgroundSize="200% 100%"
+                          animation="regenerationSweep 1.8s linear infinite"
+                        />
+                      </Box>
+                    )}
                     <Text
-                      fontSize="14px"
+                      fontSize={{ base: "2xl", md: "3xl" }}
                       fontWeight="700"
                       color="#111111"
-                      mb={2}
-                    >
-                      Optional feedback for regeneration
-                    </Text>
-                    <Text fontSize="13px" color="#6B7280" mb={4}>
-                      This will regenerate only this context section and update
-                      the stored markdown.
-                    </Text>
-                    <Textarea
-                      placeholder="Tell the agent what to fix in this direction."
-                      value={feedbackDrafts[feedbackKey] || ""}
-                      onChange={(event) =>
-                        setFeedbackDrafts((prev) => ({
-                          ...prev,
-                          [feedbackKey]: event.target.value,
-                        }))
+                      lineHeight="1.15"
+                      mb={5}
+                      bg={
+                        hasTitleChanged
+                          ? "rgba(254, 240, 138, 0.45)"
+                          : "transparent"
                       }
-                      minH="120px"
-                      px="16px"
-                      py="14px"
-                      resize="vertical"
-                      mb={4}
-                      {...feedbackFieldChrome}
-                    />
-                    <Flex gap={3} wrap="wrap">
-                      <Button
-                        bg="#4F46E5"
-                        color="white"
-                        borderRadius="12px"
-                        h="44px"
-                        px={6}
-                        fontSize="14px"
-                        fontWeight="700"
-                        boxShadow="0 6px 16px rgba(79, 70, 229, 0.22)"
-                        _hover={{
-                          bg: "#4338CA",
-                          transform: "translateY(-1px)",
-                          boxShadow: "0 10px 24px rgba(79, 70, 229, 0.26)",
-                        }}
-                        _active={{ transform: "translateY(0)" }}
-                        onClick={() => handleRegenerateContext(block)}
-                        disabled={Boolean(submittingKey)}
-                      >
-                        {isSubmitting ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          "Regenerate Section"
+                      display="inline"
+                      px={hasTitleChanged ? 1.5 : 0}
+                      py={hasTitleChanged ? 0.5 : 0}
+                      borderRadius={hasTitleChanged ? "8px" : "0"}
+                    >
+                      {renderedBlock.title}
+                    </Text>
+                    <Box
+                      fontSize={{ base: "16px", md: "18px" }}
+                      color="#5B6472"
+                      lineHeight="1.65"
+                      pb={8}
+                      borderBottom="1px solid"
+                      borderColor="#ECECEC"
+                    >
+                      <VStack align="stretch" gap={3}>
+                        {highlightedParagraphs.map(
+                          (paragraph, paragraphIndex) => (
+                            <Text
+                              key={`${feedbackKey}-paragraph-${paragraphIndex}`}
+                            >
+                              {paragraph.length === 0
+                                ? "\u00A0"
+                                : paragraph.map((sentence, sentenceIndex) => (
+                                    <Box
+                                      as="span"
+                                      key={`${feedbackKey}-sentence-${paragraphIndex}-${sentenceIndex}`}
+                                      bg={
+                                        sentence.isChanged
+                                          ? "rgba(254, 240, 138, 0.55)"
+                                          : "transparent"
+                                      }
+                                      borderRadius={
+                                        sentence.isChanged ? "8px" : "0"
+                                      }
+                                      px={sentence.isChanged ? 1 : 0}
+                                      py={sentence.isChanged ? 0.5 : 0}
+                                      transition="background-color 0.2s ease"
+                                    >
+                                      {sentence.text}{" "}
+                                    </Box>
+                                  ))}
+                            </Text>
+                          ),
                         )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        bg="white"
-                        borderRadius="12px"
-                        h="44px"
-                        px={5}
-                        fontSize="14px"
-                        fontWeight="600"
-                        borderColor="#E5E7EB"
-                        color="#6B7280"
-                        _hover={{
-                          bg: "#F8F8F6",
-                          color: "#111111",
-                          borderColor: "#D1D5DB",
-                        }}
-                        onClick={() => setOpenFeedbackKey(null)}
-                        disabled={Boolean(submittingKey)}
-                      >
-                        Cancel
-                      </Button>
+                      </VStack>
+                    </Box>
+
+                    <Flex
+                      align={{ base: "flex-start", md: "center" }}
+                      justify="space-between"
+                      direction={{ base: "column", md: "row" }}
+                      gap={4}
+                      pt={8}
+                    >
+                      <Text fontSize="16px" fontWeight="700" color="#6B7280">
+                        Rate this direction:
+                      </Text>
+                      <Flex gap={2}>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <IconButton
+                            key={`${block.context_index}-star-${index + 1}`}
+                            onClick={() => handleRatingSelect(block, index + 1)}
+                            variant="ghost"
+                            size="md"
+                            p={0}
+                            w="auto"
+                            h="auto"
+                            color="inherit"
+                            transition="transform 0.15s ease"
+                            _hover={{ transform: "translateY(-1px)" }}
+                            _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
+                            disabled={Boolean(submittingKey)}
+                            aria-label={`Rate ${index + 1} star${index + 1 > 1 ? "s" : ""}`}
+                          >
+                            <Star
+                              size={24}
+                              color={
+                                index + 1 <= selectedRating
+                                  ? "#F59E0B"
+                                  : "#D1D5DB"
+                              }
+                              fill={
+                                index + 1 <= selectedRating
+                                  ? "#FDE68A"
+                                  : "transparent"
+                              }
+                              strokeWidth={1.8}
+                            />
+                          </IconButton>
+                        ))}
+                      </Flex>
                     </Flex>
+
+                    {cardNotice && (
+                      <Box
+                        mt={5}
+                        bg={
+                          cardNotice.type === "success" ? "green.50" : "red.50"
+                        }
+                        border="1px solid"
+                        borderColor={
+                          cardNotice.type === "success"
+                            ? "green.200"
+                            : "red.200"
+                        }
+                        color={
+                          cardNotice.type === "success"
+                            ? "green.700"
+                            : "red.600"
+                        }
+                        fontSize="sm"
+                        borderRadius="14px"
+                        p={4}
+                      >
+                        {cardNotice.message}
+                      </Box>
+                    )}
+
+                    {isFeedbackOpen && (
+                      <Box
+                        mt={6}
+                        borderTop="1px solid"
+                        borderColor="#ECECEC"
+                        pt={6}
+                      >
+                        <Text
+                          fontSize="14px"
+                          fontWeight="700"
+                          color="#111111"
+                          mb={2}
+                        >
+                          Optional feedback for regeneration
+                        </Text>
+                        <Text fontSize="13px" color="#6B7280" mb={4}>
+                          This will regenerate only this context section and
+                          update the stored markdown.
+                        </Text>
+                        <Textarea
+                          placeholder="Tell the agent what to fix in this direction."
+                          value={feedbackDrafts[feedbackKey] || ""}
+                          onChange={(event) =>
+                            setFeedbackDrafts((prev) => ({
+                              ...prev,
+                              [feedbackKey]: event.target.value,
+                            }))
+                          }
+                          minH="120px"
+                          px="16px"
+                          py="14px"
+                          resize="vertical"
+                          mb={4}
+                          {...feedbackFieldChrome}
+                        />
+                        <Flex gap={3} wrap="wrap">
+                          <Button
+                            bg="#4F46E5"
+                            color="white"
+                            borderRadius="12px"
+                            h="44px"
+                            px={6}
+                            fontSize="14px"
+                            fontWeight="700"
+                            boxShadow="0 6px 16px rgba(79, 70, 229, 0.22)"
+                            _hover={{
+                              bg: "#4338CA",
+                              transform: "translateY(-1px)",
+                              boxShadow: "0 10px 24px rgba(79, 70, 229, 0.26)",
+                            }}
+                            _active={{ transform: "translateY(0)" }}
+                            onClick={() => handleRegenerateContext(block)}
+                            disabled={Boolean(submittingKey)}
+                          >
+                            {isSubmitting ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              "Regenerate Section"
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            bg="white"
+                            borderRadius="12px"
+                            h="44px"
+                            px={5}
+                            fontSize="14px"
+                            fontWeight="600"
+                            borderColor="#E5E7EB"
+                            color="#6B7280"
+                            _hover={{
+                              bg: "#F8F8F6",
+                              color: "#111111",
+                              borderColor: "#D1D5DB",
+                            }}
+                            onClick={() => setOpenFeedbackKey(null)}
+                            disabled={Boolean(submittingKey)}
+                          >
+                            Cancel
+                          </Button>
+                        </Flex>
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
-            );
-          })}
+                );
+              })}
             </VStack>
           </>
         ) : (
-          <Box border="1px dashed" borderColor="#E5E7EB" borderRadius="18px"
-            p={5} bg="#F9FAFB" textAlign="center">
+          <Box
+            border="1px dashed"
+            borderColor="#E5E7EB"
+            borderRadius="18px"
+            p={5}
+            bg="#F9FAFB"
+            textAlign="center"
+          >
             <Text fontSize="sm" color="#6B7280">
               No brand context generated yet. Run discovery to generate context.
             </Text>
@@ -1372,7 +1736,11 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
             const isActive = activeView === viewKey;
             const hasAssetsBadge = viewKey === "assets" && campaign.isPolling;
             const noBrands = allBrands.length === 0 && !isLoadingBrands;
-            const isLocked = noBrands && viewKey !== "brands" && viewKey !== "support" && viewKey !== "settings";
+            const isLocked =
+              noBrands &&
+              viewKey !== "brands" &&
+              viewKey !== "support" &&
+              viewKey !== "settings";
 
             return (
               <Flex
@@ -1387,10 +1755,14 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 fontWeight={isActive ? "600" : "500"}
                 cursor={isLocked ? "not-allowed" : "pointer"}
                 opacity={isLocked ? 0.5 : 1}
-                _hover={isLocked ? {} : {
-                  bg: isActive ? "#F0EEFF" : "#F8F8F6",
-                  color: isActive ? "#4F46E5" : "#111111",
-                }}
+                _hover={
+                  isLocked
+                    ? {}
+                    : {
+                        bg: isActive ? "#F0EEFF" : "#F8F8F6",
+                        color: isActive ? "#4F46E5" : "#111111",
+                      }
+                }
                 transition="all 0.15s ease"
                 fontSize="14px"
                 onClick={() => {
@@ -1402,7 +1774,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 <Icon size={18} />
                 <Text>{item.label}</Text>
                 {isLocked ? (
-                  <Lock size={13} style={{ marginLeft: "auto", opacity: 0.6 }} />
+                  <Lock
+                    size={13}
+                    style={{ marginLeft: "auto", opacity: 0.6 }}
+                  />
                 ) : hasAssetsBadge ? (
                   <Box
                     w="8px"
@@ -1550,42 +1925,72 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           minH={{ base: "auto", md: "80px" }}
           px={{ base: 4, md: 8, xl: 12 }}
           py={{ base: 4, md: 0 }}
-          align={{ base: "stretch", md: "center" }}
+          align="center"
           justify="space-between"
           direction={{ base: "column", md: "row" }}
           gap={{ base: 3, md: 0 }}
           borderBottom="1px solid"
           borderColor="#ECECEC"
         >
-          <Text fontSize="xl" fontWeight="700" color="#111111">
-            {viewTitle}
-          </Text>
-          <Flex align="center" gap={3} w={{ base: "full", md: "auto" }}>
-            {activeView === "brands" && (
-              <Button
-                bg="#4F46E5"
-                color="white"
-                h="42px"
-                px={6}
-                fontSize="14px"
+          {/* Left: Titles & Integration Badge */}
+          <Flex align="center" gap={6}>
+            <Box>
+              <Text
+                fontSize="xl"
                 fontWeight="700"
-                borderRadius="12px"
-                boxShadow="0 6px 16px rgba(79, 70, 229, 0.25)"
-                _hover={{
-                  bg: "#4338CA",
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 10px 24px rgba(79, 70, 229, 0.28)",
-                }}
-                _active={{ transform: "translateY(0)" }}
-                onClick={() => setIsCreateOpen(true)}
-                w={{ base: "full", sm: "auto" }}
+                color="#111111"
+                lineHeight="1.2"
               >
-                <Flex align="center" gap={2}>
-                  <Plus size={18} />
-                  Create Brand
-                </Flex>
-              </Button>
+                {viewTitle}
+              </Text>
+            </Box>
+
+            {/* Integration Badge (Middle-ish) */}
+            {headerData?.integrationStatus === "connected" && (
+              <Flex
+                display={{ base: "none", sm: "flex" }}
+                align="center"
+                gap={2}
+                px={3}
+                py={1.5}
+                borderRadius="8px"
+                border="1px solid #E5E7EB"
+                bg="white"
+                className="integration-badge"
+              >
+                <Box w="6px" h="6px" borderRadius="full" bg="#10B981" />
+                <Text fontSize="12px" fontWeight="500" color="#374151">
+                  {headerData.integrationName} connected
+                </Text>
+              </Flex>
             )}
+          </Flex>
+
+          {/* Right: Actions */}
+          <Flex align="center" gap={3} w={{ base: "full", md: "auto" }}>
+            <Button
+              bg="#4338CA"
+              color="white"
+              h="42px"
+              px={6}
+              fontSize="14px"
+              fontWeight="700"
+              borderRadius="12px"
+              boxShadow="0 6px 16px rgba(79, 70, 229, 0.25)"
+              _hover={{
+                bg: "#4338CA",
+                transform: "translateY(-1px)",
+                boxShadow: "0 10px 24px rgba(79, 70, 229, 0.28)",
+              }}
+              _active={{ transform: "translateY(0)" }}
+              onClick={() => setIsCreateOpen(true)}
+              w={{ base: "full", sm: "auto" }}
+            >
+              <Flex align="center" gap={2}>
+                <Plus size={18} />
+                Create Brand
+              </Flex>
+            </Button>
 
             {/* Docs link */}
             {activeView !== "support" && (
@@ -1596,6 +2001,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                 style={{ textDecoration: "none" }}
               >
                 <Flex
+                  as="button"
                   align="center"
                   gap={1.5}
                   px={3}
@@ -1622,23 +2028,24 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
             <Flex
               align="center"
               justify="center"
-              w="40px"
-              h="40px"
+              w="36px"
+              h="36px"
               borderRadius="full"
               bg="#EEF2FF"
               border="1.5px solid"
               borderColor="#C7D2FE"
               color="#4F46E5"
-              cursor="default"
+              cursor="pointer"
               flexShrink={0}
+              ml={1}
               title={user?.email ?? "Profile"}
             >
               {user?.email ? (
-                <Text fontSize="15px" fontWeight="700" lineHeight="1">
+                <Text fontSize="14px" fontWeight="700" lineHeight="1">
                   {user.email[0].toUpperCase()}
                 </Text>
               ) : (
-                <UserCircle size={20} />
+                <UserCircle size={18} />
               )}
             </Flex>
           </Flex>
@@ -1652,13 +2059,28 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
           overflowY="auto"
           maxH={{ base: "none", lg: "calc(100vh - 80px)" }}
         >
-          {activeView === "brands" ? (
+          {activeView === "overview" ? (
+            <OverviewTab
+              brandId={selectedBrandId ?? ""}
+              session={session ?? undefined}
+              metrics={metrics}
+              campaigns={campaigns}
+              dna={{ axes: dnaAxes, tags: dnaTags }}
+              logs={logs}
+              schedule={scheduledPosts}
+              agentStatus={{ status: agentStatus, config: statusConfig }}
+              headerData={headerData}
+              isLoading={isDashboardLoading}
+            />
+          ) : activeView === "brands" ? (
             <Box>
               {/* Slide-over edit panel */}
               {isEditPanelOpen && (
                 <EditBrandPanel
                   draft={editDraft}
-                  onChange={(field, value) => setEditDraft(d => ({ ...d, [field]: value }))}
+                  onChange={(field, value) =>
+                    setEditDraft((d) => ({ ...d, [field]: value }))
+                  }
                   onSave={handleSaveBrand}
                   onClose={() => setIsEditPanelOpen(false)}
                   isSaving={isSavingBrand}
@@ -1670,11 +2092,25 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                   <Spinner size="lg" color="#4F46E5" />
                 </Flex>
               ) : allBrands.length === 0 ? (
-                <Box bg="white" border="1px solid" borderColor="#ECECEC"
-                  borderRadius="20px" p={6} textAlign="center">
-                  <Flex w="48px" h="48px" borderRadius="12px"
-                    bg="rgba(79, 70, 229, 0.08)" color="#4F46E5"
-                    align="center" justify="center" mx="auto" mb={3}>
+                <Box
+                  bg="white"
+                  border="1px solid"
+                  borderColor="#ECECEC"
+                  borderRadius="20px"
+                  p={6}
+                  textAlign="center"
+                >
+                  <Flex
+                    w="48px"
+                    h="48px"
+                    borderRadius="12px"
+                    bg="rgba(79, 70, 229, 0.08)"
+                    color="#4F46E5"
+                    align="center"
+                    justify="center"
+                    mx="auto"
+                    mb={3}
+                  >
                     <Building2 size={24} />
                   </Flex>
                   <Text fontSize="md" fontWeight="600" color="#111111" mb={2}>
@@ -1683,9 +2119,16 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
                   <Text fontSize="sm" color="#6B7280" mb={4}>
                     Create your first brand to get started
                   </Text>
-                  <Button bg="#4F46E5" color="white" h="38px" px={5} fontSize="13px"
-                    fontWeight="600" borderRadius="10px"
-                    onClick={() => setIsCreateOpen(true)}>
+                  <Button
+                    bg="#4F46E5"
+                    color="white"
+                    h="38px"
+                    px={5}
+                    fontSize="13px"
+                    fontWeight="600"
+                    borderRadius="10px"
+                    onClick={() => setIsCreateOpen(true)}
+                  >
                     Create Brand
                   </Button>
                 </Box>
@@ -1714,7 +2157,10 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               hasRatedContext={
                 contextBlocks.length > 0 &&
                 contextBlocks.every(
-                  (b) => (ratings[getFeedbackKey(selectedBrand!.id, b.context_index)] ?? 0) > 0,
+                  (b) =>
+                    (ratings[
+                      getFeedbackKey(selectedBrand!.id, b.context_index)
+                    ] ?? 0) > 0,
                 )
               }
               onNavigateToBrands={() => navigateTo("brands")}
@@ -1729,17 +2175,18 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
               assets={campaign.assets}
               progress={campaign.progress}
               isPolling={campaign.isPolling}
-              onRatingGateChange={(hasPending, total, rated) => {
-                setHasPendingBatch(hasPending);
-                setAssetCounts({ total, rated });
-              }}
+              onRatingGateChange={handleRatingGateChange}
               onNavigateToContent={() => navigateTo("content")}
               brandId={selectedBrand?.id}
               currentGuardrails={selectedBrand?.guardrails}
               onGuardrailUpdated={(newGuardrails) => {
                 if (!selectedBrand) return;
-                setAllBrands(prev =>
-                  prev.map(b => b.id === selectedBrand.id ? { ...b, guardrails: newGuardrails } : b)
+                setAllBrands((prev) =>
+                  prev.map((b) =>
+                    b.id === selectedBrand.id
+                      ? { ...b, guardrails: newGuardrails }
+                      : b,
+                  ),
                 );
               }}
             />
