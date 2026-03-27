@@ -33,6 +33,7 @@ import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
 import ContentTab from "@/components/dashboard/ContentTab";
 import AssetsTab from "@/components/dashboard/AssetsTab";
 import CalendarTab from "@/components/dashboard/CalendarTab";
+import AIScheduleTab from "@/components/dashboard/AIScheduleTab";
 import IntegrationsTab from "@/components/dashboard/IntegrationsTab";
 import SettingsTab from "@/components/dashboard/SettingsTab";
 import SupportTab from "@/components/dashboard/SupportTab";
@@ -451,6 +452,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     | "content"
     | "assets"
     | "calendar"
+    | "schedule"
     | "integrations"
     | "settings"
     | "support"
@@ -460,7 +462,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   useEffect(() => {
     const tab = searchParams.get("tab");
     const valid = [
-      "brands", "content", "assets", "calendar",
+      "brands", "content", "assets", "calendar", "schedule",
       "integrations", "settings", "support",
     ];
     if (tab && valid.includes(tab)) {
@@ -860,13 +862,15 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       ? "Content Agent"
       : activeView === "calendar"
         ? "Content Calendar"
-        : activeView === "integrations"
-          ? "Integrations"
-          : activeView === "settings"
-            ? "Settings"
-            : activeView === "support"
-              ? "Support"
-              : allBrands.length > 0
+        : activeView === "schedule"
+          ? "AI Scheduler"
+          : activeView === "integrations"
+            ? "Integrations"
+            : activeView === "settings"
+              ? "Settings"
+              : activeView === "support"
+                ? "Support"
+                : allBrands.length > 0
                 ? `Your Brands (${allBrands.length})`
                 : "Create Your First Brand";
 
@@ -1745,6 +1749,11 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
             />
           ) : activeView === "calendar" ? (
             <CalendarTab
+              brandId={selectedBrandId ?? ""}
+              brandName={selectedBrand?.name ?? ""}
+            />
+          ) : activeView === "schedule" ? (
+            <AIScheduleTab
               brandId={selectedBrandId ?? ""}
               brandName={selectedBrand?.name ?? ""}
             />
