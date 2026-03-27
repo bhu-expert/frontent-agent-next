@@ -1309,7 +1309,11 @@ export default function ContentTab({
                   onClick={() => toggleSocialFormat(fmt.id)}
                   icon={fmt.icon}
                   label={fmt.label}
-                  description={fmt.description}
+                  description={
+                    fmt.id === "comment_free_agent" && socialCommentKeyword.trim()
+                      ? `Comment "${socialCommentKeyword.trim().toUpperCase()}" to claim the offer.`
+                      : fmt.description
+                  }
                   accent={fmt.accent}
                 />
               ))}
