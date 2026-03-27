@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -231,6 +231,50 @@ function TemplatePreviewCard({
           {template.description}
         </Text>
       </Box>
+    </Box>
+  );
+}
+
+/* ─── Reel Script sub-components ────────────────────────────────────── */
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
+      {children}
+    </Text>
+  );
+}
+
+function MetaBlock({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <Box>
+      <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>{label}</Text>
+      <Text fontSize="14px" color={highlight ? "#111111" : "#374151"} fontWeight={highlight ? "500" : "400"} lineHeight="1.55">
+        {value}
+      </Text>
+    </Box>
+  );
+}
+
+function Chip({ children, color }: { children: React.ReactNode; color: "purple" | "blue" | "gray" | "orange" }) {
+  const styles = {
+    purple: { bg: "#F5F3FF", border: "#DDD6FE", text: "#7C3AED" },
+    blue:   { bg: "#EFF6FF", border: "#BFDBFE", text: "#1D4ED8" },
+    gray:   { bg: "#F9FAFB", border: "#E5E7EB", text: "#6B7280" },
+    orange: { bg: "#FFF7ED", border: "#FED7AA", text: "#C2410C" },
+  }[color];
+  return (
+    <Box px={2.5} py={0.5} borderRadius="999px" bg={styles.bg} border={`1px solid ${styles.border}`}>
+      <Text fontSize="11px" fontWeight="600" color={styles.text}>{children}</Text>
+    </Box>
+  );
+}
+
+function BeatField({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <Box px={3} py={2.5} borderRadius="10px" bg="#F9FAFB" border="1px solid #F3F4F6">
+      <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={0.5}>{icon} {label}</Text>
+      <Text fontSize="13px" color="#374151" lineHeight="1.45">{value}</Text>
     </Box>
   );
 }
@@ -1022,14 +1066,12 @@ export default function ContentTab({
 
                     {/* Expanded content */}
                     {isExpanded && (
-                      <VStack align="stretch" gap={0} divideX={undefined}>
+                      <VStack align="stretch" gap={0}>
 
-                        {/* Hook options */}
+                        {/* ── Hook Options ── */}
                         {script.hook_options && (
                           <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
-                              Hook Options — pick one
-                            </Text>
+                            <SectionLabel>Hook Options — pick one</SectionLabel>
                             <VStack align="stretch" gap={2}>
                               {[
                                 { label: "A — Curiosity / Pain", text: script.hook_options.hook_a },
@@ -1045,43 +1087,128 @@ export default function ContentTab({
                           </Box>
                         )}
 
-                        {/* Script beats */}
+                        {/* ── Visual Brief ── */}
+                        <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                          <SectionLabel>Visual Brief</SectionLabel>
+                          <VStack align="stretch" gap={3}>
+                            {script.scene_description && (
+                              <MetaBlock label="Scene" value={script.scene_description} />
+                            )}
+                            {script.opening_frame && (
+                              <MetaBlock label="Opening Frame" value={script.opening_frame} highlight />
+                            )}
+                            <Flex gap={4} wrap="wrap">
+                              {script.location_set && <MetaBlock label="Location / Set" value={script.location_set} />}
+                              {script.color_grade && <MetaBlock label="Color Grade" value={script.color_grade} />}
+                            </Flex>
+                          </VStack>
+                        </Box>
+
+                        {/* ── Talent & Performance ── */}
+                        {(script.talent_notes || script.wardrobe_props) && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <SectionLabel>Talent & Performance</SectionLabel>
+                            <VStack align="stretch" gap={3}>
+                              {script.talent_notes && <MetaBlock label="Performance Direction" value={script.talent_notes} />}
+                              {script.wardrobe_props && <MetaBlock label="Wardrobe & Props" value={script.wardrobe_props} />}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* ── Shooting Script (Beats) ── */}
                         {script.script_beats && script.script_beats.length > 0 && (
                           <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
-                              Script Beats
-                            </Text>
-                            <VStack align="stretch" gap={3}>
+                            <SectionLabel>Shooting Script — {script.script_beats.length} Beats</SectionLabel>
+                            <VStack align="stretch" gap={4} mt={1}>
                               {script.script_beats.map((beat, bi) => (
-                                <Flex key={bi} gap={3} align="flex-start">
-                                  <Box
-                                    w="24px" h="24px" borderRadius="full" bg="#FFF1F2" border="1px solid #FECDD3"
-                                    flexShrink={0} display="flex" alignItems="center" justifyContent="center"
+                                <Box key={bi} borderRadius="16px" border="1px solid #E5E7EB" overflow="hidden">
+                                  {/* Beat header */}
+                                  <Flex
+                                    px={4} py={2.5} bg="#F9FAFB" align="center" gap={3}
+                                    borderBottom="1px solid #E5E7EB"
                                   >
-                                    <Text fontSize="11px" fontWeight="700" color="#E11D48">{bi + 1}</Text>
+                                    <Flex
+                                      w="28px" h="28px" borderRadius="full" bg="#E11D48"
+                                      align="center" justify="center" flexShrink={0}
+                                    >
+                                      <Text fontSize="12px" fontWeight="800" color="white">
+                                        {beat.beat_number ?? bi + 1}
+                                      </Text>
+                                    </Flex>
+                                    <Flex gap={2} wrap="wrap" flex={1}>
+                                      <Chip color="purple">{beat.shot_type}</Chip>
+                                      <Chip color="blue">{beat.camera_movement}</Chip>
+                                      {beat.duration_seconds && (
+                                        <Chip color="gray">{beat.duration_seconds}s</Chip>
+                                      )}
+                                      {beat.transition_out && beat.transition_out !== "END" && (
+                                        <Chip color="orange">→ {beat.transition_out}</Chip>
+                                      )}
+                                    </Flex>
+                                  </Flex>
+
+                                  {/* Beat body */}
+                                  <Box px={4} py={4}>
+                                    <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
+                                      {beat.framing_notes && (
+                                        <BeatField icon="🎬" label="Framing" value={beat.framing_notes} />
+                                      )}
+                                      {beat.lighting && (
+                                        <BeatField icon="💡" label="Lighting" value={beat.lighting} />
+                                      )}
+                                      {beat.talent_action && (
+                                        <BeatField icon="🎭" label="Talent Action" value={beat.talent_action} />
+                                      )}
+                                      {beat.sound_note && (
+                                        <BeatField icon="🎵" label="Sound" value={beat.sound_note} />
+                                      )}
+                                    </Box>
+
+                                    {/* Voice line */}
+                                    {beat.voice_text && (
+                                      <Box mt={3} px={4} py={3} borderRadius="10px" bg="#FFF1F2" border="1px solid #FECDD3">
+                                        <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>VO / ON-CAMERA LINE</Text>
+                                        <Text fontSize="15px" fontWeight="600" color="#111111" fontStyle="italic">
+                                          &ldquo;{beat.voice_text}&rdquo;
+                                        </Text>
+                                      </Box>
+                                    )}
+
+                                    {/* On-screen text */}
+                                    {beat.on_screen_text && (
+                                      <Box mt={2} px={4} py={2.5} borderRadius="10px" bg="#F0F9FF" border="1px solid #BAE6FD">
+                                        <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={0.5}>TEXT OVERLAY</Text>
+                                        <Text fontSize="14px" fontWeight="600" color="#0369A1">{beat.on_screen_text}</Text>
+                                      </Box>
+                                    )}
                                   </Box>
-                                  <Box flex={1}>
-                                    <Text fontSize="12px" color="#7C3AED" fontWeight="600" mb={0.5}>{beat.visual}</Text>
-                                    <Text fontSize="14px" color="#111111">{beat.voice_text}</Text>
-                                  </Box>
-                                </Flex>
+                                </Box>
                               ))}
                             </VStack>
                           </Box>
                         )}
 
-                        {/* CTA + production notes */}
+                        {/* ── CTA + Caption ── */}
                         <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                          <Flex gap={6} wrap="wrap">
-                            <Box flex={1} minW="200px">
-                              <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={2}>CTA</Text>
+                          <SectionLabel>CTA & Caption</SectionLabel>
+                          <Flex gap={4} wrap="wrap">
+                            <Box flex={1} minW="220px">
+                              <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Call to Action</Text>
                               <Box px={4} py={3} borderRadius="12px" bg="#F0FDF4" border="1px solid #BBF7D0">
                                 <Text fontSize="14px" fontWeight="600" color="#166534">{script.cta}</Text>
                               </Box>
                             </Box>
+                            {script.caption_hook && (
+                              <Box flex={1} minW="220px">
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Caption Hook</Text>
+                                <Box px={4} py={3} borderRadius="12px" bg="#F5F3FF" border="1px solid #DDD6FE">
+                                  <Text fontSize="14px" fontWeight="600" color="#7C3AED">{script.caption_hook}</Text>
+                                </Box>
+                              </Box>
+                            )}
                             {script.text_overlay && (
-                              <Box flex={1} minW="200px">
-                                <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={2}>Text Overlay</Text>
+                              <Box flex={1} minW="220px">
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Primary Text Overlay</Text>
                                 <Box px={4} py={3} borderRadius="12px" bg="#F0F9FF" border="1px solid #BAE6FD">
                                   <Text fontSize="14px" fontWeight="600" color="#0369A1">{script.text_overlay}</Text>
                                 </Box>
@@ -1090,12 +1217,47 @@ export default function ContentTab({
                           </Flex>
                         </Box>
 
-                        {/* Director's notes */}
+                        {/* ── Sound Design ── */}
+                        {(script.sound_design || script.audio_suggestion) && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <SectionLabel>Sound Design</SectionLabel>
+                            <VStack align="stretch" gap={3}>
+                              {script.audio_suggestion && <MetaBlock label="Music Mood" value={script.audio_suggestion} />}
+                              {script.sound_design && <MetaBlock label="Full Sound Arc" value={script.sound_design} />}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* ── Post-Production ── */}
+                        {(script.thumbnail_moment || script.loop_trick) && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <SectionLabel>Post-Production</SectionLabel>
+                            <VStack align="stretch" gap={3}>
+                              {script.thumbnail_moment && <MetaBlock label="Thumbnail Moment" value={script.thumbnail_moment} highlight />}
+                              {script.loop_trick && <MetaBlock label="Loop Trick" value={script.loop_trick} />}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* ── B-Roll List ── */}
+                        {script.b_roll_list && script.b_roll_list.length > 0 && (
+                          <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
+                            <SectionLabel>B-Roll Shot List</SectionLabel>
+                            <VStack align="stretch" gap={1.5}>
+                              {script.b_roll_list.map((shot, si) => (
+                                <Flex key={si} gap={2} align="flex-start">
+                                  <Text color="#7C3AED" flexShrink={0} mt="2px" fontWeight="700">↳</Text>
+                                  <Text fontSize="14px" color="#374151">{shot}</Text>
+                                </Flex>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
+
+                        {/* ── Director's Notes ── */}
                         {script.directors_notes && script.directors_notes.length > 0 && (
                           <Box px={6} py={5} borderBottom="1px solid" borderColor="#F3F4F6">
-                            <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
-                              Director's Notes
-                            </Text>
+                            <SectionLabel>Director's Notes</SectionLabel>
                             <VStack align="stretch" gap={1.5}>
                               {script.directors_notes.map((note, ni) => (
                                 <Flex key={ni} gap={2} align="flex-start">
@@ -1107,33 +1269,27 @@ export default function ContentTab({
                           </Box>
                         )}
 
-                        {/* Meta row */}
-                        <Box px={6} py={4} bg="#FAFAFA">
+                        {/* ── Full VO + Hashtags ── */}
+                        <Box px={6} py={5} bg="#FAFAFA">
                           <Flex gap={6} wrap="wrap" align="flex-start">
-                            {script.audio_suggestion && (
-                              <Box>
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Audio</Text>
-                                <Text fontSize="13px" color="#374151">{script.audio_suggestion}</Text>
+                            {script.voiceover_dialogue && (
+                              <Box flex={2} minW="280px">
+                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Full Voiceover Script</Text>
+                                <Text fontSize="13px" color="#374151" lineHeight="1.7" fontStyle="italic">
+                                  {script.voiceover_dialogue}
+                                </Text>
                               </Box>
                             )}
-                            {script.pacing && (
-                              <Box>
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Pacing</Text>
-                                <Text fontSize="13px" color="#374151">{script.pacing}</Text>
-                              </Box>
-                            )}
-                            {script.camera_angle && (
-                              <Box>
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Camera</Text>
-                                <Text fontSize="13px" color="#374151">{script.camera_angle}</Text>
-                              </Box>
-                            )}
-                            {script.hashtags && script.hashtags.length > 0 && (
-                              <Box>
-                                <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>Hashtags</Text>
-                                <Text fontSize="13px" color="#374151">{script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}</Text>
-                              </Box>
-                            )}
+                            <Box flex={1} minW="160px">
+                              {script.hashtags && script.hashtags.length > 0 && (
+                                <>
+                                  <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={2}>Hashtags</Text>
+                                  <Text fontSize="13px" color="#7C3AED" fontWeight="500">
+                                    {script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}
+                                  </Text>
+                                </>
+                              )}
+                            </Box>
                           </Flex>
                         </Box>
                       </VStack>

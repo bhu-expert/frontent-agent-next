@@ -520,29 +520,50 @@ export interface HookOptions {
 }
 
 export interface ScriptBeat {
-  visual: string;
+  beat_number: number;
+  duration_seconds: number;
+  shot_type: string;
+  camera_movement: string;
+  framing_notes: string;
+  lighting: string;
+  talent_action: string;
   voice_text: string;
+  on_screen_text: string;
+  sound_note: string;
+  transition_out: string;
 }
 
 export interface ReelScriptIdea {
   title: string;
-  hook: string;
-  scene_description: string;
-  voiceover_dialogue: string;
-  duration_seconds: number;
-  cta: string;
-  audio_suggestion: string;
-  hashtags: string[];
-  camera_angle: string;
-  pacing: string;
-  text_overlay: string;
-  transitions: string;
   format_name: string;
   tone: string;
   goal: string;
+  duration_seconds: number;
+  hook: string;
   hook_options: HookOptions | null;
+  scene_description: string;
+  opening_frame: string;
+  color_grade: string;
+  aspect_ratio: string;
+  location_set: string;
+  talent_notes: string;
+  wardrobe_props: string;
   script_beats: ScriptBeat[] | null;
+  audio_suggestion: string;
+  sound_design: string;
+  text_overlay: string;
+  caption_hook: string;
+  thumbnail_moment: string;
+  loop_trick: string;
   directors_notes: string[] | null;
+  cta: string;
+  voiceover_dialogue: string;
+  hashtags: string[];
+  b_roll_list: string[] | null;
+  // legacy
+  camera_angle: string;
+  pacing: string;
+  transitions: string;
 }
 
 export interface ReelScriptResponse {
