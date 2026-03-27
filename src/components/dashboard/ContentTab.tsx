@@ -22,13 +22,15 @@ import {
   Loader,
   Lock,
   Megaphone,
+  MessageCircle,
   Package,
   Rocket,
   Sparkles,
   Star,
   Tags,
+  Zap,
 } from "lucide-react";
-import { generateAdVariationsBulk, generateCarousel, generateReelScripts } from "@/api";
+import { generateAdVariationsBulk, generateCarousel, generateReelScripts, generateSocialAd } from "@/api";
 import type { ReelScriptResponse, ReelScriptIdea } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
@@ -80,6 +82,40 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "launch", label: "Launch", description: "New product or campaign momentum creatives.", icon: Rocket },
   { id: "story_narrative", label: "Story / Narrative", description: "Brand story and origin-driven creatives.", icon: BadgeCheck },
   { id: "engagement", label: "Engagement", description: "Interactive hooks designed to start response.", icon: Sparkles },
+];
+
+interface SocialFormatOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  accent: string;
+}
+
+const SOCIAL_FORMAT_OPTIONS: SocialFormatOption[] = [
+  {
+    id: "comment_free_agent",
+    label: "Comment Free Agent",
+    description: "Comment-to-unlock mechanic — users comment a keyword to claim a free offer.",
+    icon: MessageCircle,
+    accent: "#7C3AED",
+  },
+  {
+    id: "viral",
+    label: "Viral Ad",
+    description: "Scroll-stopping content engineered for shares, saves, and organic reach.",
+    icon: Zap,
+    accent: "#EA580C",
+  },
+];
+
+const SOCIAL_CTA_PRESETS = [
+  "Comment FREE below",
+  "Tag a friend",
+  "Share this post",
+  "DM us now",
+  "Click link in bio",
+  "Save this post",
 ];
 
 const CAROUSEL_THEME_OPTIONS: CarouselThemeOption[] = [
@@ -295,7 +331,7 @@ export default function ContentTab({
 }: ContentTabProps) {
 
   // ── Tab state ──────────────────────────────────────────────────────────
-  const [activeMode, setActiveMode] = useState<"ads" | "carousel" | "reels">("ads");
+  const [activeMode, setActiveMode] = useState<"ads" | "carousel" | "reels" | "social">("ads");
 
   // ── Post Variations state ────────────────────────────────────────────────
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
@@ -313,6 +349,15 @@ export default function ContentTab({
   const [reelsError, setReelsError] = useState<string | null>(null);
   const [reelsResult, setReelsResult] = useState<ReelScriptResponse | null>(null);
   const [expandedScripts, setExpandedScripts] = useState<Set<number>>(new Set());
+
+  // ── Social Ads state ───────────────────────────────────────────────────
+  const [selectedSocialFormats, setSelectedSocialFormats] = useState<string[]>(["comment_free_agent"]);
+  const [selectedSocialContextIds, setSelectedSocialContextIds] = useState<number[]>([]);
+  const [socialTopic, setSocialTopic] = useState("");
+  const [socialCta, setSocialCta] = useState("");
+  const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const isGeneratingSocialRef = useRef(false);
 
   // ── Carousel state ─────────────────────────────────────────────────────
   const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>(["educational", "product_story"]);
@@ -378,6 +423,70 @@ export default function ContentTab({
 
   const toggleCarouselContext = (idx: number) =>
     setCarouselContextIndex((prev) => (prev === idx ? null : idx));
+
+  const toggleSocialFormat = (formatId: string) =>
+    setSelectedSocialFormats((prev) =>
+      prev.includes(formatId) ? prev.filter((id) => id !== formatId) : [...prev, formatId]
+    );
+
+  const toggleSocialContext = (contextIndex: number) =>
+    setSelectedSocialContextIds((prev) =>
+      prev.includes(contextIndex)
+        ? prev.filter((id) => id !== contextIndex)
+        : [...prev, contextIndex].sort((a, b) => a - b)
+    );
+
+  const socialCombinations = useMemo(
+    () => Math.min(
+      selectedSocialFormats.length * Math.max(selectedSocialContextIds.length, 1),
+      MAX_COMBINATIONS
+    ),
+    [selectedSocialFormats, selectedSocialContextIds]
+  );
+  const socialTotalPosts = socialCombinations * 5;
+  const isSocialTrimmed =
+    selectedSocialFormats.length * Math.max(selectedSocialContextIds.length, 1) > MAX_COMBINATIONS;
+
+  const handleGenerateSocial = async () => {
+    if (!brand || !token || selectedSocialFormats.length === 0 || !socialTopic.trim() || !socialCta.trim()) return;
+    if (isGeneratingSocialRef.current) return;
+    isGeneratingSocialRef.current = true;
+    setIsGeneratingSocial(true);
+    setSocialError(null);
+    campaign.clearCampaigns();
+
+    try {
+      const result = await generateSocialAd(
+        brand.id,
+        selectedSocialFormats,
+        socialTopic.trim(),
+        socialCta.trim(),
+        selectedSocialContextIds.length > 0 ? selectedSocialContextIds.slice(0, MAX_COMBINATIONS) : null,
+        token,
+      );
+      const newCampaignIds: string[] = [];
+      for (const c of result.campaigns) {
+        const fmt = SOCIAL_FORMAT_OPTIONS.find((f) => f.id === c.format_id);
+        campaign.addCampaign({
+          campaignId: c.campaign_id,
+          contextIndex: c.context_index,
+          contextTitle: fmt?.label ?? "Social Ad",
+          templateId: c.format_id,
+          templateLabel: fmt?.label ?? c.format_id,
+          total: c.total,
+        });
+        newCampaignIds.push(c.campaign_id);
+      }
+      onBatchGenerated(newCampaignIds);
+      onNavigateToAssets();
+    } catch (error) {
+      const apiErr = error as { message?: string };
+      setSocialError(apiErr.message || "Failed to queue social ad generation. Check your connection and try again.");
+    } finally {
+      isGeneratingSocialRef.current = false;
+      setIsGeneratingSocial(false);
+    }
+  };
 
   const toggleScriptExpand = (idx: number) =>
     setExpandedScripts((prev) => {
@@ -553,7 +662,7 @@ export default function ContentTab({
         bg="#F3F4F6" borderRadius="16px" p={1} gap={1}
         w="fit-content"
       >
-        {(["ads", "carousel", "reels"] as const).map((mode) => (
+        {(["ads", "carousel", "reels", "social"] as const).map((mode) => (
           <Button
             key={mode}
             h="40px" px={6} borderRadius="12px" fontSize="14px" fontWeight="600"
@@ -567,8 +676,10 @@ export default function ContentTab({
               <Flex align="center" gap={2}><Layers size={15} />Post Variations</Flex>
             ) : mode === "carousel" ? (
               <Flex align="center" gap={2}><Sparkles size={15} />Carousel</Flex>
-            ) : (
+            ) : mode === "reels" ? (
               <Flex align="center" gap={2}><Clapperboard size={15} />Reels</Flex>
+            ) : (
+              <Flex align="center" gap={2}><Zap size={15} />Social Ads</Flex>
             )}
           </Button>
         ))}
@@ -1298,6 +1409,219 @@ export default function ContentTab({
                 );
               })}
             </VStack>
+          )}
+
+        </VStack>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* SOCIAL ADS TAB                                                       */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "social" && (
+        <VStack align="stretch" gap={8}>
+
+          {/* Step 1 — Choose Format */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Choose Ad Format</Text>
+            <Text fontSize="15px" color="#6B7280" mb={6}>Select the type of social ad you want to generate.</Text>
+            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={5}>
+              {SOCIAL_FORMAT_OPTIONS.map((fmt) => (
+                <SelectionCard
+                  key={fmt.id}
+                  isSelected={selectedSocialFormats.includes(fmt.id)}
+                  onClick={() => toggleSocialFormat(fmt.id)}
+                  icon={fmt.icon}
+                  label={fmt.label}
+                  description={fmt.description}
+                  accent={fmt.accent}
+                />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Step 2 — Select Contexts (optional) */}
+          {contextBlocks.length > 0 && (
+            <Box>
+              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Select Contexts <Text as="span" fontSize="14px" fontWeight="400" color="#9CA3AF">(optional)</Text></Text>
+              <Text fontSize="15px" color="#6B7280" mb={6}>Ground your ad in a specific brand narrative. Leave blank to generate without context.</Text>
+              <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+                {contextBlocks.map((block) => (
+                  <SelectionCard
+                    key={block.context_index}
+                    isSelected={selectedSocialContextIds.includes(block.context_index)}
+                    onClick={() => toggleSocialContext(block.context_index)}
+                    icon={BadgeCheck}
+                    label={block.title}
+                    description=""
+                    accent="#4F46E5"
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Step 3 — Topic */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "3." : "2."} What&rsquo;s this ad about?
+            </Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>Describe the product, service, or offer this ad promotes.</Text>
+            <Textarea
+              placeholder="e.g. Our new protein powder — available in 3 flavours, ships free this week only."
+              value={socialTopic}
+              onChange={(e) => setSocialTopic(e.target.value)}
+              minH="100px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Step 4 — CTA */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "4." : "3."} Call to Action
+            </Text>
+            <Text fontSize="15px" color="#6B7280" mb={3}>What should people do after seeing this ad?</Text>
+            {/* Preset chips */}
+            <Flex gap={2} wrap="wrap" mb={3}>
+              {SOCIAL_CTA_PRESETS.map((preset) => (
+                <Box
+                  key={preset}
+                  px={3} py={1.5} borderRadius="999px" cursor="pointer"
+                  border="1px solid"
+                  borderColor={socialCta === preset ? "#4F46E5" : "#E5E7EB"}
+                  bg={socialCta === preset ? "#EEF2FF" : "white"}
+                  color={socialCta === preset ? "#4338CA" : "#374151"}
+                  fontSize="13px" fontWeight={socialCta === preset ? "600" : "500"}
+                  transition="all 0.15s ease"
+                  _hover={{ borderColor: "#4F46E5", bg: "#F5F3FF" }}
+                  onClick={() => setSocialCta(preset)}
+                >
+                  {preset}
+                </Box>
+              ))}
+            </Flex>
+            <Textarea
+              placeholder="Or type your own CTA..."
+              value={socialCta}
+              onChange={(e) => setSocialCta(e.target.value)}
+              minH="72px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Rating gate banners (same as Post Variations) */}
+          {hasRatedContext && hasPendingBatch && (
+            <Flex align="center" gap={4} bg="#FFF7ED" border="1px solid" borderColor="#FED7AA" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FFEDD5" align="center" justify="center">
+                <Lock size={16} color="#EA580C" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#9A3412">Rate your generated assets to unlock the next batch</Text>
+                <Text fontSize="13px" color="#C2410C" mt={0.5}>Go to Assets and give every image a star rating before generating again.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#EA580C" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#C2410C" }} onClick={onNavigateToAssets} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />View Assets</Flex>
+              </Button>
+            </Flex>
+          )}
+          {!hasRatedContext && (
+            <Flex align="center" gap={4} bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FEF3C7" align="center" justify="center">
+                <Lock size={16} color="#D97706" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#92400E">Rate all contexts to unlock generation</Text>
+                <Text fontSize="13px" color="#B45309" mt={0.5}>Go to the Brands tab and give every context a star rating before generating.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#D97706" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#B45309" }} onClick={onNavigateToBrands} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />Rate Now</Flex>
+              </Button>
+            </Flex>
+          )}
+
+          {/* Error */}
+          {socialError && (
+            <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {socialError}
+            </Box>
+          )}
+
+          {/* Sticky Generate Bar */}
+          <Box
+            position="sticky" bottom={{ base: 2, md: 4 }}
+            bg="rgba(255,255,255,0.9)" backdropFilter="blur(12px)"
+            border="1px solid" borderColor={hasRatedContext ? "#ECECEC" : "#FDE68A"}
+            borderRadius="20px" px={{ base: 4, md: 6 }} py={4}
+          >
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              <Flex align="center" gap={4} bg="#F8F8F6" border="1px solid" borderColor="#ECECEC" borderRadius="20px" px={5} py={3} wrap="wrap">
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">{selectedSocialFormats.length}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Formats</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">{Math.max(selectedSocialContextIds.length, 1)}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Contexts</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">5</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Variations</Text>
+                </Box>
+                <Text color="#9CA3AF">=</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color={hasRatedContext && !hasPendingBatch ? "#EA580C" : "#D97706"}>{socialTotalPosts}</Text>
+                  <Text fontSize="12px" color={hasRatedContext && !hasPendingBatch ? "#EA580C" : "#D97706"} textTransform="uppercase">
+                    {isSocialTrimmed ? "Posts (capped)" : "Total Posts"}
+                  </Text>
+                </Box>
+              </Flex>
+              <Button
+                bg={hasRatedContext && !hasPendingBatch && !isGeneratingSocial && selectedSocialFormats.length > 0 && socialTopic.trim() && socialCta.trim() ? "#EA580C" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: hasRatedContext && !hasPendingBatch && selectedSocialFormats.length > 0 && socialTopic.trim() && socialCta.trim() ? "#C2410C" : "#D1D5DB" }}
+                disabled={!hasRatedContext || hasPendingBatch || selectedSocialFormats.length === 0 || !socialTopic.trim() || !socialCta.trim() || isGeneratingSocial}
+                onClick={handleGenerateSocial}
+              >
+                <Flex align="center" gap={2}>
+                  {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+                  {isGeneratingSocial
+                    ? "Generating..."
+                    : !hasRatedContext
+                      ? "Rate All Contexts First"
+                      : hasPendingBatch
+                        ? "Rate Assets to Unlock"
+                        : !socialTopic.trim() || !socialCta.trim()
+                          ? "Fill Topic & CTA to Generate"
+                          : `Generate ${socialTotalPosts} Social Ads${isSocialTrimmed ? " (capped)" : ""} \u2192`}
+                </Flex>
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Generating modal */}
+          {isGeneratingSocial && (
+            <Flex position="fixed" inset={0} zIndex={1000} bg="rgba(0,0,0,0.5)" backdropFilter="blur(6px)" align="center" justify="center">
+              <Box bg="white" borderRadius="24px" p={{ base: 8, md: 10 }} textAlign="center" maxW="420px" w="90%" boxShadow="0 24px 64px rgba(0,0,0,0.2)" style={{ animation: "fadeInUp 0.3s ease-out" }}>
+                <Flex w="64px" h="64px" borderRadius="16px" bg="#FFF7ED" align="center" justify="center" mx="auto" mb={5}>
+                  <Loader size={28} color="#EA580C" style={{ animation: "spin 1.5s linear infinite" }} />
+                </Flex>
+                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {socialTotalPosts} Social Ads</Text>
+                <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
+                  Setting up {socialTotalPosts} variations across {socialCombinations} format{socialCombinations !== 1 ? "s" : ""}.
+                </Text>
+                <Text fontSize="14px" color="#EA580C" fontWeight="500" lineHeight="1.5" mb={4}>
+                  Go grab a coffee — everything generates in the background, even if you close this tab.
+                </Text>
+                <Flex justify="center" gap={1.5}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} w="8px" h="8px" borderRadius="full" bg="#EA580C" style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                  ))}
+                </Flex>
+              </Box>
+            </Flex>
           )}
 
         </VStack>

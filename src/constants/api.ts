@@ -35,5 +35,6 @@ export const API_ENDPOINTS = {
   FORGOT_PASSWORD: "/users/forgot-password",
   RESET_PASSWORD: "/users/reset-password",
   CAROUSEL_GENERATE: "/agent/carousel/generate",
+  SOCIAL_ADS_GENERATE: "/agent/social-ads/generate",
   REEL_SCRIPT_IDEATE: "/agent/reel-script/ideate",
 } as const;

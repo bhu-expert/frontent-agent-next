@@ -513,6 +513,44 @@ export async function generateCarousel(
   return res.json();
 }
 
+/**
+ * Queues social ad generation (Comment Free Agent / Viral).
+ * Returns immediately with campaigns[] — one per (format × context) combination.
+ * Image generation happens in the background; poll via useCampaignPolling.
+ */
+export async function generateSocialAd(
+  brandId: string,
+  formatIds: string[],
+  topic: string,
+  cta: string,
+  contextIndices: number[] | null,
+  token: string,
+): Promise<{
+  campaigns: Array<{
+    campaign_id: string;
+    format_id: string;
+    context_index: number;
+    total: number;
+  }>;
+}> {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.SOCIAL_ADS_GENERATE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      brand_id: brandId,
+      format_ids: formatIds,
+      topic,
+      cta,
+      context_indices: contextIndices && contextIndices.length > 0 ? contextIndices : null,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to queue social ad generation", res.status);
+  }
+  return res.json();
+}
+
 export interface HookOptions {
   hook_a: string;
   hook_b: string;
