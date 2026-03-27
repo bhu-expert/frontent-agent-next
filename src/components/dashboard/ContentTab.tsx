@@ -29,6 +29,7 @@ import { generateAdVariationsBulk, generateCarousel } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
+import { getTemplateComponent } from "@/components/dashboard/templates";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
@@ -150,6 +151,95 @@ function SelectionCard({
       )}
       <Text fontSize="15px" fontWeight="600" color="#111111" mb={1.5} pr={6}>{label}</Text>
       <Text fontSize="13px" color="#6B7280" lineHeight="1.4">{description}</Text>
+    </Box>
+  );
+}
+
+/* ─── Template Preview Card ──────────────────────────────────────────── */
+
+const PREVIEW_VD: Record<string, string> = {
+  headline: "Your Headline Here",
+  tagline: "TAGLINE",
+  cta_text: "Shop Now",
+  brand_name: "Brand",
+  subheadline: "Supporting message goes here",
+  body_text: "Short body copy for the ad layout preview.",
+};
+
+function TemplatePreviewCard({
+  template,
+  isSelected,
+  onClick,
+}: {
+  template: TemplateOption;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const Layout = getTemplateComponent(template.id, 1);
+  const accent = "#4F46E5";
+
+  return (
+    <Box
+      border="2px solid"
+      borderColor={isSelected ? accent : "#ECECEC"}
+      borderRadius="16px"
+      overflow="hidden"
+      cursor="pointer"
+      bg="white"
+      transition="all 0.2s ease"
+      _hover={{ borderColor: isSelected ? accent : "#D1D5DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+      onClick={onClick}
+      position="relative"
+    >
+      {/* Selection indicator */}
+      <Flex
+        position="absolute"
+        top="10px"
+        right="10px"
+        zIndex={10}
+        w="20px"
+        h="20px"
+        borderRadius="full"
+        border="2px solid"
+        borderColor={isSelected ? accent : "rgba(255,255,255,0.7)"}
+        bg={isSelected ? accent : "rgba(255,255,255,0.5)"}
+        backdropFilter="blur(4px)"
+        align="center"
+        justify="center"
+        color="white"
+      >
+        {isSelected && <Text fontSize="10px" lineHeight={1}>&#10003;</Text>}
+      </Flex>
+
+      {/* Live layout preview — pointer-events off so clicks pass through */}
+      <Box w="100%" style={{ aspectRatio: "4/5" }} pointerEvents="none" overflow="hidden">
+        <Layout
+          vd={PREVIEW_VD}
+          imageUrl={null}
+          primary="#1A1A2E"
+          secondary="#4F46E5"
+          accent="#F59E0B"
+          format="feed_4_5"
+        />
+      </Box>
+
+      {/* Label row */}
+      <Box
+        px={3}
+        py={2.5}
+        bg={isSelected ? "#EEF2FF" : "white"}
+        borderTop="1px solid"
+        borderColor={isSelected ? "#C7D2FE" : "#F3F4F6"}
+        transition="background 0.2s"
+      >
+        <Text fontSize="13px" fontWeight="700" color={isSelected ? accent : "#111111"}>
+          {template.label}
+        </Text>
+        <Text fontSize="11px" color="#6B7280" lineHeight="1.4" mt={0.5}
+          overflow="hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {template.description}
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -444,15 +534,13 @@ export default function ContentTab({
           <Box mb={6}>
             <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>2. Select Templates</Text>
             <Text fontSize="15px" color="#6B7280" mb={6}>Choose the formats to apply to your selected contexts.</Text>
-            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+            <Box display="grid" gridTemplateColumns={{ base: "repeat(2, 1fr)", md: "repeat(3, 1fr)", xl: "repeat(5, 1fr)" }} gap={4}>
               {CONTENT_TEMPLATE_OPTIONS.map((template) => (
-                <SelectionCard
+                <TemplatePreviewCard
                   key={template.id}
+                  template={template}
                   isSelected={selectedTemplateIds.includes(template.id)}
                   onClick={() => toggleTemplate(template.id)}
-                  icon={template.icon}
-                  label={template.label}
-                  description={template.description}
                 />
               ))}
             </Box>
