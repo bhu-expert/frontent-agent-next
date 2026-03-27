@@ -22,7 +22,6 @@ import {
   Loader,
   Lock,
   Megaphone,
-  MessageCircle,
   Package,
   Rocket,
   Sparkles,
@@ -82,31 +81,6 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "launch", label: "Launch", description: "New product or campaign momentum creatives.", icon: Rocket },
   { id: "story_narrative", label: "Story / Narrative", description: "Brand story and origin-driven creatives.", icon: BadgeCheck },
   { id: "engagement", label: "Engagement", description: "Interactive hooks designed to start response.", icon: Sparkles },
-];
-
-interface SocialFormatOption {
-  id: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  accent: string;
-}
-
-const SOCIAL_FORMAT_OPTIONS: SocialFormatOption[] = [
-  {
-    id: "comment_free_agent",
-    label: "Comment Free Agent",
-    description: "Comment-to-unlock mechanic — users comment a keyword to claim a free offer.",
-    icon: MessageCircle,
-    accent: "#7C3AED",
-  },
-  {
-    id: "viral",
-    label: "Viral Ad",
-    description: "Scroll-stopping content engineered for shares, saves, and organic reach.",
-    icon: Zap,
-    accent: "#EA580C",
-  },
 ];
 
 const SOCIAL_CTA_PRESETS = [
@@ -351,11 +325,10 @@ export default function ContentTab({
   const [scriptExpanded, setScriptExpanded] = useState(false);
 
   // ── Social Ads state ───────────────────────────────────────────────────
-  const [selectedSocialFormats, setSelectedSocialFormats] = useState<string[]>(["comment_free_agent"]);
   const [selectedSocialContextIds, setSelectedSocialContextIds] = useState<number[]>([]);
   const [socialTopic, setSocialTopic] = useState("");
   const [socialCta, setSocialCta] = useState("");
-  const [socialCommentKeyword, setSocialCommentKeyword] = useState("");
+
   const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
   const [socialError, setSocialError] = useState<string | null>(null);
   const isGeneratingSocialRef = useRef(false);
@@ -425,11 +398,6 @@ export default function ContentTab({
   const toggleCarouselContext = (idx: number) =>
     setCarouselContextIndex((prev) => (prev === idx ? null : idx));
 
-  const toggleSocialFormat = (formatId: string) =>
-    setSelectedSocialFormats((prev) =>
-      prev.includes(formatId) ? prev.filter((id) => id !== formatId) : [...prev, formatId]
-    );
-
   const toggleSocialContext = (contextIndex: number) =>
     setSelectedSocialContextIds((prev) =>
       prev.includes(contextIndex)
@@ -438,18 +406,14 @@ export default function ContentTab({
     );
 
   const socialCombinations = useMemo(
-    () => Math.min(
-      selectedSocialFormats.length * Math.max(selectedSocialContextIds.length, 1),
-      MAX_COMBINATIONS
-    ),
-    [selectedSocialFormats, selectedSocialContextIds]
+    () => Math.min(Math.max(selectedSocialContextIds.length, 1), MAX_COMBINATIONS),
+    [selectedSocialContextIds]
   );
   const socialTotalPosts = socialCombinations * 5;
-  const isSocialTrimmed =
-    selectedSocialFormats.length * Math.max(selectedSocialContextIds.length, 1) > MAX_COMBINATIONS;
+  const isSocialTrimmed = selectedSocialContextIds.length > MAX_COMBINATIONS;
 
   const handleGenerateSocial = async () => {
-    if (!brand || !token || selectedSocialFormats.length === 0 || !socialTopic.trim() || !socialCta.trim()) return;
+    if (!brand || !token || !socialTopic.trim() || !socialCta.trim()) return;
     if (isGeneratingSocialRef.current) return;
     isGeneratingSocialRef.current = true;
     setIsGeneratingSocial(true);
@@ -459,22 +423,21 @@ export default function ContentTab({
     try {
       const result = await generateSocialAd(
         brand.id,
-        selectedSocialFormats,
+        ["viral"],
         socialTopic.trim(),
         socialCta.trim(),
         selectedSocialContextIds.length > 0 ? selectedSocialContextIds.slice(0, MAX_COMBINATIONS) : null,
         token,
-        socialCommentKeyword.trim() || null,
+        null,
       );
       const newCampaignIds: string[] = [];
       for (const c of result.campaigns) {
-        const fmt = SOCIAL_FORMAT_OPTIONS.find((f) => f.id === c.format_id);
         campaign.addCampaign({
           campaignId: c.campaign_id,
           contextIndex: c.context_index,
-          contextTitle: fmt?.label ?? "Social Ad",
+          contextTitle: "Viral Ad",
           templateId: c.format_id,
-          templateLabel: fmt?.label ?? c.format_id,
+          templateLabel: "Viral Ad",
           total: c.total,
         });
         newCampaignIds.push(c.campaign_id);
@@ -1297,33 +1260,21 @@ export default function ContentTab({
       {activeMode === "social" && (
         <VStack align="stretch" gap={8}>
 
-          {/* Step 1 — Choose Format */}
-          <Box>
-            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Choose Ad Format</Text>
-            <Text fontSize="15px" color="#6B7280" mb={6}>Select the type of social ad you want to generate.</Text>
-            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={5}>
-              {SOCIAL_FORMAT_OPTIONS.map((fmt) => (
-                <SelectionCard
-                  key={fmt.id}
-                  isSelected={selectedSocialFormats.includes(fmt.id)}
-                  onClick={() => toggleSocialFormat(fmt.id)}
-                  icon={fmt.icon}
-                  label={fmt.label}
-                  description={
-                    fmt.id === "comment_free_agent" && socialCommentKeyword.trim()
-                      ? `Comment "${socialCommentKeyword.trim().toUpperCase()}" to claim the offer.`
-                      : fmt.description
-                  }
-                  accent={fmt.accent}
-                />
-              ))}
+          {/* Viral Ad badge */}
+          <Flex align="center" gap={3}>
+            <Flex w="40px" h="40px" borderRadius="12px" bg="#FFF7ED" align="center" justify="center" flexShrink={0}>
+              <Zap size={20} color="#EA580C" />
+            </Flex>
+            <Box>
+              <Text fontSize="20px" fontWeight="700" color="#111111">Viral Ad</Text>
+              <Text fontSize="14px" color="#6B7280">Scroll-stopping hook + emotionally resonant content engineered for shares and saves.</Text>
             </Box>
-          </Box>
+          </Flex>
 
-          {/* Step 2 — Select Contexts (optional) */}
+          {/* Step 1 — Select Contexts (optional) */}
           {contextBlocks.length > 0 && (
             <Box>
-              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Select Contexts <Text as="span" fontSize="14px" fontWeight="400" color="#9CA3AF">(optional)</Text></Text>
+              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Select Contexts <Text as="span" fontSize="14px" fontWeight="400" color="#9CA3AF">(optional)</Text></Text>
               <Text fontSize="15px" color="#6B7280" mb={6}>Ground your ad in a specific brand narrative. Leave blank to generate without context.</Text>
               <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
                 {contextBlocks.map((block) => (
@@ -1341,10 +1292,10 @@ export default function ContentTab({
             </Box>
           )}
 
-          {/* Step 3 — Topic */}
+          {/* Step 2 — Topic */}
           <Box>
             <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-              {contextBlocks.length > 0 ? "3." : "2."} What&rsquo;s this ad about?
+              {contextBlocks.length > 0 ? "2." : "1."} What&rsquo;s this ad about?
             </Text>
             <Text fontSize="15px" color="#6B7280" mb={4}>Describe the product, service, or offer this ad promotes.</Text>
             <Textarea
@@ -1356,41 +1307,10 @@ export default function ContentTab({
             />
           </Box>
 
-          {/* Comment Keyword — only shown when Comment Free Agent is selected */}
-          {selectedSocialFormats.includes("comment_free_agent") && (
-            <Box>
-              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-                {contextBlocks.length > 0 ? "4." : "3."} What should people comment?
-              </Text>
-              <Text fontSize="15px" color="#6B7280" mb={3}>
-                The exact word or phrase your audience must comment to claim the offer.
-              </Text>
-              <Textarea
-                placeholder='e.g. FREE, FREEBIE, YES, I WANT THIS, SEND IT — short and all-caps works best'
-                value={socialCommentKeyword}
-                onChange={(e) => setSocialCommentKeyword(e.target.value)}
-                minH="64px" px="16px" py="14px" resize="vertical"
-                {...fieldChrome}
-                _focusVisible={{ borderColor: "#7C3AED", boxShadow: "0 0 0 4px rgba(124,58,237,0.14)" }}
-              />
-              {socialCommentKeyword.trim() && (
-                <Flex align="center" gap={1.5} mt={2}>
-                  <Box w="6px" h="6px" borderRadius="full" bg="#7C3AED" />
-                  <Text fontSize="12px" color="#7C3AED" fontWeight="600">
-                    Keyword locked in: &ldquo;{socialCommentKeyword.trim().toUpperCase()}&rdquo;
-                  </Text>
-                </Flex>
-              )}
-            </Box>
-          )}
-
-          {/* Step 4/5 — CTA */}
+          {/* Step 3 — CTA */}
           <Box>
             <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
-              {contextBlocks.length > 0
-                ? selectedSocialFormats.includes("comment_free_agent") ? "5." : "4."
-                : selectedSocialFormats.includes("comment_free_agent") ? "4." : "3."
-              } Call to Action
+              {contextBlocks.length > 0 ? "3." : "2."} Call to Action
             </Text>
             <Text fontSize="15px" color="#6B7280" mb={3}>What should people do after seeing this ad?</Text>
             {/* Preset chips */}
@@ -1468,11 +1388,6 @@ export default function ContentTab({
             <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
               <Flex align="center" gap={4} bg="#F8F8F6" border="1px solid" borderColor="#ECECEC" borderRadius="20px" px={5} py={3} wrap="wrap">
                 <Box textAlign="center">
-                  <Text fontSize="18px" fontWeight="700" color="#111111">{selectedSocialFormats.length}</Text>
-                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Formats</Text>
-                </Box>
-                <Text color="#9CA3AF">&times;</Text>
-                <Box textAlign="center">
                   <Text fontSize="18px" fontWeight="700" color="#111111">{Math.max(selectedSocialContextIds.length, 1)}</Text>
                   <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Contexts</Text>
                 </Box>
@@ -1490,11 +1405,11 @@ export default function ContentTab({
                 </Box>
               </Flex>
               <Button
-                bg={hasRatedContext && !hasPendingBatch && !isGeneratingSocial && selectedSocialFormats.length > 0 && socialTopic.trim() && socialCta.trim() ? "#EA580C" : "#D1D5DB"}
+                bg={hasRatedContext && !hasPendingBatch && !isGeneratingSocial && socialTopic.trim() && socialCta.trim() ? "#EA580C" : "#D1D5DB"}
                 color="white" borderRadius="14px" h="52px" px={7}
                 fontSize="15px" fontWeight="600"
-                _hover={{ bg: hasRatedContext && !hasPendingBatch && selectedSocialFormats.length > 0 && socialTopic.trim() && socialCta.trim() ? "#C2410C" : "#D1D5DB" }}
-                disabled={!hasRatedContext || hasPendingBatch || selectedSocialFormats.length === 0 || !socialTopic.trim() || !socialCta.trim() || isGeneratingSocial}
+                _hover={{ bg: hasRatedContext && !hasPendingBatch && socialTopic.trim() && socialCta.trim() ? "#C2410C" : "#D1D5DB" }}
+                disabled={!hasRatedContext || hasPendingBatch || !socialTopic.trim() || !socialCta.trim() || isGeneratingSocial}
                 onClick={handleGenerateSocial}
               >
                 <Flex align="center" gap={2}>
@@ -1507,7 +1422,7 @@ export default function ContentTab({
                         ? "Rate Assets to Unlock"
                         : !socialTopic.trim() || !socialCta.trim()
                           ? "Fill Topic & CTA to Generate"
-                          : `Generate ${socialTotalPosts} Social Ads${isSocialTrimmed ? " (capped)" : ""} \u2192`}
+                          : `Generate ${socialTotalPosts} Viral Ads${isSocialTrimmed ? " (capped)" : ""} \u2192`}
                 </Flex>
               </Button>
             </Flex>
@@ -1520,9 +1435,9 @@ export default function ContentTab({
                 <Flex w="64px" h="64px" borderRadius="16px" bg="#FFF7ED" align="center" justify="center" mx="auto" mb={5}>
                   <Loader size={28} color="#EA580C" style={{ animation: "spin 1.5s linear infinite" }} />
                 </Flex>
-                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {socialTotalPosts} Social Ads</Text>
+                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {socialTotalPosts} Viral Ads</Text>
                 <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
-                  Setting up {socialTotalPosts} variations across {socialCombinations} format{socialCombinations !== 1 ? "s" : ""}.
+                  Setting up {socialTotalPosts} variations across {socialCombinations} context{socialCombinations !== 1 ? "s" : ""}.
                 </Text>
                 <Text fontSize="14px" color="#EA580C" fontWeight="500" lineHeight="1.5" mb={4}>
                   Go grab a coffee — everything generates in the background, even if you close this tab.
