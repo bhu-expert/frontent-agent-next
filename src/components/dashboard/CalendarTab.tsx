@@ -2,10 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { Box, Button, Flex, SimpleGrid, Text, VStack, Image, Badge, IconButton, Dialog, Portal, Input } from "@chakra-ui/react";
-import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Calendar, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Calendar, Clock, Sparkles } from "lucide-react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Textarea } from "@chakra-ui/react";
+import { useAuth } from "@/store/AuthProvider";
+import {
+  getScheduledInstagramPosts,
+  cancelScheduledInstagramPost,
+  scheduleInstagramPost,
+  type ScheduledPost,
+  type SchedulePostPayload,
+} from "@/api/integrations";
+import BatchSchedulerPanel from "./BatchSchedulerPanel";
+
+// ── Shared types ──────────────────────────────────────────────────────────────
+
+interface AssetInventoryItem {
+  asset_id: string;
+  asset_url: string;
+  format: "feed" | "stories" | "feed_4_5" | "carousel";
+  ad_type: string;
+  source: "campaign" | "library";
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -21,18 +40,6 @@ interface CalendarDay {
   dayNumber: number;
   isCurrentMonth: boolean;
   isToday: boolean;
-}
-
-interface ScheduledPost {
-  id: string;
-  media_type: "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
-  media_url?: string;
-  carousel_urls?: string[];
-  caption?: string;
-  scheduled_at: string;
-  status: "scheduled" | "published" | "failed";
-  ig_post_id?: string;
-  error_message?: string;
 }
 
 function buildCalendarDays(year: number, month: number): CalendarDay[] {
@@ -106,9 +113,11 @@ function isSameDay(date1: Date, date2: Date): boolean {
 interface CalendarTabProps {
   brandId?: string;
   brandName?: string;
+  availableAssets?: AssetInventoryItem[];
 }
 
-export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTabProps) {
+export default function CalendarTab({ brandId = "", brandName = "", availableAssets = [] }: CalendarTabProps) {
+  const { session } = useAuth();
   const now = new Date();
   const [monthOffset, setMonthOffset] = useState(0);
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -118,6 +127,8 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
   const [editCaption, setEditCaption] = useState("");
   const [editScheduledAt, setEditScheduledAt] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showBatchPanel, setShowBatchPanel] = useState(false);
+
   const displayDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const displayYear = displayDate.getFullYear();
   const displayMonth = displayDate.getMonth();
@@ -126,23 +137,33 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
 
   // Fetch scheduled posts on mount and when month changes
   useEffect(() => {
-    fetchScheduledPosts();
-  }, []);
+    if (session?.access_token) {
+      fetchScheduledPosts(session.access_token);
+    }
+  }, [session?.access_token]);
 
-  const fetchScheduledPosts = async () => {
+  const fetchScheduledPosts = async (token: string) => {
     setLoadingPosts(true);
     try {
-      const res = await fetch("/api/integrations/instagram/schedule");
-      const data = await res.json();
-      setScheduledPosts(data.posts || []);
-    } catch (err) {
+      const posts = await getScheduledInstagramPosts(token);
+      setScheduledPosts(posts);
+    } catch (err: any) {
       console.error("Fetch scheduled posts error:", err);
-      toaster.create({
-        title: "Error loading posts",
-        description: "Failed to load scheduled posts",
-        type: "error",
-        duration: 3000,
-      });
+      if (err.status === 401) {
+        toaster.create({
+          title: "Authentication required",
+          description: "Please reconnect Instagram to view scheduled posts",
+          type: "warning",
+          duration: 4000,
+        });
+      } else {
+        toaster.create({
+          title: "Error loading posts",
+          description: err.message || "Failed to load scheduled posts",
+          type: "error",
+          duration: 3000,
+        });
+      }
     } finally {
       setLoadingPosts(false);
     }
@@ -162,9 +183,18 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
 
   const handleDeleteClick = async (post: ScheduledPost) => {
     if (!confirm("Cancel this scheduled post?")) return;
+    const token = session?.access_token;
+    if (!token) {
+      toaster.create({
+        title: "Authentication required",
+        description: "Please sign in to cancel scheduled posts",
+        type: "warning",
+        duration: 4000,
+      });
+      return;
+    }
     try {
-      const res = await fetch(`/api/integrations/instagram/schedule?id=${post.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
+      await cancelScheduledInstagramPost(post.id, token);
       setScheduledPosts(prev => prev.filter(p => p.id !== post.id));
       toaster.create({ title: "Post cancelled", type: "success", duration: 3000 });
     } catch (err: any) {
@@ -179,38 +209,43 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
       return;
     }
 
+    const token = session?.access_token;
+    if (!token) {
+      toaster.create({
+        title: "Authentication required",
+        description: "Please sign in to update scheduled posts",
+        type: "warning",
+        duration: 4000,
+      });
+      return;
+    }
+
     setIsUpdating(true);
     try {
       // Delete old and create new (simple approach)
       const newDate = new Date(editScheduledAt).toISOString();
-      
+
       // First delete the old one
-      await fetch(`/api/integrations/instagram/schedule?id=${selectedPost.id}`, { method: "DELETE" });
-      
+      await cancelScheduledInstagramPost(selectedPost.id, token);
+
       // Then create a new one with updated values
-      const body: Record<string, any> = {
+      const payload: SchedulePostPayload = {
         media_type: selectedPost.media_type,
         caption: editCaption || undefined,
         scheduled_at: newDate,
       };
-      
+
       if (selectedPost.media_type === "CAROUSEL") {
-        body.carousel_urls = selectedPost.carousel_urls;
+        payload.carousel_urls = selectedPost.carousel_urls;
       } else {
-        body.media_url = selectedPost.media_url;
+        payload.media_url = selectedPost.media_url;
       }
 
-      const res = await fetch("/api/integrations/instagram/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) throw new Error("Update failed");
+      await scheduleInstagramPost(payload, token);
 
       toaster.create({ title: "Post updated", type: "success", duration: 3000 });
       setIsEditDialogOpen(false);
-      fetchScheduledPosts();
+      fetchScheduledPosts(token);
     } catch (err: any) {
       toaster.create({ title: "Error", description: err.message, type: "error", duration: 4000 });
     } finally {
@@ -408,22 +443,41 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
               {MONTH_NAMES[displayMonth]} {displayYear}
             </Text>
           </Box>
-          <Button
-            bg="#F3F4F6"
-            color="#374151"
-            borderRadius="12px"
-            h="40px"
-            px={4}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: "#E5E7EB" }}
-            onClick={() => toaster.create({ title: "Navigate to Integrations", description: "Use the Integrations tab to schedule new posts", type: "info", duration: 3000 })}
-          >
-            <Flex align="center" gap={2}>
-              <Plus size={16} strokeWidth={2.5} />
-              Schedule Post
-            </Flex>
-          </Button>
+          <Flex gap={2}>
+            <Button
+              bg="#F3F4F6"
+              color="#374151"
+              borderRadius="12px"
+              h="40px"
+              px={4}
+              fontSize="14px"
+              fontWeight="600"
+              _hover={{ bg: "#E5E7EB" }}
+              onClick={() => toaster.create({ title: "Navigate to Integrations", description: "Use the Integrations tab to schedule new posts", type: "info", duration: 3000 })}
+            >
+              <Flex align="center" gap={2}>
+                <Plus size={16} strokeWidth={2.5} />
+                Schedule Post
+              </Flex>
+            </Button>
+            <Button
+              bg="#4F46E5"
+              color="white"
+              borderRadius="12px"
+              h="40px"
+              px={4}
+              fontSize="14px"
+              fontWeight="600"
+              shadow="sm"
+              _hover={{ bg: "#4338CA", shadow: "md" }}
+              onClick={() => setShowBatchPanel(true)}
+            >
+              <Flex align="center" gap={2}>
+                <Sparkles size={16} strokeWidth={2.5} />
+                AI Batch
+              </Flex>
+            </Button>
+          </Flex>
         </Flex>
 
         {/* Loading state */}
@@ -568,7 +622,7 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
                   <Flex align="center" gap={4} mt={1}>
                     <Flex align="center" gap={1.5} fontSize="12px" color="#6B7280">
                       <Clock size={14} />
-                      <Text fontWeight="500">{formatDateTime(post.scheduled_at)}</Text>
+                      <Text fontWeight="500" suppressHydrationWarning>{formatDateTime(post.scheduled_at)}</Text>
                     </Flex>
                     {post.error_message && (
                       <Flex align="center" gap={1} fontSize="12px" color="#DC2626" bg="#FEF2F2" px={2} py={1} borderRadius="6px">
@@ -748,6 +802,20 @@ export default function CalendarTab({ brandId = "", brandName = "" }: CalendarTa
         </Portal>
       </Dialog.Root>
 
+      {showBatchPanel && (
+        <BatchSchedulerPanel
+          brandId={brandId}
+          brandName={brandName}
+          availableAssets={availableAssets}
+          onClose={() => setShowBatchPanel(false)}
+          onBatchCreated={() => {
+            setShowBatchPanel(false);
+            if (session?.access_token) {
+              fetchScheduledPosts(session.access_token);
+            }
+          }}
+        />
+      )}
     </VStack>
   );
 }

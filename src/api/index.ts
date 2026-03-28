@@ -9,6 +9,8 @@ import type {
 } from "@/types/onboarding.types";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants";
 export { API_BASE_URL, API_ENDPOINTS };
+export * from "./dashboard";
+export * from "./integrations";
 
 const BASE_URL = API_BASE_URL.replace(/\/$/, "");
 

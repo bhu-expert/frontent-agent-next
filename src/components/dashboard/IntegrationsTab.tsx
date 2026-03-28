@@ -15,6 +15,21 @@ import {
 import { useAuth } from "@/store/AuthProvider";
 import { toaster } from "@/components/ui/toaster";
 import { supabase } from "@/lib/supabase";
+import {
+  getInstagramConnectUrl,
+  getInstagramConnection,
+  disconnectInstagram,
+  getScheduledInstagramPosts,
+  scheduleInstagramPost,
+  publishInstagramPost,
+  cancelScheduledInstagramPost,
+  type MediaType,
+  type IgConnection,
+  type ScheduledPost,
+  type SchedulePostPayload,
+} from "@/api/integrations";
+
+type PostMode = "now" | "schedule";
 
 // ─── Logos ────────────────────────────────────────────────────────────────────
 
@@ -81,38 +96,11 @@ function PlatformPlaceholderLogo({
   );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type MediaType = "IMAGE" | "VIDEO" | "REELS" | "STORIES" | "CAROUSEL";
-type PostMode = "now" | "schedule";
-
-interface IgConnection {
-  connected: boolean;
-  username?: string;
-  name?: string;
-  ig_user_id?: string;
-  profile_picture_url?: string;
-  expires_at?: string;
-  connected_at?: string;
-}
-
-interface ScheduledPost {
-  id: string;
-  media_type: MediaType;
-  media_url?: string;
-  carousel_urls?: string[];
-  caption?: string;
-  scheduled_at: string;
-  status: "scheduled" | "published" | "failed";
-  ig_post_id?: string;
-  error_message?: string;
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function IntegrationsTab() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const [igConnection, setIgConnection] = useState<IgConnection>({
     connected: false,
@@ -196,8 +184,10 @@ export default function IntegrationsTab() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (igConnection.connected) fetchScheduledPosts();
-  }, [igConnection.connected]);
+    if (igConnection.connected && session?.access_token) {
+      fetchScheduledPosts(session.access_token);
+    }
+  }, [igConnection.connected, session?.access_token]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -251,14 +241,19 @@ export default function IntegrationsTab() {
     }
   };
 
-  const fetchScheduledPosts = async () => {
+  const fetchScheduledPosts = async (token: string) => {
     setLoadingScheduled(true);
     try {
-      const res = await fetch("/api/integrations/instagram/schedule");
-      const data = await res.json();
-      setScheduledPosts(data.posts || []);
-    } catch (err) {
+      const posts = await getScheduledInstagramPosts(token);
+      setScheduledPosts(posts);
+    } catch (err: any) {
       console.error("Fetch scheduled posts error:", err);
+      toaster.create({
+        title: "Error loading posts",
+        description: err.message || "Failed to load scheduled posts",
+        type: "error",
+        duration: 3000,
+      });
     } finally {
       setLoadingScheduled(false);
     }
@@ -274,7 +269,7 @@ export default function IntegrationsTab() {
       });
       return;
     }
-    window.location.href = `/api/integrations/instagram/connect?user_id=${encodeURIComponent(user.id)}`;
+    window.location.href = getInstagramConnectUrl(user.id);
   };
 
   const handleDisconnect = async () => {
@@ -284,10 +279,17 @@ export default function IntegrationsTab() {
       return;
     setIsDisconnecting(true);
     try {
-      const res = await fetch("/api/integrations/instagram/disconnect", {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Disconnect failed");
+      const token = session?.access_token;
+      if (!token) {
+        toaster.create({
+          title: "Authentication required",
+          description: "Please sign in to disconnect Instagram.",
+          type: "warning",
+          duration: 4000,
+        });
+        return;
+      }
+      await disconnectInstagram(token);
       setIgConnection({ connected: false });
       setScheduledPosts([]);
       toaster.create({
@@ -351,53 +353,55 @@ export default function IntegrationsTab() {
       return;
     }
 
+    const token = session?.access_token;
+    if (!token) {
+      toaster.create({
+        title: "Authentication required",
+        description: "Please sign in to post to Instagram.",
+        type: "warning",
+        duration: 4000,
+      });
+      return;
+    }
+
     setIsPosting(true);
     try {
-      const body: Record<string, any> = {
+      const payload: SchedulePostPayload = {
         media_type: mediaType,
         caption: caption || undefined,
       };
       if (mediaType === "CAROUSEL") {
-        body.carousel_urls = carouselUrls
+        payload.carousel_urls = carouselUrls
           .split("\n")
           .map((u) => u.trim())
           .filter(Boolean);
       } else {
-        body.media_url = mediaUrl.trim();
+        payload.media_url = mediaUrl.trim();
       }
       if (postMode === "schedule") {
-        body.scheduled_at = new Date(scheduledAt).toISOString();
+        payload.scheduled_at = new Date(scheduledAt).toISOString();
       }
 
-      const endpoint =
-        postMode === "now"
-          ? "/api/integrations/instagram/publish"
-          : "/api/integrations/instagram/schedule";
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Failed");
-
       if (postMode === "now") {
+        const result = await publishInstagramPost(
+          { media_type: payload.media_type, media_url: payload.media_url, carousel_urls: payload.carousel_urls, caption: payload.caption },
+          token
+        );
         toaster.create({
           title: "Published! 🎉",
-          description: `Post live at ${data.post_url}`,
+          description: `Post live at ${result.post_url}`,
           type: "success",
           duration: 6000,
         });
       } else {
+        await scheduleInstagramPost(payload, token);
         toaster.create({
           title: "Scheduled ✓",
           description: `Post scheduled for ${new Date(scheduledAt).toLocaleString()}`,
           type: "success",
           duration: 5000,
         });
-        fetchScheduledPosts();
+        fetchScheduledPosts(token);
       }
 
       // Reset form
@@ -421,10 +425,17 @@ export default function IntegrationsTab() {
     if (!confirm("Cancel this scheduled post?")) return;
     setCancellingId(id);
     try {
-      const res = await fetch(`/api/integrations/instagram/schedule?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Cancel failed");
+      const token = session?.access_token;
+      if (!token) {
+        toaster.create({
+          title: "Authentication required",
+          description: "Please sign in to cancel scheduled posts.",
+          type: "warning",
+          duration: 4000,
+        });
+        return;
+      }
+      await cancelScheduledInstagramPost(id, token);
       setScheduledPosts((prev) => prev.filter((p) => p.id !== id));
       toaster.create({ title: "Cancelled", type: "success", duration: 3000 });
     } catch (err: any) {
@@ -904,7 +915,7 @@ export default function IntegrationsTab() {
             <Button
               variant="ghost"
               size="xs"
-              onClick={fetchScheduledPosts}
+              onClick={() => session?.access_token && fetchScheduledPosts(session.access_token)}
               loading={loadingScheduled}
               color="#6B7280"
               _hover={{ color: "#111111" }}
@@ -1012,7 +1023,7 @@ export default function IntegrationsTab() {
                           {post.caption}
                         </Text>
                       )}
-                      <Text fontSize="12px" color="#9CA3AF" mt={1}>
+                      <Text fontSize="12px" color="#9CA3AF" mt={1} suppressHydrationWarning>
                         {post.status === "scheduled"
                           ? `Scheduled: ${new Date(post.scheduled_at).toLocaleString()}`
                           : post.status === "published"
