@@ -515,6 +515,149 @@ export async function generateCarousel(
   return res.json();
 }
 
+/**
+ * Queues social ad generation (Comment Free Agent / Viral).
+ * Returns immediately with campaigns[] — one per (format × context) combination.
+ * Image generation happens in the background; poll via useCampaignPolling.
+ */
+export async function generateSocialAd(
+  brandId: string,
+  formatIds: string[],
+  topic: string,
+  cta: string,
+  contextIndices: number[] | null,
+  token: string,
+  commentKeyword?: string | null,
+): Promise<{
+  campaigns: Array<{
+    campaign_id: string;
+    format_id: string;
+    context_index: number;
+    total: number;
+  }>;
+}> {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1${API_ENDPOINTS.SOCIAL_ADS_GENERATE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      brand_id: brandId,
+      format_ids: formatIds,
+      topic,
+      cta,
+      context_indices: contextIndices && contextIndices.length > 0 ? contextIndices : null,
+      comment_keyword: commentKeyword || null,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to queue social ad generation", res.status);
+  }
+  return res.json();
+}
+
+export interface HookOptions {
+  hook_a: string;
+  hook_b: string;
+  hook_c: string;
+}
+
+export interface ScriptBeat {
+  beat_number: number;
+  duration_seconds: number;
+  shot_type: string;
+  camera_movement: string;
+  framing_notes: string;
+  lighting: string;
+  talent_action: string;
+  voice_text: string;
+  on_screen_text: string;
+  sound_note: string;
+  transition_out: string;
+}
+
+export interface ReelScriptIdea {
+  title: string;
+  format_name: string;
+  tone: string;
+  goal: string;
+  duration_seconds: number;
+  hook: string;
+  hook_options: HookOptions | null;
+  scene_description: string;
+  opening_frame: string;
+  color_grade: string;
+  aspect_ratio: string;
+  location_set: string;
+  talent_notes: string;
+  wardrobe_props: string;
+  script_beats: ScriptBeat[] | null;
+  audio_suggestion: string;
+  sound_design: string;
+  text_overlay: string;
+  caption_hook: string;
+  thumbnail_moment: string;
+  loop_trick: string;
+  directors_notes: string[] | null;
+  cta: string;
+  voiceover_dialogue: string;
+  hashtags: string[];
+  b_roll_list: string[] | null;
+  // legacy
+  camera_angle: string;
+  pacing: string;
+  transitions: string;
+}
+
+export interface ReelScriptResponse {
+  scripts: ReelScriptIdea[];
+}
+
+export interface BeatImage {
+  beat_number: number;
+  duration_seconds: number;
+  image_url: string;
+  prompt_used: string;
+  generation_success: boolean;
+}
+
+export interface ReelOutput {
+  reel_id: string;
+  brand_id: string;
+  reel_url: string;
+  thumbnail_url: string;
+  voiceover_url: string;
+  duration_seconds: number;
+  beat_count: number;
+  beat_images: BeatImage[];
+  script: ReelScriptIdea;
+  created_at: string;
+}
+
+/**
+ * Full reel production — returns a real MP4.
+ * Expected response time: 60–180 seconds.
+ */
+export async function createReel(
+  brandId: string,
+  context: string,
+  token: string,
+): Promise<ReelOutput> {
+  const res = await fetch(`https://content.bhuexpert.com/api/v1/agent/reel/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      brand_id: brandId,
+      context: context || null,
+      num_ideas: 1,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    apiError(body.detail || body.message || "Failed to create Reel", res.status);
+  }
+  return res.json();
+}
+
 export async function saveAssetOverlay(
   campaignId: string,
   variationId: string,

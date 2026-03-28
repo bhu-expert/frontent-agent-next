@@ -41,6 +41,7 @@ import CreateBrandPanel from "@/components/dashboard/CreateBrandPanel";
 import ContentTab from "@/components/dashboard/ContentTab";
 import AssetsTab from "@/components/dashboard/AssetsTab";
 import CalendarTab from "@/components/dashboard/CalendarTab";
+import AIScheduleTab from "@/components/dashboard/AIScheduleTab";
 import IntegrationsTab from "@/components/dashboard/IntegrationsTab";
 import SettingsTab from "@/components/dashboard/SettingsTab";
 import SupportTab from "@/components/dashboard/SupportTab";
@@ -593,6 +594,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
     | "content"
     | "assets"
     | "calendar"
+    | "schedule"
     | "integrations"
     | "settings"
     | "support"
@@ -2192,6 +2194,11 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
             />
           ) : activeView === "calendar" ? (
             <CalendarTab
+              brandId={selectedBrandId ?? ""}
+              brandName={selectedBrand?.name ?? ""}
+            />
+          ) : activeView === "schedule" ? (
+            <AIScheduleTab
               brandId={selectedBrandId ?? ""}
               brandName={selectedBrand?.name ?? ""}
             />

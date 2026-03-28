@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -13,6 +13,9 @@ import {
 import {
   BadgeCheck,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Clapperboard,
   GraduationCap,
   Layers,
   Lightbulb,
@@ -24,11 +27,14 @@ import {
   Sparkles,
   Star,
   Tags,
+  Zap,
 } from "lucide-react";
-import { generateAdVariationsBulk, generateCarousel } from "@/api";
+import { generateAdVariationsBulk, generateCarousel, createReel, generateSocialAd } from "@/api";
+import type { ReelOutput } from "@/api";
 import { useCampaignPolling } from "@/hooks/useCampaignPolling";
 import type { ContextBlock } from "@/types/onboarding.types";
 import type { LucideIcon } from "lucide-react";
+import { getTemplateComponent } from "@/components/dashboard/templates";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
@@ -75,6 +81,15 @@ const CONTENT_TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: "launch", label: "Launch", description: "New product or campaign momentum creatives.", icon: Rocket },
   { id: "story_narrative", label: "Story / Narrative", description: "Brand story and origin-driven creatives.", icon: BadgeCheck },
   { id: "engagement", label: "Engagement", description: "Interactive hooks designed to start response.", icon: Sparkles },
+];
+
+const SOCIAL_CTA_PRESETS = [
+  "Comment FREE below",
+  "Tag a friend",
+  "Share this post",
+  "DM us now",
+  "Click link in bio",
+  "Save this post",
 ];
 
 const CAROUSEL_THEME_OPTIONS: CarouselThemeOption[] = [
@@ -154,6 +169,126 @@ function SelectionCard({
   );
 }
 
+/* ─── Template Preview Card ──────────────────────────────────────────── */
+
+const PREVIEW_VD: Record<string, string> = {
+  headline: "Your Headline Here",
+  tagline: "TAGLINE",
+  cta_text: "Shop Now",
+  brand_name: "Brand",
+  subheadline: "Supporting message goes here",
+  body_text: "Short body copy for the post layout preview.",
+};
+
+function TemplatePreviewCard({
+  template,
+  isSelected,
+  onClick,
+}: {
+  template: TemplateOption;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const accent = "#4F46E5";
+
+  return (
+    <Box
+      border="2px solid"
+      borderColor={isSelected ? accent : "#ECECEC"}
+      borderRadius="16px"
+      overflow="hidden"
+      cursor="pointer"
+      bg="white"
+      transition="all 0.2s ease"
+      _hover={{ borderColor: isSelected ? accent : "#D1D5DB", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+      onClick={onClick}
+      position="relative"
+    >
+      {/* Selection indicator */}
+      <Flex
+        position="absolute"
+        top="10px"
+        right="10px"
+        zIndex={10}
+        w="20px"
+        h="20px"
+        borderRadius="full"
+        border="2px solid"
+        borderColor={isSelected ? accent : "rgba(255,255,255,0.7)"}
+        bg={isSelected ? accent : "rgba(255,255,255,0.5)"}
+        backdropFilter="blur(4px)"
+        align="center"
+        justify="center"
+        color="white"
+      >
+        {isSelected && <Text fontSize="10px" lineHeight={1}>&#10003;</Text>}
+      </Flex>
+
+      {/* Label row */}
+      <Box
+        px={3}
+        py={2.5}
+        bg={isSelected ? "#EEF2FF" : "white"}
+        borderTop="1px solid"
+        borderColor={isSelected ? "#C7D2FE" : "#F3F4F6"}
+        transition="background 0.2s"
+      >
+        <Text fontSize="13px" fontWeight="700" color={isSelected ? accent : "#111111"}>
+          {template.label}
+        </Text>
+        <Text fontSize="11px" color="#6B7280" lineHeight="1.4" mt={0.5}
+          overflow="hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {template.description}
+        </Text>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── Reel Script sub-components ────────────────────────────────────── */
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text fontSize="13px" fontWeight="700" color="#374151" textTransform="uppercase" letterSpacing="0.06em" mb={3}>
+      {children}
+    </Text>
+  );
+}
+
+function MetaBlock({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <Box>
+      <Text fontSize="11px" fontWeight="700" color="#9CA3AF" textTransform="uppercase" mb={1}>{label}</Text>
+      <Text fontSize="14px" color={highlight ? "#111111" : "#374151"} fontWeight={highlight ? "500" : "400"} lineHeight="1.55">
+        {value}
+      </Text>
+    </Box>
+  );
+}
+
+function Chip({ children, color }: { children: React.ReactNode; color: "purple" | "blue" | "gray" | "orange" }) {
+  const styles = {
+    purple: { bg: "#F5F3FF", border: "#DDD6FE", text: "#7C3AED" },
+    blue:   { bg: "#EFF6FF", border: "#BFDBFE", text: "#1D4ED8" },
+    gray:   { bg: "#F9FAFB", border: "#E5E7EB", text: "#6B7280" },
+    orange: { bg: "#FFF7ED", border: "#FED7AA", text: "#C2410C" },
+  }[color];
+  return (
+    <Box px={2.5} py={0.5} borderRadius="999px" bg={styles.bg} border={`1px solid ${styles.border}`}>
+      <Text fontSize="11px" fontWeight="600" color={styles.text}>{children}</Text>
+    </Box>
+  );
+}
+
+function BeatField({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <Box px={3} py={2.5} borderRadius="10px" bg="#F9FAFB" border="1px solid #F3F4F6">
+      <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={0.5}>{icon} {label}</Text>
+      <Text fontSize="13px" color="#374151" lineHeight="1.45">{value}</Text>
+    </Box>
+  );
+}
+
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
 export default function ContentTab({
@@ -170,15 +305,33 @@ export default function ContentTab({
 }: ContentTabProps) {
 
   // ── Tab state ──────────────────────────────────────────────────────────
-  const [activeMode, setActiveMode] = useState<"ads" | "carousel">("ads");
+  const [activeMode, setActiveMode] = useState<"ads" | "carousel" | "reels" | "social">("ads");
 
-  // ── Ad Variations state ────────────────────────────────────────────────
+  // ── Post Variations state ────────────────────────────────────────────────
   const [selectedContextIds, setSelectedContextIds] = useState<number[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>(["awareness"]);
   const [contentBrief, setContentBrief] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentError, setContentError] = useState<string | null>(null);
   const isGeneratingRef = useRef(false);
+
+  // ── Reels state ────────────────────────────────────────────────────────
+  const [reelsBrief, setReelsBrief] = useState("");
+  const [reelsContextIndex, setReelsContextIndex] = useState<number | null>(null);
+  const [isGeneratingReels, setIsGeneratingReels] = useState(false);
+  const [reelsError, setReelsError] = useState<string | null>(null);
+  const [reelsResult, setReelsResult] = useState<ReelOutput | null>(null);
+  const [reelsProgressStep, setReelsProgressStep] = useState(0);
+  const [scriptExpanded, setScriptExpanded] = useState(false);
+
+  // ── Social Ads state ───────────────────────────────────────────────────
+  const [selectedSocialContextIds, setSelectedSocialContextIds] = useState<number[]>([]);
+  const [socialTopic, setSocialTopic] = useState("");
+  const [socialCta, setSocialCta] = useState("");
+
+  const [isGeneratingSocial, setIsGeneratingSocial] = useState(false);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const isGeneratingSocialRef = useRef(false);
 
   // ── Carousel state ─────────────────────────────────────────────────────
   const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>(["educational", "product_story"]);
@@ -244,6 +397,102 @@ export default function ContentTab({
 
   const toggleCarouselContext = (idx: number) =>
     setCarouselContextIndex((prev) => (prev === idx ? null : idx));
+
+  const toggleSocialContext = (contextIndex: number) =>
+    setSelectedSocialContextIds((prev) =>
+      prev.includes(contextIndex)
+        ? prev.filter((id) => id !== contextIndex)
+        : [...prev, contextIndex].sort((a, b) => a - b)
+    );
+
+  const socialCombinations = useMemo(
+    () => Math.min(Math.max(selectedSocialContextIds.length, 1), MAX_COMBINATIONS),
+    [selectedSocialContextIds]
+  );
+  const socialTotalPosts = socialCombinations * 5;
+  const isSocialTrimmed = selectedSocialContextIds.length > MAX_COMBINATIONS;
+
+  const handleGenerateSocial = async () => {
+    if (!brand || !token || !socialTopic.trim() || !socialCta.trim()) return;
+    if (isGeneratingSocialRef.current) return;
+    isGeneratingSocialRef.current = true;
+    setIsGeneratingSocial(true);
+    setSocialError(null);
+    campaign.clearCampaigns();
+
+    try {
+      const result = await generateSocialAd(
+        brand.id,
+        ["viral"],
+        socialTopic.trim(),
+        socialCta.trim(),
+        selectedSocialContextIds.length > 0 ? selectedSocialContextIds.slice(0, MAX_COMBINATIONS) : null,
+        token,
+        null,
+      );
+      const newCampaignIds: string[] = [];
+      for (const c of result.campaigns) {
+        campaign.addCampaign({
+          campaignId: c.campaign_id,
+          contextIndex: c.context_index,
+          contextTitle: "Viral Ad",
+          templateId: c.format_id,
+          templateLabel: "Viral Ad",
+          total: c.total,
+        });
+        newCampaignIds.push(c.campaign_id);
+      }
+      onBatchGenerated(newCampaignIds);
+      onNavigateToAssets();
+    } catch (error) {
+      const apiErr = error as { message?: string };
+      setSocialError(apiErr.message || "Failed to queue social ad generation. Check your connection and try again.");
+    } finally {
+      isGeneratingSocialRef.current = false;
+      setIsGeneratingSocial(false);
+    }
+  };
+
+  const REEL_PROGRESS_STEPS = [
+    "Writing director's script…",
+    "Generating beat images…",
+    "Recording voiceover…",
+    "Composing reel…",
+    "Uploading to storage…",
+  ];
+
+  const handleGenerateReels = async () => {
+    if (!brand || !token || reelsContextIndex === null) return;
+    setIsGeneratingReels(true);
+    setReelsError(null);
+    setReelsResult(null);
+    setReelsProgressStep(0);
+    try {
+      const contextBlock = contextBlocks.find(b => b.context_index === reelsContextIndex);
+      const contextPrefix = contextBlock ? `Context: ${contextBlock.title}.\n` : "";
+      const fullBrief = (contextPrefix + reelsBrief.trim()).trim();
+
+      // Advance progress indicator while API call is in flight
+      let step = 0;
+      const interval = setInterval(() => {
+        step = Math.min(step + 1, REEL_PROGRESS_STEPS.length - 1);
+        setReelsProgressStep(step);
+      }, 18_000); // ~18s per stage
+
+      try {
+        const result = await createReel(brand.id, fullBrief, token);
+        setReelsResult(result);
+      } finally {
+        clearInterval(interval);
+        setReelsProgressStep(REEL_PROGRESS_STEPS.length - 1);
+      }
+    } catch (err) {
+      const e = err as { message?: string };
+      setReelsError(e.message || "Failed to generate reel. Please try again.");
+    } finally {
+      setIsGeneratingReels(false);
+    }
+  };
 
   const handleGenerateCarousel = async () => {
     if (!brand || !token || selectedThemeIds.length === 0) return;
@@ -365,7 +614,7 @@ export default function ContentTab({
             Content Generation
           </Text>
           <Text fontSize="15px" color="#6B7280">
-            Generate ad variations or branded carousel posts for your brand.
+            Generate Post variations or branded carousel posts for your brand.
           </Text>
         </Box>
         <Flex align="center" gap={2} wrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
@@ -392,7 +641,7 @@ export default function ContentTab({
         bg="#F3F4F6" borderRadius="16px" p={1} gap={1}
         w="fit-content"
       >
-        {(["ads", "carousel"] as const).map((mode) => (
+        {(["ads", "carousel", "reels", "social"] as const).map((mode) => (
           <Button
             key={mode}
             h="40px" px={6} borderRadius="12px" fontSize="14px" fontWeight="600"
@@ -403,22 +652,20 @@ export default function ContentTab({
             onClick={() => setActiveMode(mode)}
           >
             {mode === "ads" ? (
-              <Flex align="center" gap={2}>
-                <Layers size={15} />
-                Ad Variations
-              </Flex>
+              <Flex align="center" gap={2}><Layers size={15} />Post Variations</Flex>
+            ) : mode === "carousel" ? (
+              <Flex align="center" gap={2}><Sparkles size={15} />Carousel</Flex>
+            ) : mode === "reels" ? (
+              <Flex align="center" gap={2}><Clapperboard size={15} />Reels</Flex>
             ) : (
-              <Flex align="center" gap={2}>
-                <Sparkles size={15} />
-                Carousel
-              </Flex>
+              <Flex align="center" gap={2}><Zap size={15} />Social Ads</Flex>
             )}
           </Button>
         ))}
       </Flex>
 
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* AD VARIATIONS TAB                                                  */}
+      {/* POST VARIATIONS TAB                                                  */}
       {/* ══════════════════════════════════════════════════════════════════ */}
       {activeMode === "ads" && (
         <>
@@ -444,15 +691,13 @@ export default function ContentTab({
           <Box mb={6}>
             <Text fontSize="20px" fontWeight="600" color="#111111" mb={2}>2. Select Templates</Text>
             <Text fontSize="15px" color="#6B7280" mb={6}>Choose the formats to apply to your selected contexts.</Text>
-            <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+            <Box display="grid" gridTemplateColumns={{ base: "repeat(2, 1fr)", md: "repeat(3, 1fr)", xl: "repeat(5, 1fr)" }} gap={4}>
               {CONTENT_TEMPLATE_OPTIONS.map((template) => (
-                <SelectionCard
+                <TemplatePreviewCard
                   key={template.id}
+                  template={template}
                   isSelected={selectedTemplateIds.includes(template.id)}
                   onClick={() => toggleTemplate(template.id)}
-                  icon={template.icon}
-                  label={template.label}
-                  description={template.description}
                 />
               ))}
             </Box>
@@ -575,7 +820,7 @@ export default function ContentTab({
                 </Flex>
                 <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {effectiveTotalPosts} Ads</Text>
                 <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
-                  Setting up {effectiveTotalPosts} ad variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
+                  Setting up {effectiveTotalPosts} Post variations across {Math.min(selectedContextIds.length * selectedTemplateIds.length, MAX_COMBINATIONS)} context-template combination{cappedCombinations !== 1 ? "s" : ""}.
                 </Text>
                 <Text fontSize="14px" color="#7C3AED" fontWeight="500" lineHeight="1.5" mb={4}>
                   Go grab a coffee — everything generates in the background, even if you close this tab.
@@ -743,6 +988,469 @@ export default function ContentTab({
               </Box>
             </Flex>
           )}
+        </VStack>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* REELS TAB                                                           */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "reels" && (
+        <VStack align="stretch" gap={8}>
+
+          {/* Context selector (required) */}
+          <Box>
+            <Flex align="baseline" gap={3} mb={2}>
+              <Text fontSize="20px" fontWeight="600" color="#111111">1. Select a Context</Text>
+              <Text fontSize="13px" color="#6B7280">Required — grounds the script in a specific brand narrative.</Text>
+            </Flex>
+            {contextBlocks.length === 0 ? (
+              <Box px={4} py={3} borderRadius="12px" bg="#FFFBEB" border="1px solid #FDE68A">
+                <Text fontSize="14px" color="#92400E">No contexts found. Add brand contexts in the Brands tab first.</Text>
+              </Box>
+            ) : (
+              <Flex gap={3} mt={4} wrap="wrap">
+                {contextBlocks.map((block) => {
+                  const isActive = reelsContextIndex === block.context_index;
+                  return (
+                    <Box
+                      key={block.context_index}
+                      px={4} py={2.5} borderRadius="12px" cursor="pointer"
+                      border="2px solid" borderColor={isActive ? "#E11D48" : "#E5E7EB"}
+                      bg={isActive ? "#FFF1F2" : "white"}
+                      color={isActive ? "#E11D48" : "#374151"}
+                      fontSize="14px" fontWeight={isActive ? "600" : "500"}
+                      transition="all 0.15s ease"
+                      _hover={{ borderColor: "#E11D48", bg: "#FFF1F2" }}
+                      onClick={() => setReelsContextIndex(block.context_index)}
+                    >
+                      {block.title}
+                    </Box>
+                  );
+                })}
+              </Flex>
+            )}
+            {reelsContextIndex !== null && (
+              <Text fontSize="12px" color="#E11D48" mt={2} fontWeight="500">
+                ✓ Scripts will be grounded in &ldquo;{contextBlocks.find(b => b.context_index === reelsContextIndex)?.title}&rdquo;
+              </Text>
+            )}
+          </Box>
+
+          {/* Brief */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>2. Campaign Brief</Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>Describe the angle, launch, or story — the agent handles the rest.</Text>
+            <Textarea
+              placeholder="e.g. Summer launch — eco-friendly packaging, tone: playful and bold."
+              value={reelsBrief}
+              onChange={(e) => setReelsBrief(e.target.value)}
+              minH="110px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Error */}
+          {reelsError && (
+            <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {reelsError}
+            </Box>
+          )}
+
+          {/* Generate button */}
+          <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" px={6} py={5}>
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              <Flex align="center" gap={4} bg="#FFF1F2" border="1px solid" borderColor="#FECDD3" borderRadius="16px" px={5} py={3}>
+                <Box textAlign="center">
+                  <Text fontSize="13px" fontWeight="700" color="#E11D48">Script → Images → Voice</Text>
+                  <Text fontSize="11px" color="#6B7280">Full reel · ~90 seconds</Text>
+                </Box>
+              </Flex>
+              <Button
+                bg={!isGeneratingReels && reelsContextIndex !== null ? "#E11D48" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: !isGeneratingReels && reelsContextIndex !== null ? "#BE123C" : "#D1D5DB" }}
+                disabled={isGeneratingReels || reelsContextIndex === null}
+                onClick={handleGenerateReels}
+              >
+                <Flex align="center" gap={2}>
+                  {isGeneratingReels
+                    ? <><Loader size={16} style={{ animation: "spin 1.5s linear infinite" }} /> Generating...</>
+                    : reelsContextIndex === null
+                      ? "Select a Context First"
+                      : <><Clapperboard size={16} /> Create Reel</>}
+                </Flex>
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Progress indicator while generating */}
+          {isGeneratingReels && (
+            <Box bg="white" border="1px solid" borderColor="#FECDD3" borderRadius="20px" px={6} py={6}>
+              <Text fontSize="14px" fontWeight="600" color="#E11D48" mb={4}>Building your reel…</Text>
+              <VStack align="stretch" gap={2}>
+                {REEL_PROGRESS_STEPS.map((label, i) => (
+                  <Flex key={i} align="center" gap={3}>
+                    <Flex
+                      w="24px" h="24px" borderRadius="full" flexShrink={0}
+                      align="center" justify="center"
+                      bg={i < reelsProgressStep ? "#E11D48" : i === reelsProgressStep ? "#FFF1F2" : "#F3F4F6"}
+                      border="2px solid"
+                      borderColor={i < reelsProgressStep ? "#E11D48" : i === reelsProgressStep ? "#E11D48" : "#E5E7EB"}
+                    >
+                      {i < reelsProgressStep
+                        ? <Text fontSize="11px" color="white" fontWeight="800">✓</Text>
+                        : i === reelsProgressStep
+                          ? <Loader size={10} color="#E11D48" style={{ animation: "spin 1.5s linear infinite" }} />
+                          : null}
+                    </Flex>
+                    <Text
+                      fontSize="14px"
+                      color={i <= reelsProgressStep ? "#111111" : "#9CA3AF"}
+                      fontWeight={i === reelsProgressStep ? "600" : "400"}
+                    >
+                      {label}
+                    </Text>
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
+          )}
+
+          {/* Reel result — video player */}
+          {reelsResult && (
+            <Box bg="white" border="1px solid" borderColor="#E5E7EB" borderRadius="20px" overflow="hidden">
+
+              {/* Video player */}
+              <Box bg="#000" borderRadius="20px 20px 0 0" overflow="hidden">
+                <video
+                  src={reelsResult.reel_url}
+                  poster={reelsResult.thumbnail_url}
+                  controls
+                  playsInline
+                  style={{ width: "100%", maxHeight: "540px", display: "block", margin: "0 auto" }}
+                />
+              </Box>
+
+              {/* Meta row */}
+              <Flex px={6} py={4} align="center" justify="space-between" wrap="wrap" gap={3} borderBottom="1px solid #F3F4F6">
+                <Flex align="center" gap={3} wrap="wrap">
+                  <Box px={2.5} py={0.5} borderRadius="999px" bg="#FFF1F2" border="1px solid #FECDD3">
+                    <Text fontSize="11px" fontWeight="700" color="#E11D48">{Math.round(reelsResult.duration_seconds)}s</Text>
+                  </Box>
+                  {reelsResult.script.format_name && (
+                    <Box px={2.5} py={0.5} borderRadius="999px" bg="#F0F9FF" border="1px solid #BAE6FD">
+                      <Text fontSize="11px" fontWeight="600" color="#0369A1">{reelsResult.script.format_name}</Text>
+                    </Box>
+                  )}
+                  <Text fontSize="16px" fontWeight="700" color="#111111">{reelsResult.script.title}</Text>
+                </Flex>
+                <a
+                  href={reelsResult.reel_url}
+                  download={`reel-${reelsResult.reel_id}.mp4`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Button
+                    size="sm" bg="#E11D48" color="white" borderRadius="10px"
+                    _hover={{ bg: "#BE123C" }}
+                    fontSize="13px" fontWeight="600" px={4} h="36px"
+                  >
+                    Download MP4
+                  </Button>
+                </a>
+              </Flex>
+
+              {/* Caption hook + hashtags */}
+              {(reelsResult.script.caption_hook || (reelsResult.script.hashtags && reelsResult.script.hashtags.length > 0)) && (
+                <Box px={6} py={4} borderBottom="1px solid #F3F4F6">
+                  {reelsResult.script.caption_hook && (
+                    <Text fontSize="14px" color="#374151" fontWeight="500" mb={2}>
+                      {reelsResult.script.caption_hook}
+                    </Text>
+                  )}
+                  {reelsResult.script.hashtags && reelsResult.script.hashtags.length > 0 && (
+                    <Text fontSize="13px" color="#7C3AED" fontWeight="500">
+                      {reelsResult.script.hashtags.map(h => `#${h.replace(/^#/, "")}`).join(" ")}
+                    </Text>
+                  )}
+                </Box>
+              )}
+
+              {/* Collapsible script */}
+              <Box>
+                <Flex
+                  px={6} py={4} align="center" justify="space-between" cursor="pointer"
+                  onClick={() => setScriptExpanded(v => !v)}
+                  _hover={{ bg: "#FAFAFA" }}
+                  transition="background 0.15s"
+                >
+                  <Text fontSize="14px" fontWeight="600" color="#374151">View Script & Director Notes</Text>
+                  <Flex color="#9CA3AF">
+                    {scriptExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </Flex>
+                </Flex>
+
+                {scriptExpanded && (
+                  <VStack align="stretch" gap={0} borderTop="1px solid #F3F4F6">
+
+                    {/* Beat list */}
+                    {reelsResult.script.script_beats && reelsResult.script.script_beats.length > 0 && (
+                      <Box px={6} py={5} borderBottom="1px solid #F3F4F6">
+                        <SectionLabel>Shooting Script — {reelsResult.script.script_beats.length} Beats</SectionLabel>
+                        <VStack align="stretch" gap={4} mt={1}>
+                          {reelsResult.script.script_beats.map((beat, bi) => (
+                            <Box key={bi} borderRadius="14px" border="1px solid #E5E7EB" overflow="hidden">
+                              <Flex px={4} py={2.5} bg="#F9FAFB" align="center" gap={3} borderBottom="1px solid #E5E7EB">
+                                <Flex w="26px" h="26px" borderRadius="full" bg="#E11D48" align="center" justify="center" flexShrink={0}>
+                                  <Text fontSize="11px" fontWeight="800" color="white">{beat.beat_number ?? bi + 1}</Text>
+                                </Flex>
+                                <Flex gap={2} wrap="wrap" flex={1}>
+                                  <Chip color="purple">{beat.shot_type}</Chip>
+                                  <Chip color="blue">{beat.camera_movement}</Chip>
+                                  {beat.duration_seconds && <Chip color="gray">{beat.duration_seconds}s</Chip>}
+                                </Flex>
+                              </Flex>
+                              <Box px={4} py={4}>
+                                <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
+                                  {beat.framing_notes && <BeatField icon="🎬" label="Framing" value={beat.framing_notes} />}
+                                  {beat.lighting && <BeatField icon="💡" label="Lighting" value={beat.lighting} />}
+                                  {beat.talent_action && <BeatField icon="🎭" label="Talent" value={beat.talent_action} />}
+                                  {beat.sound_note && <BeatField icon="🎵" label="Sound" value={beat.sound_note} />}
+                                </Box>
+                                {beat.voice_text && (
+                                  <Box mt={3} px={4} py={3} borderRadius="10px" bg="#FFF1F2" border="1px solid #FECDD3">
+                                    <Text fontSize="11px" fontWeight="700" color="#9CA3AF" mb={1}>VO LINE</Text>
+                                    <Text fontSize="14px" fontWeight="600" color="#111111" fontStyle="italic">&ldquo;{beat.voice_text}&rdquo;</Text>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+
+                    {/* Director notes */}
+                    {reelsResult.script.directors_notes && reelsResult.script.directors_notes.length > 0 && (
+                      <Box px={6} py={5}>
+                        <SectionLabel>Director&apos;s Notes</SectionLabel>
+                        <VStack align="stretch" gap={1.5}>
+                          {reelsResult.script.directors_notes.map((note, ni) => (
+                            <Flex key={ni} gap={2} align="flex-start">
+                              <Text color="#E11D48" flexShrink={0} mt="2px">•</Text>
+                              <Text fontSize="14px" color="#374151">{note}</Text>
+                            </Flex>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+                  </VStack>
+                )}
+              </Box>
+
+            </Box>
+          )}
+
+        </VStack>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* SOCIAL ADS TAB                                                       */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {activeMode === "social" && (
+        <VStack align="stretch" gap={8}>
+
+          {/* Viral Ad badge */}
+          <Flex align="center" gap={3}>
+            <Flex w="40px" h="40px" borderRadius="12px" bg="#FFF7ED" align="center" justify="center" flexShrink={0}>
+              <Zap size={20} color="#EA580C" />
+            </Flex>
+            <Box>
+              <Text fontSize="20px" fontWeight="700" color="#111111">Viral Ad</Text>
+              <Text fontSize="14px" color="#6B7280">Scroll-stopping hook + emotionally resonant content engineered for shares and saves.</Text>
+            </Box>
+          </Flex>
+
+          {/* Step 1 — Select Contexts (optional) */}
+          {contextBlocks.length > 0 && (
+            <Box>
+              <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>1. Select Contexts <Text as="span" fontSize="14px" fontWeight="400" color="#9CA3AF">(optional)</Text></Text>
+              <Text fontSize="15px" color="#6B7280" mb={6}>Ground your ad in a specific brand narrative. Leave blank to generate without context.</Text>
+              <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }} gap={5}>
+                {contextBlocks.map((block) => (
+                  <SelectionCard
+                    key={block.context_index}
+                    isSelected={selectedSocialContextIds.includes(block.context_index)}
+                    onClick={() => toggleSocialContext(block.context_index)}
+                    icon={BadgeCheck}
+                    label={block.title}
+                    description=""
+                    accent="#4F46E5"
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Step 2 — Topic */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "2." : "1."} What&rsquo;s this ad about?
+            </Text>
+            <Text fontSize="15px" color="#6B7280" mb={4}>Describe the product, service, or offer this ad promotes.</Text>
+            <Textarea
+              placeholder="e.g. Our new protein powder — available in 3 flavours, ships free this week only."
+              value={socialTopic}
+              onChange={(e) => setSocialTopic(e.target.value)}
+              minH="100px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Step 3 — CTA */}
+          <Box>
+            <Text fontSize="20px" fontWeight="600" color="#111111" mb={1}>
+              {contextBlocks.length > 0 ? "3." : "2."} Call to Action
+            </Text>
+            <Text fontSize="15px" color="#6B7280" mb={3}>What should people do after seeing this ad?</Text>
+            {/* Preset chips */}
+            <Flex gap={2} wrap="wrap" mb={3}>
+              {SOCIAL_CTA_PRESETS.map((preset) => (
+                <Box
+                  key={preset}
+                  px={3} py={1.5} borderRadius="999px" cursor="pointer"
+                  border="1px solid"
+                  borderColor={socialCta === preset ? "#4F46E5" : "#E5E7EB"}
+                  bg={socialCta === preset ? "#EEF2FF" : "white"}
+                  color={socialCta === preset ? "#4338CA" : "#374151"}
+                  fontSize="13px" fontWeight={socialCta === preset ? "600" : "500"}
+                  transition="all 0.15s ease"
+                  _hover={{ borderColor: "#4F46E5", bg: "#F5F3FF" }}
+                  onClick={() => setSocialCta(preset)}
+                >
+                  {preset}
+                </Box>
+              ))}
+            </Flex>
+            <Textarea
+              placeholder="Or type your own CTA..."
+              value={socialCta}
+              onChange={(e) => setSocialCta(e.target.value)}
+              minH="72px" px="16px" py="14px" resize="vertical"
+              {...fieldChrome}
+            />
+          </Box>
+
+          {/* Rating gate banners (same as Post Variations) */}
+          {hasRatedContext && hasPendingBatch && (
+            <Flex align="center" gap={4} bg="#FFF7ED" border="1px solid" borderColor="#FED7AA" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FFEDD5" align="center" justify="center">
+                <Lock size={16} color="#EA580C" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#9A3412">Rate your generated assets to unlock the next batch</Text>
+                <Text fontSize="13px" color="#C2410C" mt={0.5}>Go to Assets and give every image a star rating before generating again.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#EA580C" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#C2410C" }} onClick={onNavigateToAssets} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />View Assets</Flex>
+              </Button>
+            </Flex>
+          )}
+          {!hasRatedContext && (
+            <Flex align="center" gap={4} bg="#FFFBEB" border="1px solid" borderColor="#FDE68A" borderRadius="16px" px={5} py={4}>
+              <Flex w="36px" h="36px" flexShrink={0} borderRadius="10px" bg="#FEF3C7" align="center" justify="center">
+                <Lock size={16} color="#D97706" />
+              </Flex>
+              <Box flex={1}>
+                <Text fontSize="14px" fontWeight="700" color="#92400E">Rate all contexts to unlock generation</Text>
+                <Text fontSize="13px" color="#B45309" mt={0.5}>Go to the Brands tab and give every context a star rating before generating.</Text>
+              </Box>
+              <Button size="sm" h="36px" px={4} borderRadius="10px" bg="#D97706" color="white" fontSize="13px" fontWeight="600" _hover={{ bg: "#B45309" }} onClick={onNavigateToBrands} flexShrink={0}>
+                <Flex align="center" gap={1.5}><Star size={13} />Rate Now</Flex>
+              </Button>
+            </Flex>
+          )}
+
+          {/* Error */}
+          {socialError && (
+            <Box bg="red.50" border="1px solid" borderColor="red.200" color="red.600" fontSize="sm" borderRadius="14px" p={4}>
+              {socialError}
+            </Box>
+          )}
+
+          {/* Sticky Generate Bar */}
+          <Box
+            position="sticky" bottom={{ base: 2, md: 4 }}
+            bg="rgba(255,255,255,0.9)" backdropFilter="blur(12px)"
+            border="1px solid" borderColor={hasRatedContext ? "#ECECEC" : "#FDE68A"}
+            borderRadius="20px" px={{ base: 4, md: 6 }} py={4}
+          >
+            <Flex align={{ base: "stretch", md: "center" }} justify="space-between" direction={{ base: "column", md: "row" }} gap={4}>
+              <Flex align="center" gap={4} bg="#F8F8F6" border="1px solid" borderColor="#ECECEC" borderRadius="20px" px={5} py={3} wrap="wrap">
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">{Math.max(selectedSocialContextIds.length, 1)}</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Contexts</Text>
+                </Box>
+                <Text color="#9CA3AF">&times;</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color="#111111">5</Text>
+                  <Text fontSize="12px" color="#6B7280" textTransform="uppercase">Variations</Text>
+                </Box>
+                <Text color="#9CA3AF">=</Text>
+                <Box textAlign="center">
+                  <Text fontSize="18px" fontWeight="700" color={hasRatedContext && !hasPendingBatch ? "#EA580C" : "#D97706"}>{socialTotalPosts}</Text>
+                  <Text fontSize="12px" color={hasRatedContext && !hasPendingBatch ? "#EA580C" : "#D97706"} textTransform="uppercase">
+                    {isSocialTrimmed ? "Posts (capped)" : "Total Posts"}
+                  </Text>
+                </Box>
+              </Flex>
+              <Button
+                bg={hasRatedContext && !hasPendingBatch && !isGeneratingSocial && socialTopic.trim() && socialCta.trim() ? "#EA580C" : "#D1D5DB"}
+                color="white" borderRadius="14px" h="52px" px={7}
+                fontSize="15px" fontWeight="600"
+                _hover={{ bg: hasRatedContext && !hasPendingBatch && socialTopic.trim() && socialCta.trim() ? "#C2410C" : "#D1D5DB" }}
+                disabled={!hasRatedContext || hasPendingBatch || !socialTopic.trim() || !socialCta.trim() || isGeneratingSocial}
+                onClick={handleGenerateSocial}
+              >
+                <Flex align="center" gap={2}>
+                  {(!hasRatedContext || hasPendingBatch) && <Lock size={15} />}
+                  {isGeneratingSocial
+                    ? "Generating..."
+                    : !hasRatedContext
+                      ? "Rate All Contexts First"
+                      : hasPendingBatch
+                        ? "Rate Assets to Unlock"
+                        : !socialTopic.trim() || !socialCta.trim()
+                          ? "Fill Topic & CTA to Generate"
+                          : `Generate ${socialTotalPosts} Viral Ads${isSocialTrimmed ? " (capped)" : ""} \u2192`}
+                </Flex>
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Generating modal */}
+          {isGeneratingSocial && (
+            <Flex position="fixed" inset={0} zIndex={1000} bg="rgba(0,0,0,0.5)" backdropFilter="blur(6px)" align="center" justify="center">
+              <Box bg="white" borderRadius="24px" p={{ base: 8, md: 10 }} textAlign="center" maxW="420px" w="90%" boxShadow="0 24px 64px rgba(0,0,0,0.2)" style={{ animation: "fadeInUp 0.3s ease-out" }}>
+                <Flex w="64px" h="64px" borderRadius="16px" bg="#FFF7ED" align="center" justify="center" mx="auto" mb={5}>
+                  <Loader size={28} color="#EA580C" style={{ animation: "spin 1.5s linear infinite" }} />
+                </Flex>
+                <Text fontSize="22px" fontWeight="700" color="#111" mb={2}>Queuing {socialTotalPosts} Viral Ads</Text>
+                <Text fontSize="15px" color="#6B7280" lineHeight="1.5" mb={2}>
+                  Setting up {socialTotalPosts} variations across {socialCombinations} context{socialCombinations !== 1 ? "s" : ""}.
+                </Text>
+                <Text fontSize="14px" color="#EA580C" fontWeight="500" lineHeight="1.5" mb={4}>
+                  Go grab a coffee — everything generates in the background, even if you close this tab.
+                </Text>
+                <Flex justify="center" gap={1.5}>
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} w="8px" h="8px" borderRadius="full" bg="#EA580C" style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                  ))}
+                </Flex>
+              </Box>
+            </Flex>
+          )}
+
         </VStack>
       )}
 
