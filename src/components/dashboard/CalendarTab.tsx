@@ -622,7 +622,7 @@ export default function CalendarTab({ brandId = "", brandName = "", availableAss
                   <Flex align="center" gap={4} mt={1}>
                     <Flex align="center" gap={1.5} fontSize="12px" color="#6B7280">
                       <Clock size={14} />
-                      <Text fontWeight="500">{formatDateTime(post.scheduled_at)}</Text>
+                      <Text fontWeight="500" suppressHydrationWarning>{formatDateTime(post.scheduled_at)}</Text>
                     </Flex>
                     {post.error_message && (
                       <Flex align="center" gap={1} fontSize="12px" color="#DC2626" bg="#FEF2F2" px={2} py={1} borderRadius="6px">

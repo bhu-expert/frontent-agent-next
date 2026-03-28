@@ -9,8 +9,10 @@ import {
 
 export function Provider(props: ColorModeProviderProps) {
   return (
-    <ChakraProvider value={system}>
-      <ColorModeProvider {...props} />
-    </ChakraProvider>
+    <ColorModeProvider {...props}>
+      <ChakraProvider value={system}>
+        {props.children}
+      </ChakraProvider>
+    </ColorModeProvider>
   )
 }

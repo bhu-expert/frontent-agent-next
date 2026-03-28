@@ -1023,7 +1023,7 @@ export default function IntegrationsTab() {
                           {post.caption}
                         </Text>
                       )}
-                      <Text fontSize="12px" color="#9CA3AF" mt={1}>
+                      <Text fontSize="12px" color="#9CA3AF" mt={1} suppressHydrationWarning>
                         {post.status === "scheduled"
                           ? `Scheduled: ${new Date(post.scheduled_at).toLocaleString()}`
                           : post.status === "published"

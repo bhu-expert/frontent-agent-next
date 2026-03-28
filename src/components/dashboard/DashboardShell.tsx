@@ -1053,7 +1053,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
   /* ─── View title helper ─── */
   const viewTitle =
     activeView === "overview"
-      ? "Home"
+      ? "Dashboard"
       : activeView === "content"
         ? "Content Agent"
         : activeView === "calendar"

@@ -48,6 +48,7 @@ export const API_ENDPOINTS = {
   INSTAGRAM_STATUS:     "/integrations/instagram/status",
   INSTAGRAM_PUBLISH:    "/integrations/instagram/publish",
   INSTAGRAM_SCHEDULE:   "/integrations/instagram/schedule",
+  INSTAGRAM_DASHBOARD:  "/integrations/instagram/dashboard",
 
   // ── Contact ──────────────────────────────────────────────────────────────
   CONTACT_PROXY: "/api/contact",
