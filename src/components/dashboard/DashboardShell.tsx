@@ -609,6 +609,7 @@ export default function DashboardShell({ brandId }: DashboardShellProps) {
       "content",
       "assets",
       "calendar",
+      "schedule",
       "integrations",
       "settings",
       "support",
